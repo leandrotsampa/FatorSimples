@@ -11,7 +11,7 @@ Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiz
 
 [![Versão](https://img.shields.io/github/v/release/leandrotsampa/fatorsimples?label=vers%C3%A3o&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/leandrotsampa/fatorsimples/total?label=downloads&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases)
-[![Visualizações](https://visitor-badge.laobi.icu/badge?page_id=leandrotsampa.fatorsimples&left_text=visualiza%C3%A7%C3%B5es&left_color=%23334155&right_color=%23059669)](https://github.com/leandrotsampa/fatorsimples)
+[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples)
 [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-334155?style=flat-square)](LICENSE)
 <br />
 ![Windows](https://img.shields.io/badge/Windows-port%C3%A1til-0078D4?style=flat-square&logo=windows&logoColor=white)
@@ -254,7 +254,7 @@ O FatorSimples é uma ferramenta de apoio ao planejamento e à conferência. Ele
 
 <div align="center">
 
-[![Visualizações](https://visitor-badge.laobi.icu/badge?page_id=leandrotsampa.fatorsimples&left_text=visualiza%C3%A7%C3%B5es%20do%20projeto&left_color=%23334155&right_color=%23059669)](https://github.com/leandrotsampa/fatorsimples)
+[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es%20do%20projeto&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples)
 [![Downloads](https://img.shields.io/github/downloads/leandrotsampa/fatorsimples/total?label=downloads%20totais&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases)
 [![Estrelas](https://img.shields.io/github/stars/leandrotsampa/fatorsimples?label=estrelas&color=eab308&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/stargazers)
 [![Último commit](https://img.shields.io/github/last-commit/leandrotsampa/fatorsimples?label=%C3%BAltimo%20commit&color=334155&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/commits)
