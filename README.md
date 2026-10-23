@@ -9,9 +9,9 @@ Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiz
 
 <br />
 
-[![Versão](https://img.shields.io/github/v/release/leandrotsampa/fatorsimples?label=vers%C3%A3o&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/leandrotsampa/fatorsimples/total?label=downloads&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases)
-[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples)
+[![Versão](https://img.shields.io/github/v/release/leandrotsampa/FatorSimples?label=vers%C3%A3o&color=059669&style=flat-square)](https://github.com/leandrotsampa/FatorSimples/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/leandrotsampa/FatorSimples/total?label=downloads&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/FatorSimples/releases)
+[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es&color=059669&style=flat-square)](https://github.com/leandrotsampa/FatorSimples)
 [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-334155?style=flat-square)](LICENSE)
 <br />
 ![Windows](https://img.shields.io/badge/Windows-port%C3%A1til-0078D4?style=flat-square&logo=windows&logoColor=white)
@@ -20,7 +20,7 @@ Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiz
 ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-local-003B57?style=flat-square&logo=sqlite&logoColor=white)
 
-[**Baixar para Windows**](https://github.com/leandrotsampa/fatorsimples/releases/latest) ·
+[**Baixar para Windows**](https://github.com/leandrotsampa/FatorSimples/releases/latest) ·
 [Funcionalidades](#-funcionalidades) ·
 [Telas](#-telas) ·
 [Como o cálculo funciona](#-como-o-cálculo-funciona) ·
@@ -168,7 +168,7 @@ O lucro que sobra na empresa após DAS e pró-labore pode ser distribuído ao s�
 
 ## 📥 Instalação
 
-1. Baixe o `FatorSimples-x.y.z-portable.exe` em [**Releases**](https://github.com/leandrotsampa/fatorsimples/releases/latest)
+1. Baixe o `FatorSimples-x.y.z-portable.exe` em [**Releases**](https://github.com/leandrotsampa/FatorSimples/releases/latest)
 2. Coloque o arquivo numa pasta sua, por exemplo `Documentos\FatorSimples`
 3. Abra. Não precisa instalar nada
 
@@ -262,20 +262,20 @@ O FatorSimples é uma ferramenta de apoio ao planejamento e à conferência. Ele
 
 <div align="center">
 
-[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es%20do%20projeto&color=059669&style=flat-square)](https://github.com/leandrotsampa/fatorsimples)
-[![Downloads](https://img.shields.io/github/downloads/leandrotsampa/fatorsimples/total?label=downloads%20totais&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/releases)
-[![Estrelas](https://img.shields.io/github/stars/leandrotsampa/fatorsimples?label=estrelas&color=eab308&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/stargazers)
-[![Último commit](https://img.shields.io/github/last-commit/leandrotsampa/fatorsimples?label=%C3%BAltimo%20commit&color=334155&style=flat-square)](https://github.com/leandrotsampa/fatorsimples/commits)
+[![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es%20do%20projeto&color=059669&style=flat-square)](https://github.com/leandrotsampa/FatorSimples)
+[![Downloads](https://img.shields.io/github/downloads/leandrotsampa/FatorSimples/total?label=downloads%20totais&color=0f766e&style=flat-square)](https://github.com/leandrotsampa/FatorSimples/releases)
+[![Estrelas](https://img.shields.io/github/stars/leandrotsampa/FatorSimples?label=estrelas&color=eab308&style=flat-square)](https://github.com/leandrotsampa/FatorSimples/stargazers)
+[![Último commit](https://img.shields.io/github/last-commit/leandrotsampa/FatorSimples?label=%C3%BAltimo%20commit&color=334155&style=flat-square)](https://github.com/leandrotsampa/FatorSimples/commits)
 
 <sub>O contador de visualizações soma cada abertura desta página. Visitantes únicos e clones ficam em <b>Insights → Traffic</b> no GitHub.</sub>
 
 <br /><br />
 
-<a href="https://star-history.com/#leandrotsampa/fatorsimples&Date">
+<a href="https://star-history.com/#leandrotsampa/FatorSimples&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date" />
-    <img alt="Crescimento de estrelas do FatorSimples" src="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date" width="720" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date" />
+    <img alt="Crescimento de estrelas do FatorSimples" src="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date" width="720" />
   </picture>
 </a>
 
