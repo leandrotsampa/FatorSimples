@@ -22,28 +22,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build e publicação
-    runs-on: windows-latest
-    env:
-      # Sem certificado de assinatura de código: gera o executável sem assinar
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-
+  version:
+    name: Conferir versão
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
       - name: Ler a versão
         id: version
-        shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -54,54 +46,119 @@ jobs:
           fi
           echo "Versão a publicar: v$VERSION"
 
+  build:
+    name: Build ${{ matrix.name }}
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            command: npm run dist:portable -- --publish never
+            files: release/*.exe
+          - name: macOS
+            os: macos-latest
+            command: npm run dist:mac -- --publish never
+            files: release/*.dmg
+          - name: Linux
+            os: ubuntu-latest
+            command: npm run dist:linux -- --publish never
+            files: release/*.AppImage
+    env:
+      # Sem certificados de assinatura de código (Windows e Apple)
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
       - name: Instalar dependências
         run: npm ci
 
       - name: Checar tipos
         run: npm run lint
 
-      - name: Gerar executável portátil
-        run: npm run dist:portable -- --publish never
+      - name: Gerar instalável
+        run: ${{ matrix.command }}
+
+      - name: Guardar arquivos
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.name }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  release:
+    name: Publicar release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Juntar os arquivos dos três sistemas
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-release
+          pattern: build-*
+          merge-multiple: true
+
+      - name: Calcular checksums
+        working-directory: dist-release
+        run: |
+          ls -la
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Gerar changelog
-        shell: bash
-        run: node scripts/release-notes.mjs "${{ steps.version.outputs.version }}" release-notes.md
-
-      - name: Calcular checksum
-        id: files
-        shell: bash
         run: |
-          EXE="release/FatorSimples-${{ steps.version.outputs.version }}-portable.exe"
-          test -f "$EXE" || { echo "::error::Executável não encontrado: $EXE"; exit 1; }
-          sha256sum "$EXE" | sed 's#release/##' > "$EXE.sha256"
-          echo "exe=$EXE" >> "$GITHUB_OUTPUT"
+          VERSION="${{ needs.version.outputs.version }}"
+          node scripts/release-notes.mjs "$VERSION" release-notes.md
           {
             echo ""
             echo "### 📥 Download"
             echo ""
-            echo "Baixe o \`FatorSimples-${{ steps.version.outputs.version }}-portable.exe\` abaixo e coloque-o na mesma pasta do seu \`fatorsimples.sqlite\` (se já usa o app). Não precisa instalar."
+            echo "| Sistema | Arquivo |"
+            echo "|---|---|"
+            echo "| Windows | \`FatorSimples-$VERSION-portable.exe\` (não precisa instalar) |"
+            echo "| macOS com chip Apple (M1 a M4) | \`FatorSimples-$VERSION-mac-arm64.dmg\` |"
+            echo "| macOS com processador Intel | \`FatorSimples-$VERSION-mac-x64.dmg\` |"
+            echo "| Linux | \`FatorSimples-$VERSION-linux-x64.AppImage\` |"
             echo ""
-            echo "SHA-256: \`$(cut -d' ' -f1 "$EXE.sha256")\`"
+            echo "**Windows:** coloque o \`.exe\` na mesma pasta do seu \`fatorsimples.sqlite\`, se já usa o app. Se o SmartScreen avisar, clique em *Mais informações → Executar assim mesmo*."
+            echo ""
+            echo "**macOS:** o app não é assinado pela Apple. Na primeira abertura, vá em *Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim*. Se aparecer \"está danificado\", rode no Terminal: \`xattr -cr /Applications/FatorSimples.app\`."
+            echo ""
+            echo "**Linux:** dê permissão de execução (\`chmod +x FatorSimples-*.AppImage\`) e abra. O banco fica na mesma pasta do \`.AppImage\`."
+            echo ""
+            echo "Os checksums SHA-256 de todos os arquivos estão em \`SHA256SUMS.txt\`."
           } >> release-notes.md
 
       - name: Registrar o changelog no repositório
-        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git commit -m "chore(release): v${{ steps.version.outputs.version }}"
+          git commit -m "chore(release): v${{ needs.version.outputs.version }}"
           git push origin HEAD:${{ github.ref_name }}
 
       - name: Publicar a release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: FatorSimples ${{ steps.version.outputs.version }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: FatorSimples ${{ needs.version.outputs.version }}
           body_path: release-notes.md
           target_commitish: ${{ github.ref_name }}
           prerelease: ${{ inputs.prerelease }}
           draft: ${{ inputs.draft }}
-          files: |
-            ${{ steps.files.outputs.exe }}
-            ${{ steps.files.outputs.exe }}.sha256
+          files: dist-release/*
