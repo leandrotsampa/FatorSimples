@@ -1,0 +1,20 @@
+# Dependências e saídas de build
+node_modules/
+dist/
+release/
+.electron-dist/
+coverage/
+*.log
+
+# Ambiente e ferramentas locais
+.env*
+.DS_Store
+Thumbs.db
+
+# Dados reais do usuário (banco local, backups e importações)
+*.sqlite
+*.sqlite-journal
+fatorsimples_data.json
+fatorsimples-*.json
+*.pdf
+*.xlsx
