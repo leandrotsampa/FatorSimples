@@ -215,7 +215,15 @@ npm run dev
 | `npm run build` | Build de produção da interface em `dist/` |
 | `npm run dist:portable` | Gera `release/FatorSimples-<versão>-portable.exe` |
 
-A versão exibida no app vem do `package.json`. Para lançar uma versão nova, ajuste o campo `version` e rode `npm run dist:portable`.
+### Publicando uma versão
+
+As releases são geradas pela action **[Gerar release](.github/workflows/release.yml)**, disparada manualmente:
+
+1. Ajuste o campo `version` do `package.json` (por exemplo, `1.1.1` → `1.2.0`) e faça o commit na `main`
+2. No GitHub, abra **Actions → Gerar release → Run workflow**. Dá para marcar como pré-lançamento ou rascunho
+3. A action compila o executável no Windows, gera o changelog a partir dos commits desde a última versão, atualiza o [`CHANGELOG.md`](CHANGELOG.md) e publica a release com o `.exe` e o checksum SHA-256
+
+O changelog agrupa os commits pelo prefixo: `feat:` (novidades), `fix:` (correções), `docs:`, `refactor:`, `perf:`, `build:` e `chore:`. A versão exibida no app também vem do `package.json`.
 
 ### Estrutura
 
