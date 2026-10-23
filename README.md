@@ -319,11 +319,11 @@ O FatorSimples é uma ferramenta de apoio ao planejamento e à conferência. Ele
 
 <br /><br />
 
-<a href="https://star-history.com/#leandrotsampa/FatorSimples&Date">
+<a href="https://www.star-history.com/?repos=leandrotsampa%2FFatorSimples&type=date&legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date" />
-    <img alt="Crescimento de estrelas do FatorSimples" src="https://api.star-history.com/svg?repos=leandrotsampa/FatorSimples&type=Date" width="720" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=leandrotsampa%2Ffatorsimples&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=leandrotsampa%2Ffatorsimples&type=date&legend=top-left" />
+    <img alt="Crescimento de estrelas do FatorSimples" src="https://api.star-history.com/chart?repos=leandrotsampa%2Ffatorsimples&type=date&legend=top-left" width="720" />
   </picture>
 </a>
 
