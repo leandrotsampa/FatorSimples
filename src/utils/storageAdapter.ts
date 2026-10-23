@@ -1,5 +1,6 @@
 import { MonthRecord, TaxSettings } from '../types/tax';
 import { DEFAULT_SETTINGS } from './taxCalculations';
+import type { StorageMode } from '../types/electron';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -24,6 +25,20 @@ export const storageAdapter = {
       }
     }
     return null;
+  },
+
+  /**
+   * Onde o banco está: ao lado do app (portátil) ou na pasta de dados do sistema (macOS)
+   */
+  async getStorageMode(): Promise<StorageMode> {
+    if (typeof window !== 'undefined' && window.electronAPI?.getStorageMode) {
+      try {
+        return await window.electronAPI.getStorageMode();
+      } catch (e) {
+        console.error('Erro ao obter o modo de armazenamento:', e);
+      }
+    }
+    return 'portable';
   },
 
   /**

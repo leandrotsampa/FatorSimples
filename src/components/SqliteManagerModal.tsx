@@ -37,13 +37,16 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [activeTab, setActiveTab] = useState<'portability' | 'schema' | 'electron'>('portability');
   const [dbPath, setDbPath] = useState<string>('');
+  const [storageMode, setStorageMode] = useState<'portable' | 'system'>('portable');
   const isElectron = Boolean(window.electronAPI?.isElectron);
+  const isSystem = storageMode === 'system';
 
   useEffect(() => {
     if (isOpen && window.electronAPI?.getDbPath) {
       window.electronAPI.getDbPath().then((p) => {
         if (p) setDbPath(p);
       });
+      window.electronAPI.getStorageMode?.().then(setStorageMode);
     }
   }, [isOpen]);
 
@@ -85,7 +88,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Banco SQLite Portátil na Pasta do Executável (.exe)
+              Banco SQLite local
             </h2>
           </div>
           <button
@@ -106,7 +109,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            01. Modo Portátil (Pasta do .exe / Pendrive)
+            01. Onde ficam os dados
           </button>
 
           <button
@@ -144,22 +147,31 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="font-bold flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Sim! Salva na própria pasta do executável (.exe)</span>
+                    <span>{isSystem ? 'Salvo na pasta de dados do sistema' : 'Salvo na mesma pasta do aplicativo'}</span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-semibold font-mono">
-                    Modo Portátil Ativo
+                    {isSystem ? 'Pasta do sistema' : 'Modo Portátil Ativo'}
                   </span>
                 </div>
 
                 <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
-                  Quando você compila ou roda o aplicativo localmente, o arquivo de banco <strong className="text-emerald-700 dark:text-emerald-300 font-mono">fatorsimples.sqlite</strong> é gravado <strong>diretamente ao lado do seu arquivo executável</strong>:
+                  O arquivo de banco <strong className="text-emerald-700 dark:text-emerald-300 font-mono">fatorsimples.sqlite</strong> é gravado {isSystem ? <strong>na pasta de dados do sistema, fora do aplicativo, e continua lá quando você atualizar o app</strong> : <strong>diretamente ao lado do arquivo do aplicativo</strong>}:
                 </p>
 
                 {/* Diagrama de Pasta */}
                 <div className="bg-slate-900 text-slate-200 p-3 rounded-md font-mono text-[11px] border border-slate-800">
-                  <div className="text-emerald-400 font-semibold mb-1">📁 MinhaPasta (ou Pendrive / OneDrive / Google Drive):</div>
-                  <div className="pl-4 text-slate-300">├── 🚀 <span className="text-sky-300 font-semibold">FatorSimples.exe</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Seu aplicativo)</div>
-                  <div className="pl-4 text-emerald-300">└── 💾 <span className="font-semibold text-emerald-400">fatorsimples.sqlite</span> &nbsp;(Banco com todos os 12 meses e alíquotas)</div>
+                  {isSystem ? (
+                    <>
+                      <div className="text-emerald-400 font-semibold mb-1">📁 ~/Library/Application Support/FatorSimples/</div>
+                      <div className="pl-4 text-emerald-300">└── 💾 <span className="font-semibold text-emerald-400">fatorsimples.sqlite</span> &nbsp;(Banco com todos os meses e alíquotas)</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-emerald-400 font-semibold mb-1">📁 MinhaPasta (ou Pendrive / OneDrive / Google Drive):</div>
+                      <div className="pl-4 text-slate-300">├── 🚀 <span className="text-sky-300 font-semibold">FatorSimples (.exe ou .AppImage)</span> &nbsp;(Seu aplicativo)</div>
+                      <div className="pl-4 text-emerald-300">└── 💾 <span className="font-semibold text-emerald-400">fatorsimples.sqlite</span> &nbsp;(Banco com todos os meses e alíquotas)</div>
+                    </>
+                  )}
                 </div>
 
                 {/* Caminho Atual Detectado */}
@@ -167,7 +179,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                   <div className="text-slate-600 dark:text-slate-400 truncate">
                     <span className="font-semibold text-slate-800 dark:text-slate-200">Local do banco: </span>
                     <span className="font-mono text-emerald-700 dark:text-emerald-300">
-                      {dbPath || (isElectron ? 'fatorsimples.sqlite (pasta do .exe)' : 'fatorsimples.sqlite (Modo Navegador / Web)')}
+                      {dbPath || (isElectron ? 'fatorsimples.sqlite' : 'fatorsimples.sqlite (Modo Navegador / Web)')}
                     </span>
                   </div>
 
@@ -177,7 +189,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                       className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition-colors cursor-pointer text-[10px] shrink-0"
                     >
                       <FolderOpen className="w-3.5 h-3.5" />
-                      <span>Abrir Pasta do .exe</span>
+                      <span>Abrir pasta do banco</span>
                     </button>
                   )}
                 </div>

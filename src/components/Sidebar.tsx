@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Calculator,
   History,
@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
+import { storageAdapter } from '../utils/storageAdapter';
+import type { StorageMode } from '../types/electron';
 
 interface SidebarProps {
   activeTab: 'apuration' | 'history' | 'comparison' | 'report';
@@ -59,6 +61,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const nextMonth = `${year}-${String(month).padStart(2, '0')}`;
     setSelectedMonth(nextMonth);
   };
+
+  // Onde o banco está: ao lado do app (Windows/Linux) ou na pasta de dados do sistema (macOS)
+  const [storageMode, setStorageMode] = useState<StorageMode>('portable');
+  useEffect(() => {
+    storageAdapter.getStorageMode().then(setStorageMode);
+  }, []);
 
   // Verifica se a competência selecionada já está salva no histórico
   const isMonthSaved = history.some((h) => h.yearMonth === selectedMonth);
@@ -255,7 +263,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <HardDrive className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
               <span>fatorsimples.sqlite</span>
             </span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-medium">Pasta do .exe</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+              {storageMode === 'system' ? 'Dados do sistema' : 'Junto ao app'}
+            </span>
           </div>
         </div>
 
@@ -292,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Banco SQLite</span>
           </span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono">
-            Portátil
+            {storageMode === 'system' ? 'Local' : 'Portátil'}
           </span>
         </button>
 

@@ -1,8 +1,12 @@
 import { MonthRecord, TaxSettings } from './tax';
 
+export type StorageMode = 'portable' | 'system';
+
 export interface ElectronAPI {
   isElectron: boolean;
   getDbPath: () => Promise<string>;
+  // 'portable' = banco ao lado do app (Windows/Linux); 'system' = pasta de dados do sistema (macOS)
+  getStorageMode?: () => Promise<StorageMode>;
   getHistory: () => Promise<MonthRecord[]>;
   saveMonth: (record: MonthRecord) => Promise<boolean>;
   deleteMonth: (id: string) => Promise<boolean>;

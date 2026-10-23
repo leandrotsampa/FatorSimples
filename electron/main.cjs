@@ -11,40 +11,55 @@ const fs = require('fs');
 let mainWindow = null;
 let db = null;
 let dbPath = '';
+// 'portable' = banco ao lado do app; 'system' = pasta de dados do sistema (userData)
+let storageMode = 'portable';
 
-// Obtém o diretório físico onde o arquivo .exe está localizado (Modo Portátil)
-function getExecutableDirectory() {
-  // 1. Se gerado como executável portátil (electron-builder portable):
+// Pasta onde o banco fica ao lado do app (modo portátil), ou null quando o sistema não permite
+function getPortableDirectory() {
+  // Windows portátil (electron-builder portable): pasta real do .exe, não a extraída em temp
   if (process.env.PORTABLE_EXECUTABLE_DIR) {
     return process.env.PORTABLE_EXECUTABLE_DIR;
   }
-  // 2. Se for o executável .exe empacotado (Windows / Mac / Linux):
+  // Linux AppImage: pasta do arquivo .AppImage (o app em si roda de uma montagem somente leitura)
+  if (process.env.APPIMAGE) {
+    return path.dirname(process.env.APPIMAGE);
+  }
+  // macOS: o app fica dentro do pacote .app em Aplicativos; gravar ali se perde ao atualizar
+  if (process.platform === 'darwin' && app.isPackaged) {
+    return null;
+  }
   if (app.isPackaged) {
     return path.dirname(app.getPath('exe'));
   }
-  // 3. Em desenvolvimento local:
+  // Em desenvolvimento local
   return process.cwd();
 }
 
-// Inicialização do Banco de Dados SQLite Local na própria pasta do executável
-function initDatabase() {
-  const targetDir = getExecutableDirectory();
-  const portablePath = path.join(targetDir, 'fatorsimples.sqlite');
-
-  // Verifica permissão de escrita na pasta do .exe
-  try {
-    fs.accessSync(targetDir, fs.constants.W_OK);
-    dbPath = portablePath;
-  } catch (err) {
-    // Fallback caso o executável seja colocado em pasta restrita do sistema (ex: C:\Program Files)
-    const userDataDir = app.getPath('userData');
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir, { recursive: true });
+// Pasta dos dados: ao lado do app quando possível e gravável; senão, a pasta de dados do sistema
+function getDataDirectory() {
+  const portableDir = getPortableDirectory();
+  if (portableDir) {
+    try {
+      fs.accessSync(portableDir, fs.constants.W_OK);
+      storageMode = 'portable';
+      return portableDir;
+    } catch (err) {
+      // pasta restrita (ex.: C:\Program Files): cai para a pasta de dados do sistema
     }
-    dbPath = path.join(userDataDir, 'fatorsimples.sqlite');
   }
+  const userDataDir = app.getPath('userData');
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
+  }
+  storageMode = 'system';
+  return userDataDir;
+}
 
-  console.log(`[FatorSimples] Banco de Dados SQLite configurado na pasta do .exe: ${dbPath}`);
+// Inicialização do Banco de Dados SQLite local
+function initDatabase() {
+  dbPath = path.join(getDataDirectory(), 'fatorsimples.sqlite');
+
+  console.log(`[FatorSimples] Banco de Dados SQLite (${storageMode}): ${dbPath}`);
 
   try {
     // Tenta carregar better-sqlite3 nativo se instalado
@@ -139,15 +154,9 @@ function createWindow() {
   });
 }
 
-// Caminho de fallback portátil na pasta do .exe
+// Arquivo JSON de fallback, na mesma pasta do banco
 function getFallbackFilePath() {
-  const targetDir = getExecutableDirectory();
-  try {
-    fs.accessSync(targetDir, fs.constants.W_OK);
-    return path.join(targetDir, 'fatorsimples_data.json');
-  } catch (err) {
-    return path.join(app.getPath('userData'), 'fatorsimples_data.json');
-  }
+  return path.join(getDataDirectory(), 'fatorsimples_data.json');
 }
 
 // Configuração dos canais IPC do SQLite para o Renderer (React)
@@ -156,12 +165,15 @@ function setupIpcHandlers() {
     return dbPath;
   });
 
+  ipcMain.handle('sqlite:get-storage-mode', () => {
+    return storageMode;
+  });
+
   ipcMain.handle('sqlite:open-db-folder', async () => {
-    const targetDir = getExecutableDirectory();
     if (fs.existsSync(dbPath)) {
       shell.showItemInFolder(dbPath);
     } else {
-      shell.openPath(targetDir);
+      shell.openPath(path.dirname(dbPath));
     }
     return true;
   });
