@@ -261,6 +261,18 @@ O FatorSimples é uma ferramenta de apoio ao planejamento e à conferência. Ele
 
 <sub>O contador de visualizações soma cada abertura desta página. Visitantes únicos e clones ficam em <b>Insights → Traffic</b> no GitHub.</sub>
 
+<br /><br />
+
+<a href="https://star-history.com/#leandrotsampa/fatorsimples&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date" />
+    <img alt="Crescimento de estrelas do FatorSimples" src="https://api.star-history.com/svg?repos=leandrotsampa/fatorsimples&type=Date" width="720" />
+  </picture>
+</a>
+
+<sub>Crescimento do projeto na comunidade (estrelas ao longo do tempo).</sub>
+
 </div>
 
 ## 📄 Licença
