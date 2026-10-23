@@ -15,12 +15,14 @@ Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiz
 [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-334155?style=flat-square)](LICENSE)
 <br />
 ![Windows](https://img.shields.io/badge/Windows-port%C3%A1til-0078D4?style=flat-square&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-Apple%20e%20Intel-000000?style=flat-square&logo=apple&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-AppImage-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![Electron](https://img.shields.io/badge/Electron-45-47848F?style=flat-square&logo=electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-local-003B57?style=flat-square&logo=sqlite&logoColor=white)
 
-[**Baixar para Windows**](https://github.com/leandrotsampa/FatorSimples/releases/latest) ·
+[**Baixar para Windows, macOS ou Linux**](https://github.com/leandrotsampa/FatorSimples/releases/latest) ·
 [Funcionalidades](#-funcionalidades) ·
 [Telas](#-telas) ·
 [Como o cálculo funciona](#-como-o-cálculo-funciona) ·
@@ -83,7 +85,7 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 </tr>
 </table>
 
-**Privado por padrão:** os dados ficam num arquivo SQLite ao lado do executável. Nada é enviado para a internet.
+**Privado por padrão:** os dados ficam num arquivo SQLite no seu computador. Nada é enviado para a internet.
 
 ## 📸 Telas
 
@@ -168,13 +170,57 @@ O lucro que sobra na empresa após DAS e pró-labore pode ser distribuído ao s�
 
 ## 📥 Instalação
 
-1. Baixe o `FatorSimples-x.y.z-portable.exe` em [**Releases**](https://github.com/leandrotsampa/FatorSimples/releases/latest)
-2. Coloque o arquivo numa pasta sua, por exemplo `Documentos\FatorSimples`
-3. Abra. Não precisa instalar nada
+Baixe o arquivo do seu sistema em [**Releases**](https://github.com/leandrotsampa/FatorSimples/releases/latest):
 
-O banco `fatorsimples.sqlite` é criado **na mesma pasta do executável**. Para atualizar, troque só o `.exe` e mantenha o `.sqlite` ao lado. Para fazer backup, copie esse arquivo.
+| Sistema | Arquivo | Onde fica o banco `fatorsimples.sqlite` |
+|---|---|---|
+| 🪟 **Windows** | `FatorSimples-x.y.z-portable.exe` | Na mesma pasta do `.exe` |
+| 🍎 **macOS** (chip Apple) | `FatorSimples-x.y.z-mac-arm64.dmg` | `~/Library/Application Support/FatorSimples` |
+| 🍎 **macOS** (Intel) | `FatorSimples-x.y.z-mac-x64.dmg` | `~/Library/Application Support/FatorSimples` |
+| 🐧 **Linux** | `FatorSimples-x.y.z-linux-x64.AppImage` | Na mesma pasta do `.AppImage` |
 
-> O Windows SmartScreen pode avisar na primeira execução, porque o executável não tem assinatura de código comercial. Clique em **Mais informações → Executar assim mesmo**.
+<details>
+<summary><b>🪟 Windows</b></summary>
+<br />
+
+1. Coloque o `.exe` numa pasta sua, por exemplo `Documentos\FatorSimples`, e abra. Não precisa instalar
+2. Para atualizar, troque só o `.exe` e mantenha o `fatorsimples.sqlite` ao lado
+
+O SmartScreen pode avisar na primeira execução, porque o executável não tem assinatura de código comercial. Clique em **Mais informações → Executar assim mesmo**.
+
+</details>
+
+<details>
+<summary><b>🍎 macOS</b></summary>
+<br />
+
+1. Abra o `.dmg` e arraste o **FatorSimples** para **Aplicativos**
+2. Na primeira abertura, o macOS bloqueia porque o app não é assinado pela Apple. Vá em **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**
+3. Se aparecer a mensagem de que o app "está danificado", rode no Terminal:
+
+```bash
+xattr -cr /Applications/FatorSimples.app
+```
+
+Os dados ficam fora do app, então atualizar substituindo o FatorSimples em Aplicativos não apaga nada.
+
+</details>
+
+<details>
+<summary><b>🐧 Linux</b></summary>
+<br />
+
+1. Dê permissão de execução e abra:
+
+```bash
+chmod +x FatorSimples-*.AppImage
+```
+
+2. Para atualizar, troque só o `.AppImage` e mantenha o `fatorsimples.sqlite` ao lado
+
+</details>
+
+Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Banco SQLite** do app mostra onde ele está e abre a pasta.
 
 ## 🔄 Importando o seu histórico
 
@@ -197,7 +243,7 @@ Pelo menu **Banco SQLite → Importar dados**, o app aceita um JSON no formato a
 
 ## 🛠️ Desenvolvimento
 
-**Requisitos:** Node.js 22+ e Windows (para gerar o executável).
+**Requisitos:** Node.js 22+. Cada instalável é gerado no próprio sistema (o `.exe` no Windows, o `.dmg` no macOS e o `.AppImage` no Linux); a action de release faz os três de uma vez.
 
 ```bash
 npm install
@@ -213,7 +259,9 @@ npm run dev
 | `npm run electron:dev` | Abre o app desktop (usa o build em `dist/` se existir; senão, o servidor em `:3000`) |
 | `npm run lint` | Checagem de tipos com TypeScript |
 | `npm run build` | Build de produção da interface em `dist/` |
-| `npm run dist:portable` | Gera `release/FatorSimples-<versão>-portable.exe` |
+| `npm run dist:portable` | Gera `release/FatorSimples-<versão>-portable.exe` (Windows) |
+| `npm run dist:mac` | Gera os `.dmg` para Mac com chip Apple e Intel (macOS) |
+| `npm run dist:linux` | Gera o `.AppImage` (Linux) |
 
 ### Publicando uma versão
 
@@ -221,7 +269,7 @@ As releases são geradas pela action **[Gerar release](.github/workflows/release
 
 1. Ajuste o campo `version` do `package.json` (por exemplo, `1.1.1` → `1.2.0`) e faça o commit na `main`
 2. No GitHub, abra **Actions → Gerar release → Run workflow**. Dá para marcar como pré-lançamento ou rascunho
-3. A action compila o executável no Windows, gera o changelog a partir dos commits desde a última versão, atualiza o [`CHANGELOG.md`](CHANGELOG.md) e publica a release com o `.exe` e o checksum SHA-256
+3. A action compila em paralelo no **Windows**, no **macOS** e no **Linux**, gera o changelog a partir dos commits desde a última versão, atualiza o [`CHANGELOG.md`](CHANGELOG.md) e publica a release com o `.exe`, os `.dmg`, o `.AppImage` e os checksums SHA-256
 
 O changelog agrupa os commits pelo prefixo: `feat:` (novidades), `fix:` (correções), `docs:`, `refactor:`, `perf:`, `build:` e `chore:`. A versão exibida no app também vem do `package.json`.
 
@@ -239,7 +287,7 @@ fatorsimples/
 │   │   └── storageAdapter.ts     # SQLite (desktop) ou localStorage (navegador)
 │   └── types/             # tipos do domínio fiscal
 ├── scripts/               # preparação do Electron para o empacotamento
-├── build/                 # ícone do executável
+├── build/                 # ícones do app (Windows, macOS e Linux)
 └── docs/                  # banner e capturas do README
 ```
 
