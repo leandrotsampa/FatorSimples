@@ -239,7 +239,14 @@ Pelo menu **Banco SQLite → Importar dados**, o app aceita um JSON no formato a
 
 **De onde tirar os números oficiais:**
 - **Receita e folha:** recibo do PGDAS-D. Cada recibo traz as receitas desde janeiro do ano anterior e as folhas dos 12 meses anteriores
-- **DAS, INSS e IRRF pagos:** e-CAC → *Pagamentos e Parcelamentos → Consulta Comprovante de Pagamento*. Código **3333** é o DAS; o DARF da DCTFWeb traz INSS e IRRF juntos
+- **DAS, INSS e IRRF pagos:** e-CAC → *Pagamentos e Parcelamentos → Consulta Comprovante de Pagamento*. Na lista, cada guia aparece com o código da receita:
+
+  | Código | Guia | Campo no app |
+  |---|---|---|
+  | **3333** | DAS do Simples Nacional | DAS pago |
+  | **1410** | DARF da DCTFWeb, com **INSS e IRRF juntos** | INSS + IRRF |
+
+  Para separar a guia 1410, o INSS é 11% do pró-labore (limitado ao teto) e o restante é IRRF. A data da guia é a do pagamento: a competência é sempre o mês anterior
 
 ## 🛠️ Desenvolvimento
 
