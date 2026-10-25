@@ -25,6 +25,9 @@ import {
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
+import { SegmentedControl } from './ui/SegmentedControl';
+import { AnimatePresence, motion } from 'motion/react';
+import { DURATION, EASE_OUT } from '../utils/motion';
 
 interface MonthApurationViewProps {
   currentRevenue: number;
@@ -299,36 +302,34 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
 
           <div className="min-w-0">
             <div className="h-5 text-sm text-slate-600 dark:text-slate-400 mb-1.5">Pró-labore</div>
-            <div
-              className="grid grid-cols-3 h-10 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-300 dark:border-slate-700 text-sm"
-              role="group"
-              aria-label="Estratégia do pró-labore"
-            >
-              {STRATEGIES.map((s) => (
-                <button
-                  key={s.rule}
-                  onClick={() => handleSelectRule(s.rule)}
-                  disabled={isReadOnly}
-                  aria-pressed={prolaboreRule === s.rule}
-                  title={s.title}
-                  className={`px-2 rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                    prolaboreRule === s.rule
-                      ? 'bg-emerald-600 text-white font-semibold dark:bg-emerald-500 dark:text-emerald-950'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
+            <SegmentedControl
+              options={STRATEGIES.map((s) => ({ value: s.rule, label: s.label, title: s.title }))}
+              value={prolaboreRule}
+              onChange={handleSelectRule}
+              disabled={isReadOnly}
+              ariaLabel="Estratégia do pró-labore"
+              layoutId="prolabore-rule"
+            />
+            <AnimatePresence initial={false}>
+              {prolaboreRule === 'manual' && !isReadOnly && (
+                <motion.div
+                  key="manual-prolabore"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: DURATION.base, ease: EASE_OUT }}
+                  // Folga de 1px para o anel de foco do campo não ser cortado
+                  className="overflow-hidden -mx-px px-px pb-px"
                 >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            {prolaboreRule === 'manual' && !isReadOnly && (
-              <CurrencyInput
-                className="mt-2"
-                ariaLabel="Pró-labore bruto manual"
-                value={manualProlabore}
-                onChange={setManualProlabore}
-              />
-            )}
+                  <CurrencyInput
+                    className="mt-2"
+                    ariaLabel="Pró-labore bruto manual"
+                    value={manualProlabore}
+                    onChange={setManualProlabore}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div>
