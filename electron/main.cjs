@@ -7,7 +7,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { windowChromeOptions, titleBarOverlayFor, shortcutFor } = require('./windowChrome.cjs');
+const { windowChromeOptions, windowControlFor, shortcutFor } = require('./windowChrome.cjs');
 const { ensureSettingsColumns } = require('./settingsSchema.cjs');
 
 let mainWindow = null;
@@ -145,8 +145,8 @@ function createWindow() {
     minHeight: 650,
     title: 'FatorSimples - Calculadora Simples Nacional & Fator R',
     backgroundColor: '#e7eee9', // fundo do tema claro (padrão) até a interface carregar
-    // Barra de título desenhada pelo app; abre no tema escuro (padrão) e o renderer corrige via IPC
-    ...windowChromeOptions(process.platform, 'light'),
+    // Barra de título e botões da janela desenhados pelo app (no macOS, os botões do sistema)
+    ...windowChromeOptions(process.platform),
     // Ícone da janela/barra de tarefas (copiado de public/ para dist/ no build)
     icon: path.join(__dirname, '..', 'dist', 'icon.png'),
     webPreferences: {
@@ -168,6 +168,11 @@ function createWindow() {
   } else {
     mainWindow.loadFile(prodPath);
   }
+
+  // Ícone do botão maximizar/restaurar acompanha o estado da janela (também ao arrastar ou dar duplo clique)
+  const sendMaximized = () => mainWindow.webContents.send('window:maximized', mainWindow.isMaximized());
+  mainWindow.on('maximize', sendMaximized);
+  mainWindow.on('unmaximize', sendMaximized);
 
   // Atalhos que vinham do menu padrão (zoom sempre; recarregar e DevTools só fora do build)
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -211,10 +216,19 @@ function setupIpcHandlers() {
     shell.openExternal('https://github.com/leandrotsampa/FatorSimples/releases/latest');
   });
 
-  // Cor dos botões nativos da janela acompanha o tema do app (no macOS os botões são os do sistema)
-  ipcMain.handle('window:set-titlebar-theme', (event, theme) => {
-    if (process.platform === 'darwin' || !mainWindow) return;
-    mainWindow.setTitleBarOverlay(titleBarOverlayFor(theme === 'light' ? 'light' : 'dark'));
+  // Botões da janela desenhados pelo app (minimizar, maximizar/restaurar e fechar)
+  ipcMain.handle('window:control', (event, action) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const control = windowControlFor(action);
+    if (!win || !control) return;
+    if (control === 'minimize') win.minimize();
+    else if (control === 'close') win.close();
+    else if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  });
+  ipcMain.handle('window:is-maximized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return Boolean(win && win.isMaximized());
   });
 
   ipcMain.handle('sqlite:get-db-path', () => {

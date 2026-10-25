@@ -4,20 +4,20 @@
  * Funções puras, testadas em windowChrome.test.ts.
  */
 
-const TITLEBAR_HEIGHT = 48;
-
-// Cores dos botões nativos (minimizar/maximizar/fechar) iguais ao fundo da janela (--canvas em index.css)
-function titleBarOverlayFor(theme) {
-  return theme === 'light'
-    ? { color: '#e7eee9', symbolColor: '#334155', height: TITLEBAR_HEIGHT }
-    : { color: '#080b0a', symbolColor: '#aeb9b2', height: TITLEBAR_HEIGHT };
+// Windows e Linux: sem barra nem botões nativos; minimizar, maximizar e fechar são do próprio app
+// (assim acompanham o tema junto com a página). macOS: os botões coloridos do sistema, embutidos
+function usesCustomWindowControls(platform) {
+  return platform !== 'darwin';
 }
 
-function windowChromeOptions(platform, theme) {
-  if (platform === 'darwin') {
-    return { titleBarStyle: 'hiddenInset' };
-  }
-  return { titleBarStyle: 'hidden', titleBarOverlay: titleBarOverlayFor(theme) };
+function windowChromeOptions(platform) {
+  return usesCustomWindowControls(platform) ? { titleBarStyle: 'hidden' } : { titleBarStyle: 'hiddenInset' };
+}
+
+// Comandos de janela que a página pode pedir; qualquer outro valor é ignorado
+const WINDOW_CONTROLS = ['minimize', 'toggle-maximize', 'close'];
+function windowControlFor(action) {
+  return WINDOW_CONTROLS.includes(action) ? action : null;
 }
 
 // Atalho de teclado tratado pelo app; null deixa a tecla seguir para a página
@@ -34,4 +34,4 @@ function shortcutFor(input, isPackaged) {
   return null;
 }
 
-module.exports = { TITLEBAR_HEIGHT, titleBarOverlayFor, windowChromeOptions, shortcutFor };
+module.exports = { usesCustomWindowControls, windowChromeOptions, windowControlFor, shortcutFor };

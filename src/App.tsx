@@ -82,7 +82,6 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    window.electronAPI?.setTitleBarTheme?.(theme);
   }, [theme]);
 
   // Inicialização da Competência Atual (ex: 2026-01 ou ano atual)

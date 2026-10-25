@@ -5,8 +5,11 @@ export type StorageMode = 'portable' | 'system';
 export interface ElectronAPI {
   isElectron: boolean;
   platform?: string;
-  // Cor dos botões nativos da janela (minimizar/maximizar/fechar) conforme o tema
-  setTitleBarTheme?: (theme: 'dark' | 'light') => Promise<void>;
+  // Botões da janela desenhados pelo app (Windows e Linux)
+  windowControl?: (action: 'minimize' | 'toggle-maximize' | 'close') => Promise<void>;
+  isWindowMaximized?: () => Promise<boolean>;
+  // Avisa quando a janela maximiza ou restaura; devolve a função que para de ouvir
+  onWindowMaximized?: (callback: (maximized: boolean) => void) => () => void;
   // Abre a página de versões do FatorSimples no navegador do sistema
   openReleasesPage?: () => Promise<void>;
   // Tabelas fiscais baixadas do GitHub, guardadas no banco

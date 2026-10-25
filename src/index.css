@@ -118,10 +118,6 @@
 .app-drag a {
   -webkit-app-region: no-drag;
 }
-/* Reserva à direita a largura dos botões nativos da janela; fora do Electron vale 0 */
-.titlebar-safe {
-  padding-right: max(1.5rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.75rem));
-}
 
 /* Entrada das telas: cada bloco sobe e aparece em sequência (o wrapper da tela anima o desfoque) */
 @keyframes page-rise {
