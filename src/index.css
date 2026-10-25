@@ -15,6 +15,24 @@
 @theme {
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Movimento: durações e curvas compartilhadas */
+  --duration-micro: 150ms;
+  --duration-base: 250ms;
+  --duration-number: 450ms;
+  --duration-chart: 700ms;
+  --duration-theme: 600ms;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-theme: cubic-bezier(.65, 0, .35, 1);
+}
+
+/* Quem pede menos movimento no sistema vê tudo já no estado final */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer base {
@@ -58,6 +76,11 @@
   }
   .print-only {
     display: block !important;
+  }
+  /* Nada pela metade no papel */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
