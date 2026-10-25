@@ -242,6 +242,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
             formatRight={(v) => `${Math.round(v)}%`}
             tooltip={(i) => {
               const m = chartMonths[i];
+              if (!m) return null;
               const fr = m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0;
               return (
                 <>

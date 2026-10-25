@@ -84,3 +84,8 @@ export function niceTicks(max: number, count = 4): number[] {
   if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
   return ticks;
 }
+
+// Índice ainda válido para uma lista de n itens (o do mouse pode sobrar quando a lista encolhe)
+export function validIndex(i: number | null, n: number): number | null {
+  return i !== null && i >= 0 && i < n ? i : null;
+}

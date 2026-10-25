@@ -20,8 +20,8 @@ import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransf
 import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
 import { competenceInputs } from './utils/competenceInputs';
-import { AnimatePresence, motion } from 'motion/react';
-import { DURATION, EASE_OUT } from './utils/motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { playSound } from './hooks/useSound';
 
@@ -106,6 +106,7 @@ export default function App() {
 
   // Aba ativa e o container que rola (volta ao topo ao trocar de aba)
   const scrollRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = Boolean(useReducedMotion());
   const [activeTab, setActiveTab] = useState<'apuration' | 'history' | 'comparison' | 'report'>('apuration');
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
@@ -378,9 +379,9 @@ export default function App() {
           <motion.div
             key={activeTab}
             className="page-transition"
-            initial={{ opacity: 0, filter: 'blur(6px)', scale: 0.995 }}
-            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1, transition: { duration: 0.42, ease: EASE_OUT } }}
-            exit={{ opacity: 0, filter: 'blur(4px)', transition: { duration: 0.18, ease: EASE_OUT } }}
+            initial={reduceMotion ? false : { opacity: 0, filter: 'blur(6px)', scale: 0.995 }}
+            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1, transition: instantIf(reduceMotion, { duration: 0.42, ease: EASE_OUT }) }}
+            exit={{ opacity: 0, filter: 'blur(4px)', transition: instantIf(reduceMotion, { duration: 0.18, ease: EASE_OUT }) }}
           >
           {activeTab === 'apuration' && (
             <MonthApurationView

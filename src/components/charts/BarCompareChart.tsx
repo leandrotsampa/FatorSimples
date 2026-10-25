@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { linearScale, niceTicks } from '../../utils/chartGeometry';
+import { linearScale, niceTicks, validIndex } from '../../utils/chartGeometry';
 import { DURATION, EASE_OUT, instantIf } from '../../utils/motion';
 import { ChartTooltip } from './ChartTooltip';
 
@@ -23,7 +23,7 @@ export const BarCompareChart: React.FC<{
   const reduceMotion = Boolean(useReducedMotion());
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
-  const [hover, setHover] = useState<number | null>(null);
+  const [rawHover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
     const el = boxRef.current;
@@ -34,6 +34,7 @@ export const BarCompareChart: React.FC<{
   }, []);
 
   const n = labels.length;
+  const hover = validIndex(rawHover, n);
   if (n === 0) return null;
   const innerW = Math.max(0, width - PAD.left - PAD.right);
   const bottom = height - PAD.bottom;

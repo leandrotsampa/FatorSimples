@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { areaPath, linePath, linearScale, niceTicks } from '../../utils/chartGeometry';
+import { areaPath, linePath, linearScale, niceTicks, validIndex } from '../../utils/chartGeometry';
 import { DURATION, EASE_OUT, instantIf } from '../../utils/motion';
 import { ChartTooltip } from './ChartTooltip';
 import { TONES, type ChartTone } from './tones';
@@ -41,7 +41,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   const uid = useId().replace(/:/g, '');
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
-  const [hover, setHover] = useState<number | null>(null);
+  const [rawHover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
     const el = boxRef.current;
@@ -52,6 +52,8 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   }, []);
 
   const n = labels.length;
+  // O mês sob o mouse pode deixar de existir quando o intervalo encolhe (ex.: 12 → 6 meses)
+  const hover = validIndex(rawHover, n);
   const innerW = Math.max(0, width - PAD.left - PAD.right);
   const bottom = height - PAD.bottom;
 

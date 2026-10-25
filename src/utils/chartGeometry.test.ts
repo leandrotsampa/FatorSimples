@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areaPath, arcPath, clamp, linearScale, linePath, niceTicks } from './chartGeometry';
+import { areaPath, arcPath, clamp, linearScale, linePath, niceTicks, validIndex } from './chartGeometry';
 
 const noNaN = (s: string) => expect(s).not.toContain('NaN');
 
@@ -72,5 +72,22 @@ describe('clamp / niceTicks', () => {
   it('marcas redondas para valores em reais', () => {
     expect(niceTicks(26800)).toEqual([0, 10000, 20000, 30000]);
     expect(niceTicks(0)).toEqual([0]);
+  });
+});
+
+describe('validIndex', () => {
+  it('mantém um índice dentro da lista', () => {
+    expect(validIndex(3, 12)).toBe(3);
+    expect(validIndex(0, 1)).toBe(0);
+  });
+
+  it('descarta o índice do mouse que ficou fora quando a lista encolheu (12 → 6 meses)', () => {
+    expect(validIndex(10, 6)).toBeNull();
+    expect(validIndex(0, 0)).toBeNull();
+    expect(validIndex(-1, 6)).toBeNull();
+  });
+
+  it('sem mouse continua sem índice', () => {
+    expect(validIndex(null, 6)).toBeNull();
   });
 });
