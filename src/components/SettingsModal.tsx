@@ -331,7 +331,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </option>
                     ))}
                   </select>
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     Base legal: {activeVersion.legalBasis}
                   </span>
                 </div>
@@ -441,7 +441,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Salário Mínimo Nacional (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -452,7 +452,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, minimumWage: parseFloat(e.target.value) || 0 })}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     Piso legal obrigatório para retirada de pró-labore.
                   </span>
                 </div>
@@ -463,7 +463,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Teto Máximo do INSS (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -474,7 +474,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, inssCeiling: parseFloat(e.target.value) || 0 })}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     Limite máximo de contribuição individual (11%).
                   </span>
                 </div>
@@ -485,7 +485,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Número de Dependentes (IRRF):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-num">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-num">
                       R$ 189,59/dep
                     </span>
                   </div>
@@ -497,7 +497,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, dependentsCount: parseInt(e.target.value, 10) || 0 })}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     Dedução legal de R$ 189,59 por dependente cadastrado.
                   </span>
                 </div>
@@ -508,7 +508,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Desconto Simplificado IRPF (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -519,7 +519,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, simplifiedIrDeduction: parseFloat(e.target.value) || 0 })}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     Aplicado automaticamente quando for mais vantajoso que as deduções legais.
                   </span>
                 </div>

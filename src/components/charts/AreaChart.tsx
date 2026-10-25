@@ -103,19 +103,19 @@ export const AreaChart: React.FC<AreaChartProps> = ({
           {leftTicks.map((t) => (
             <g key={`l${t}`}>
               <line x1={PAD.left} x2={PAD.left + innerW} y1={yLeft(t)} y2={yLeft(t)} className="stroke-slate-200/80 dark:stroke-white/5" strokeDasharray={t === 0 ? undefined : '3 4'} />
-              <text x={PAD.left - 10} y={yLeft(t)} dy="0.32em" textAnchor="end" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-num">
+              <text x={PAD.left - 10} y={yLeft(t)} dy="0.32em" textAnchor="end" className="fill-slate-500 dark:fill-slate-400 text-[11px] font-num">
                 {formatLeft(t)}
               </text>
             </g>
           ))}
           {rightTicks.map((t) => (
-            <text key={`r${t}`} x={PAD.left + innerW + 10} y={yRight(t)} dy="0.32em" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-num">
+            <text key={`r${t}`} x={PAD.left + innerW + 10} y={yRight(t)} dy="0.32em" className="fill-slate-500 dark:fill-slate-400 text-[11px] font-num">
               {formatRight(t)}
             </text>
           ))}
           {labels.map((l, i) =>
             (n - 1 - i) % labelEvery === 0 ? (
-              <text key={`x${i}`} x={x(i)} y={height - 8} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-num">
+              <text key={`x${i}`} x={x(i)} y={height - 8} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[11px] font-num">
                 {l}
               </text>
             ) : null
@@ -167,7 +167,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
                 strokeWidth={1.5}
                 className="stroke-sky-500/70 dark:stroke-sky-400/70"
               />
-              <text x={PAD.left + 6} y={yRight(threshold.value) - 6} className="fill-sky-600 dark:fill-sky-400 text-[10px] font-semibold">
+              <text x={PAD.left + 6} y={yRight(threshold.value) - 6} className="fill-sky-600 dark:fill-sky-400 text-[11px] font-semibold">
                 {threshold.label}
               </text>
             </g>

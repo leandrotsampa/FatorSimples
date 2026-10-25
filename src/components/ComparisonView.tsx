@@ -178,7 +178,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
   return (
     <div className="page-stagger space-y-5">
       <PageHeader
-        eyebrow="Comparador de anexos · baseado no seu histórico"
+        eyebrow="Com e sem o Fator R · com base no seu histórico"
         title="O Fator R está valendo a pena para você?"
         description="Comparamos o que está registrado no seu histórico (DAS + INSS + IRRF) com o que pagaria sem o Fator R: Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência."
       />
@@ -430,7 +430,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                           >
                             {formatPercent(r.factorRPercentage, 1)}
                           </span>
-                          <span className="text-[10px] text-slate-500">{r.anexoUsed}</span>
+                          <span className="text-[11px] text-slate-500">{r.anexoUsed}</span>
                           {r.factorRShortfall > 0 && r.factorRShortfall <= FACTOR_R_NEAR_MISS && (
                             <span
                               className="text-amber-600 dark:text-amber-400"
@@ -444,7 +444,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                       <td className="py-2.5 px-4 text-right tabular-nums text-slate-800 dark:text-slate-200 whitespace-nowrap">
                         {formatCurrency(r.dasReal)}
                         {!r.dasInformed && (
-                          <span className="ml-1 text-[10px] text-slate-500" title="DAS não informado no histórico: valor calculado">
+                          <span className="ml-1 text-[11px] text-slate-500" title="DAS não informado no histórico: valor calculado">
                             calc.
                           </span>
                         )}
@@ -469,7 +469,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                       <td className="py-2.5 px-4 text-right tabular-nums font-bold whitespace-nowrap">
                         <SignedCurrency value={r.result} />
                         {r.missedSavings > 0.005 && (
-                          <div className="text-[10px] font-normal text-rose-600 dark:text-rose-400">
+                          <div className="text-[11px] font-normal text-rose-600 dark:text-rose-400">
                             com Fator R: −{formatCurrency(r.missedSavings)}
                           </div>
                         )}
@@ -538,7 +538,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             onChange={(e) => setSimulatedRevenue(parseFloat(e.target.value))}
             className="w-full accent-emerald-500 cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-num mt-1">
+          <div className="flex justify-between text-[11px] text-slate-500 font-num mt-1">
             <span>{formatCurrency(1000)}</span>
             <button
               type="button"
@@ -578,7 +578,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: DURATION.base, ease: EASE_OUT }}
-                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
+                      className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Mais vantajoso
                     </motion.span>
@@ -672,7 +672,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                   <tr key={rev} className={rev === baseRevenue ? 'bg-emerald-50/60 dark:bg-emerald-500/10' : ''}>
                     <td className="py-2 px-4 font-bold text-slate-900 dark:text-slate-200 tabular-nums">
                       {formatCurrency(rev)}
-                      {rev === baseRevenue && <span className="ml-1 text-[10px] font-normal text-slate-500">real</span>}
+                      {rev === baseRevenue && <span className="ml-1 text-[11px] font-normal text-slate-500">real</span>}
                     </td>
                     <td className="py-2 px-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
                       {formatCurrency(t.comFatorR.totalTaxes)}

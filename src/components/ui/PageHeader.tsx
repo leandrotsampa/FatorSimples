@@ -14,7 +14,7 @@ export const PageHeader: React.FC<{
   return (
     <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{eyebrow}</div>
+        <div className="text-xs font-medium text-slate-600 dark:text-slate-400">{eyebrow}</div>
         <motion.h1
           className="text-[1.75rem] leading-tight font-bold tracking-tight text-slate-900 dark:text-white mt-0.5"
           initial={reduceMotion ? false : { clipPath: 'inset(0 100% 0 0)' }}

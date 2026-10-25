@@ -13,7 +13,8 @@ export const ModalShell: React.FC<{ children: React.ReactNode; panelClassName: s
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus({ preventScroll: true });
+    // Respeita um botão que já pegou o foco ao abrir (autoFocus)
+    if (!panelRef.current?.contains(document.activeElement)) panelRef.current?.focus({ preventScroll: true });
     return () => previous?.focus?.({ preventScroll: true });
   }, []);
 

@@ -30,6 +30,7 @@ import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
 import { competenceInputs } from './utils/competenceInputs';
 import { PageSkeleton } from './components/ui/Skeleton';
+import { useAppDialog } from './components/ui/AppDialog';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -292,8 +293,18 @@ export default function App() {
     setIsAddMonthOpen(true);
   };
 
-  const handleDeleteMonth = (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover esta competência do histórico?')) {
+  // Confirmações e avisos no tema do app
+  const { dialog, confirm, notify } = useAppDialog();
+
+  const handleDeleteMonth = async (id: string) => {
+    const rec = history.find((h) => h.id === id);
+    const ok = await confirm({
+      title: 'Excluir competência',
+      message: `Remover ${rec ? rec.yearMonth : 'esta competência'} do histórico? Isso muda o RBT12 e a alíquota dos meses seguintes.`,
+      confirmLabel: 'Excluir',
+      tone: 'danger',
+    });
+    if (ok) {
       setHistory((prev) => prev.filter((item) => item.id !== id));
       storageAdapter.deleteMonth(id);
       playSound('delete');
@@ -303,7 +314,10 @@ export default function App() {
   // Exemplo só pode ser gerado com o histórico vazio, para nunca sobrescrever dados reais
   const handleGenerateSample = () => {
     if (history.length > 0) {
-      alert('O histórico já possui competências. Os meses de exemplo só podem ser gerados com o histórico vazio.');
+      void notify({
+        title: 'Histórico já tem meses',
+        message: 'Os meses de exemplo só podem ser gerados com o histórico vazio, para nunca se misturarem aos seus.',
+      });
       return;
     }
     const sample = generateSampleHistory(currentRevenue || 25000, 0.285);
@@ -322,8 +336,14 @@ export default function App() {
     playSound('delete');
   };
 
-  const handleClearHistory = () => {
-    if (window.confirm('Tem certeza que deseja limpar todo o histórico de competências?')) {
+  const handleClearHistory = async () => {
+    const ok = await confirm({
+      title: 'Limpar todo o histórico',
+      message: `Apagar as ${history.length} competências do histórico? Não dá para desfazer; faça um backup em "Dados e backup" antes, se quiser.`,
+      confirmLabel: 'Apagar tudo',
+      tone: 'danger',
+    });
+    if (ok) {
       setHistory([]);
       storageAdapter.clearHistory();
       playSound('delete');
@@ -342,12 +362,12 @@ export default function App() {
   };
 
   // Importar dados (JSON): empresa só é alterada se vier no arquivo; competências mesclam por mês
-  const handleImportData = (content: string) => {
+  const handleImportData = async (content: string) => {
     let imported: DataImport;
     try {
       imported = parseDataImport(content);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Erro ao processar o arquivo selecionado.');
+      void notify({ title: 'Não deu para importar', message: e instanceof Error ? e.message : 'Erro ao processar o arquivo selecionado.' });
       return;
     }
 
@@ -360,7 +380,7 @@ export default function App() {
       settings
     );
     if (!company && records.length === 0) {
-      alert('O arquivo não contém dados da empresa nem competências.');
+      void notify({ title: 'Nada para importar', message: 'O arquivo não contém dados da empresa nem competências.' });
       return;
     }
 
@@ -374,7 +394,7 @@ export default function App() {
     if (filledFields > 0) {
       lines.push(`• ${filledFields} valor(es) de INSS, IRRF ou DAS zerados serão calculados`);
     }
-    if (!window.confirm(lines.join('\n'))) return;
+    if (!(await confirm({ title: 'Importar dados', message: lines.slice(1).join('\n'), confirmLabel: 'Importar' }))) return;
 
     if (company) {
       setSettings((prev) => ({ ...prev, ...company }));
@@ -385,8 +405,8 @@ export default function App() {
       records.forEach((rec) => storageAdapter.saveMonth(rec));
     }
 
-    alert('Dados importados com sucesso!');
     setIsSqliteManagerOpen(false);
+    void notify({ title: 'Dados importados', message: 'Os dados do arquivo já estão no app.' });
   };
 
   const handlePrint = () => {
@@ -585,6 +605,7 @@ export default function App() {
       />
       )}
       </AnimatePresence>
+      {dialog}
     </div>
   );
 }

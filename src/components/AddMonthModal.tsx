@@ -149,7 +149,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
                 <span>Folha / Pró-labore:</span>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-num font-bold">
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-num font-bold">
                   {revenue > 0 ? `${((payroll / revenue) * 100).toFixed(1)}%` : ''}
                 </span>
               </label>

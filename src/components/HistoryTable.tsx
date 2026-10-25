@@ -62,7 +62,7 @@ const Metric: React.FC<{
         <Sparkline values={trend} tone={tone} width={64} height={22} />
       </span>
     </div>
-    <div className="text-[10px] text-slate-500 mt-1 truncate" title={detail}>{detail}</div>
+    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate" title={detail}>{detail}</div>
   </div>
 );
 
@@ -144,9 +144,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   return (
     <div className="page-stagger space-y-5">
       <PageHeader
-        eyebrow="Memória fiscal permanente"
+        eyebrow="Meses anteriores"
         title="Histórico de faturamento e folha"
-        description="O Simples Nacional calcula a alíquota pela receita bruta dos 12 meses anteriores à apuração (RBT12). Cadastre ou edite as competências abaixo."
+        description="A alíquota de cada mês depende do faturamento dos 12 meses anteriores. Cadastre aqui os meses que faltam ou corrija algum valor."
         actions={
           <>
             {history.length === 0 && (
@@ -385,12 +385,12 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                       <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
                         <span>{item.yearMonth}</span>
                         {idx === 0 && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 rounded font-sans font-semibold">
+                          <span className="text-[11px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 rounded font-sans font-semibold">
                             Mais Recente
                           </span>
                         )}
                         {idx >= 12 && (
-                          <span className="text-[10px] px-1 py-0.2 text-slate-500 font-sans">
+                          <span className="text-[11px] px-1 py-0.2 text-slate-500 font-sans">
                             (Fora 12m)
                           </span>
                         )}
@@ -412,7 +412,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                           title={`Folha ÷ receita só deste mês: ${formatPercent(monthRatio, 1)}`}
                         >
                           {formatPercent(factorR, 1)}
-                          <span className="text-[10px] font-normal text-slate-500">
+                          <span className="text-[11px] font-normal text-slate-500">
                             {apuration && `Anexo ${apuration.anexoUsed}${apuration.monthsCount === 0 ? ' · 1º mês' : ''}`}
                           </span>
                           {apuration && apuration.factorRShortfall > 0 && apuration.factorRShortfall <= FACTOR_R_NEAR_MISS && (

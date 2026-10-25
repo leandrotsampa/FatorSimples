@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  HardDrive,
   CalendarDays,
   PanelLeftClose,
   PanelLeftOpen,
@@ -178,27 +177,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: NavItem[] = [
     {
       id: 'apuration',
-      label: 'Apuração do Mês',
-      description: 'Cálculo Fator R e DAS',
+      label: 'Mês',
+      description: 'Alíquota da nota e transferências',
       icon: Calculator,
     },
     {
       id: 'history',
       label: 'Histórico',
-      description: 'RBT12, Folha e Alíquotas',
+      description: 'Meses anteriores',
       icon: History,
       badge: `${history.length}m`,
     },
     {
       id: 'comparison',
-      label: 'Comparador Anexos',
-      description: 'Anexo III vs Anexo V',
+      label: 'Vale a pena?',
+      description: 'Com e sem o Fator R',
       icon: Scale,
     },
     {
       id: 'report',
-      label: 'Relatório Oficial',
-      description: 'Demonstrativo Contábil',
+      label: 'Resumo do mês',
+      description: 'Para guardar ou enviar',
       icon: FileText,
     },
   ];
@@ -300,7 +299,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Reveal show={expanded} className="min-w-0 flex-1">
                   <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
                     FatorSimples
-                    <span className="ml-1.5 text-[10px] font-normal font-num text-slate-400 dark:text-slate-500">
+                    <span className="ml-1.5 text-[11px] font-normal font-num text-slate-400 dark:text-slate-500">
                       v{__APP_VERSION__}
                     </span>
                   </h1>
@@ -330,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               {expanded ? (
                 <Reveal show>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 mb-1.5">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 mb-1.5">
                     Competência
                   </div>
                   {monthBlock}
@@ -350,7 +349,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="relative w-full flex flex-col items-center gap-0.5 py-1.5 rounded-md text-emerald-700 dark:text-emerald-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     <CalendarDays className="w-4 h-4" />
-                    <span className="text-[10px] font-num font-bold">{monthShort}</span>
+                    <span className="text-[11px] font-num font-bold">{monthShort}</span>
                     <span
                       className={`absolute top-1 right-2 w-1.5 h-1.5 rounded-full ${
                         isMonthSaved ? 'bg-emerald-500' : 'bg-amber-500'
@@ -378,12 +377,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'bg-emerald-50 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:ring-emerald-500/30'
                 }`}
               />
-              <Reveal
-                show={expanded}
-                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-1 whitespace-nowrap"
-              >
-                Menu de Navegação
-              </Reveal>
 
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -423,14 +416,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <Icon className={collapsed ? 'w-[18px] h-[18px]' : 'w-4 h-4'} />
                           {/* No menu recolhido o contador vira uma bolinha com o número */}
                           {collapsed && item.badge && history.length > 0 && (
-                            <span className="absolute -top-1 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold font-num leading-4 text-center ring-2 ring-white dark:ring-slate-950">
+                            <span className="absolute -top-1 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-slate-600 text-white dark:bg-slate-300 dark:text-slate-900 text-[11px] font-bold font-num leading-4 text-center ring-2 ring-white dark:ring-slate-950">
                               {history.length > 99 ? '99+' : history.length}
                             </span>
                           )}
                         </div>
                         <Reveal show={expanded} className="min-w-0">
                           <div className="text-xs truncate">{item.label}</div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal truncate">
                             {item.description}
                           </div>
                         </Reveal>
@@ -442,7 +435,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           initial={{ scale: 0.8, opacity: 0.6 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ type: 'spring', stiffness: 600, damping: 20 }}
-                          className={`relative text-[10px] px-1.5 py-0.2 rounded font-num font-bold ${
+                          className={`relative text-[11px] px-1.5 py-0.2 rounded font-num font-bold ${
                             isActive
                               ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
                               : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -485,15 +478,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ) : (
                       'sem histórico'
                     )}
-                  </span>
-                </div>
-                <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <HardDrive className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                    <span>fatorsimples.sqlite</span>
-                  </span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                    {storageMode === 'system' ? 'Dados do sistema' : 'Junto ao app'}
                   </span>
                 </div>
               </Reveal>
@@ -578,18 +562,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </RailTooltip>
 
             {/* SQLite Manager */}
-            <RailTooltip enabled={collapsed} label="Banco SQLite" detail={storageMode === 'system' ? 'Local' : 'Portátil'}>
+            <RailTooltip enabled={collapsed} label="Dados e backup" detail={storageMode === 'system' ? 'Neste computador' : 'Junto ao app'}>
               <button
                 onClick={onOpenSqliteManager}
                 className={footerButtonClass}
-                aria-label={collapsed ? 'Banco SQLite' : undefined}
+                aria-label={collapsed ? 'Dados e backup' : undefined}
               >
                 <span className="flex items-center gap-2">
                   <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  {expanded && <span className="whitespace-nowrap">Banco SQLite</span>}
+                  {expanded && <span className="whitespace-nowrap">Dados e backup</span>}
                 </span>
                 {expanded && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-num">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-num">
                     {storageMode === 'system' ? 'Local' : 'Portátil'}
                   </span>
                 )}

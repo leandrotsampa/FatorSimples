@@ -686,7 +686,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 trendTone={simples.isQualifiedForAnexo3 ? 'emerald' : 'rose'}
                 value={simples.factorRPercentage}
                 format={formatPercent}
-                detail={`Anexo ${simples.anexoUsed} · definido pelos meses anteriores`}
+                detail={`${simples.isQualifiedForAnexo3 ? '✓ acima' : '⚠ abaixo'} de 28% · Anexo ${simples.anexoUsed}`}
                 valueClass={simples.isQualifiedForAnexo3 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
               />
               <Indicator
@@ -765,7 +765,11 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 trendTone={simples.isQualifiedForAnexo3 ? 'emerald' : 'rose'}
                 value={simples.factorRPercentage}
                 format={formatPercent}
-                detail={simples.monthsCount === 0 ? 'primeiro mês' : '12 meses anteriores'}
+                detail={
+                  simples.monthsCount === 0
+                    ? 'primeiro mês'
+                    : `${simples.isQualifiedForAnexo3 ? '✓ acima' : '⚠ abaixo'} de 28% · 12 meses`
+                }
                 valueClass={simples.isQualifiedForAnexo3 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
               />
               <Indicator

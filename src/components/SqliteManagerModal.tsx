@@ -78,14 +78,14 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
   };
 
   return (
-    <ModalShell ariaLabel="Banco SQLite local" panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
+    <ModalShell ariaLabel="Dados e backup" panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Banco SQLite local
+              Dados e backup
             </h2>
           </div>
           <button
@@ -146,7 +146,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{isSystem ? 'Salvo na pasta de dados do sistema' : 'Salvo na mesma pasta do aplicativo'}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-semibold font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-semibold font-mono">
                     {isSystem ? 'Pasta do sistema' : 'Modo Portátil Ativo'}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                   {isElectron && (
                     <button
                       onClick={handleOpenFolder}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition-colors cursor-pointer text-[10px] shrink-0"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition-colors cursor-pointer text-[11px] shrink-0"
                     >
                       <FolderOpen className="w-3.5 h-3.5" />
                       <span>Abrir pasta do banco</span>
@@ -273,7 +273,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                 </button>
               </div>
 
-              <pre className="bg-slate-950 text-emerald-400 p-4 rounded-lg font-mono text-[10px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed">
+              <pre className="bg-slate-950 text-emerald-400 p-4 rounded-lg font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed">
                 {sqlDump}
               </pre>
             </div>
@@ -286,7 +286,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
                 O arquivo <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400 font-mono">electron/main.cjs</code> do projeto já está programado para detectar a pasta física do <code className="font-mono text-sky-500">.exe</code> (ou pendrive) e salvar o <code className="font-mono text-emerald-500">fatorsimples.sqlite</code> lado a lado:
               </p>
 
-              <pre className="bg-slate-950 text-slate-200 p-4 rounded-lg font-mono text-[10px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed">
+              <pre className="bg-slate-950 text-slate-200 p-4 rounded-lg font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed">
 {`// electron/main.cjs - Modo Portátil nativo
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const Database = require('better-sqlite3');
