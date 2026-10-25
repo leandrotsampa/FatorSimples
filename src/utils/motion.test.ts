@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { easeOutCubic, lerp, prefersReducedMotion } from './motion';
+import { easeOutCubic, instantIf, lerp, prefersReducedMotion } from './motion';
 
 describe('easeOutCubic', () => {
   it('começa em 0 e termina em 1', () => {
@@ -22,5 +22,16 @@ describe('prefersReducedMotion', () => {
   it('é falso fora do navegador', () => {
     expect(typeof window).toBe('undefined');
     expect(prefersReducedMotion()).toBe(false);
+  });
+});
+
+describe('instantIf', () => {
+  it('com movimento reduzido a transição vira instantânea', () => {
+    expect(instantIf(true, { type: 'spring', stiffness: 400 })).toEqual({ duration: 0 });
+  });
+
+  it('sem movimento reduzido mantém a transição original', () => {
+    const t = { duration: 0.45 };
+    expect(instantIf(false, t)).toBe(t);
   });
 });

@@ -15,3 +15,9 @@ export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
+
+// MotionConfig reducedMotion="user" só corta transform e layout; largura, altura e pathLength
+// passam por aqui para também ficarem instantâneos com movimento reduzido
+export function instantIf<T extends object>(reduce: boolean, transition: T): T | { duration: 0 } {
+  return reduce ? { duration: 0 } : transition;
+}

@@ -9,7 +9,7 @@ export const ModalShell: React.FC<{ children: React.ReactNode; panelClassName: s
   panelClassName,
 }) => (
   <motion.div
-    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+    className="app-no-drag fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}

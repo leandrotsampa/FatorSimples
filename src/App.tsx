@@ -12,7 +12,6 @@ import { MonthRecord, TaxSettings } from './types/tax';
 import {
   DEFAULT_SETTINGS,
   generateSampleHistory,
-  calculateGoldRuleProlabore,
   fillMissingTaxes,
 } from './utils/taxCalculations';
 import { getTaxTableForCompetence, OFFICIAL_TAX_TABLES } from './utils/taxTablesRegistry';
@@ -20,6 +19,7 @@ import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransf
 
 import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
+import { competenceInputs } from './utils/competenceInputs';
 import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -160,20 +160,17 @@ export default function App() {
   const selectedRecordKey = selectedRecord
     ? `${selectedRecord.id}|${selectedRecord.revenue}|${selectedRecord.payroll}`
     : '';
-  useEffect(() => {
-    if (selectedRecord) {
-      // Pró-labore salvo igual aos 28% (tolerância de 1 centavo de arredondamento) = regra 28%
-      const goldRule = calculateGoldRuleProlabore(selectedRecord.revenue, settings);
-      const isGoldRule = Math.abs(selectedRecord.payroll - goldRule) <= 0.01 + 1e-9;
-      setCurrentRevenue(selectedRecord.revenue);
-      setProlaboreRule(isGoldRule ? 'auto_28_month' : 'manual');
-      setManualProlabore(selectedRecord.payroll);
-    } else {
-      setCurrentRevenue(0);
-      setProlaboreRule('auto_28_month');
-      setManualProlabore(0);
-    }
-  }, [selectedMonth, selectedRecordKey]);
+  // Ajuste feito durante o render (não num efeito): nunca existe um render com a competência nova
+  // e os valores da anterior, que faria contagens e o aviso sonoro reagirem a um estado misturado
+  const competenceKey = `${selectedMonth}|${selectedRecordKey}`;
+  const [loadedCompetenceKey, setLoadedCompetenceKey] = useState('');
+  if (loadedCompetenceKey !== competenceKey) {
+    const inputs = competenceInputs(selectedRecord, settings);
+    setLoadedCompetenceKey(competenceKey);
+    setCurrentRevenue(inputs.revenue);
+    setProlaboreRule(inputs.rule);
+    setManualProlabore(inputs.manualProlabore);
+  }
 
   // Competência salva usa exatamente o pró-labore gravado; em apuração, só o manual define valor
   const apurationSettings: TaxSettings = { ...settings, prolaboreRule };
@@ -361,8 +358,10 @@ export default function App() {
 
       {/* Viewport Principal com Rolagem Independente */}
       <div ref={scrollRef} className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos */}
-        <header className="no-print app-drag titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos.
+            Com o menu aberto por cima, deixa de arrastar: o Electron monta a área de arraste pela
+            ordem do DOM (ignora z-index) e os botões do menu sobre a barra ficariam sem clique */}
+        <header className={`no-print ${sidebarMode === 'overlay' ? '' : 'app-drag'} titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs`}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
               {settings.companyName || 'Empresa Simples Nacional'}

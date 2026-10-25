@@ -26,8 +26,8 @@ import {
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
 import { SegmentedControl } from './ui/SegmentedControl';
-import { AnimatePresence, motion } from 'motion/react';
-import { DURATION, EASE_OUT } from '../utils/motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { playSound } from '../hooks/useSound';
 import { crossedBelowTarget } from '../utils/sound';
@@ -200,6 +200,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   onNavigateToHistory,
 }) => {
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
+  const reduceMotion = Boolean(useReducedMotion());
+  const sizeTransition = instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT });
 
   // Último faturamento salvo e média dos 12 meses, para os atalhos
   const lastRecordedMonth = history.find((h) => h.yearMonth !== selectedMonth) || history[0];
@@ -297,7 +299,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
           initial={{ opacity: 0, y: -12, height: 0 }}
           animate={{ opacity: 1, y: 0, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          transition={sizeTransition}
           className="overflow-hidden"
         >
         <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-emerald-900 dark:text-emerald-200 px-4 py-2.5 rounded-lg flex items-center justify-between text-sm">
@@ -372,7 +374,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: DURATION.base, ease: EASE_OUT }}
+                  transition={sizeTransition}
                   // Folga de 1px para o anel de foco do campo não ser cortado
                   className="overflow-hidden -mx-px px-px pb-px"
                 >
@@ -583,9 +585,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 <motion.div
                   key={p.label}
                   className={p.color}
-                  initial={{ width: 0 }}
+                  initial={reduceMotion ? false : { width: 0 }}
                   animate={{ width: `${(p.value / breakdownTotal) * 100}%` }}
-                  transition={{ duration: DURATION.number, ease: EASE_OUT }}
+                  transition={instantIf(reduceMotion, { duration: DURATION.number, ease: EASE_OUT })}
                 />
               ))}
             </div>

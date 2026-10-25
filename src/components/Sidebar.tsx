@@ -15,14 +15,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { RailTooltip } from './ui/RailTooltip';
 import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
-import { DURATION, EASE_OUT } from '../utils/motion';
+import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import type { SidebarMode } from '../utils/sidebarMode';
 import type { StorageMode } from '../types/electron';
 
@@ -85,6 +85,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const expanded = mode !== 'collapsed';
   const collapsed = !expanded;
+  const reduceMotion = Boolean(useReducedMotion());
+  const widthTransition = instantIf(reduceMotion, widthSpring);
 
   // Stepper para avançar ou retroceder o mês rapidamente
   const handleStepMonth = (delta: number) => {
@@ -258,13 +260,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className="no-print shrink-0 h-screen sticky top-0 z-50"
         initial={false}
         animate={{ width: mode === 'expanded' ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
-        transition={widthSpring}
+        transition={widthTransition}
       >
         <motion.aside
           className="absolute inset-y-0 left-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/90 flex flex-col justify-between select-none shadow-xs overflow-x-hidden"
           initial={false}
           animate={{ width: expanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
-          transition={widthSpring}
+          transition={widthTransition}
         >
           {/* Top Section */}
           <div className="flex flex-col flex-1 min-h-0">
@@ -470,9 +472,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           strokeWidth="4"
                           strokeLinecap="round"
                           className={ringOk ? 'stroke-emerald-500' : 'stroke-amber-500'}
-                          initial={{ pathLength: 0 }}
+                          initial={reduceMotion ? false : { pathLength: 0 }}
                           animate={{ pathLength: ringPct }}
-                          transition={{ duration: DURATION.number, ease: EASE_OUT }}
+                          transition={instantIf(reduceMotion, { duration: DURATION.number, ease: EASE_OUT })}
                         />
                       )}
                     </svg>
