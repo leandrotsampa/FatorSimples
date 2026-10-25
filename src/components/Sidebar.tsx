@@ -14,6 +14,7 @@ import {
   Building2,
   HardDrive,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
@@ -198,18 +199,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`group relative w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-colors cursor-pointer border border-transparent ${
                   isActive
-                    ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-300 shadow-xs dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent'
+                    ? 'text-emerald-900 font-bold dark:text-emerald-300'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                {/* Destaque do item ativo: desliza entre os itens */}
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-0 rounded-lg bg-emerald-50 border border-emerald-300 shadow-xs dark:bg-emerald-500/15 dark:border-emerald-500/40"
+                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                  />
+                )}
+                <div className="relative flex items-center gap-2.5 min-w-0">
                   <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
                       isActive
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:translate-x-0.5'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -223,15 +233,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 {item.badge && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                  <motion.span
+                    key={item.badge}
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 600, damping: 20 }}
+                    className={`relative text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
                       isActive
                         ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
                         : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     {item.badge}
-                  </span>
+                  </motion.span>
                 )}
               </button>
             );
