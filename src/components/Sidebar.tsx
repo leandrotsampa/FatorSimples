@@ -484,13 +484,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex justify-center py-3">
                 <RailTooltip
                   enabled
-                  label={`Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : '—'}`}
-                  detail={`RBT12: ${monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'}`}
+                  label={`Fator R ${selectedMonth}: ${isLoading ? 'carregando…' : monthsCount > 0 ? formatPercent1(factorR) : '—'}`}
+                  detail={`RBT12: ${isLoading ? 'carregando…' : monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'}`}
                 >
                   <span
                     tabIndex={0}
                     role="img"
-                    aria-label={`Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : 'sem histórico'}. RBT12: ${
+                    aria-label={isLoading ? 'Carregando o Fator R e o RBT12' : `Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : 'sem histórico'}. RBT12: ${
                       monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'
                     }`}
                     className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"

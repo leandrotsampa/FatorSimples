@@ -61,14 +61,18 @@ const SignedCurrency: React.FC<{ value: number; className?: string }> = ({ value
 
 // Mesmo valor com sinal, contando até o resultado
 const signedFormat = (v: number) => `${v >= 0.005 ? '+' : v <= -0.005 ? '−' : ''}${formatCurrency(Math.abs(v))}`;
-const AnimatedSignedCurrency: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => {
+const AnimatedSignedCurrency: React.FC<{ value: number; className?: string; durationMs?: number }> = ({
+  value,
+  className = '',
+  durationMs,
+}) => {
   const color =
     value >= 0.005
       ? 'text-emerald-700 dark:text-emerald-400'
       : value <= -0.005
         ? 'text-rose-600 dark:text-rose-400'
         : 'text-slate-500 dark:text-slate-400';
-  return <AnimatedNumber value={value} format={signedFormat} className={`${color} ${className}`} />;
+  return <AnimatedNumber value={value} format={signedFormat} durationMs={durationMs} className={`${color} ${className}`} />;
 };
 
 // Eixo em reais compacto: "R$ 4 mil"
@@ -618,7 +622,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
         <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <AnimatePresence mode="wait" initial={false}>
+          <span className="grid [&>*]:[grid-area:1/1]">
+          <AnimatePresence initial={false}>
             {simulation.savings >= 0 ? (
               <motion.span
                 key="compensa"
@@ -628,8 +633,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 transition={{ duration: DURATION.micro }}
               >
                 Manter o Fator R economiza{' '}
-                <AnimatedSignedCurrency value={simulation.savings} className="font-num font-bold" /> por mês (
-                <AnimatedSignedCurrency value={simulation.savings * 12} className="font-num" /> em 12 meses).
+                <AnimatedSignedCurrency value={simulation.savings} durationMs={SIM_COUNT_MS} className="font-num font-bold" /> por
+                mês (<AnimatedSignedCurrency value={simulation.savings * 12} durationMs={SIM_COUNT_MS} className="font-num" /> em 12
+                meses).
               </motion.span>
             ) : (
               <motion.span
@@ -645,6 +651,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               </motion.span>
             )}
           </AnimatePresence>
+          </span>
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">

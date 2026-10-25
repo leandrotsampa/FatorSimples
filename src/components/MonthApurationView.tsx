@@ -212,8 +212,8 @@ const DetailSection: React.FC<{ title: string; summary: React.ReactNode; childre
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-controls={contentId}
-        className="w-full flex items-center justify-between gap-4 py-3.5 cursor-pointer rounded text-left active:scale-100"
+        aria-controls={open ? contentId : undefined}
+        className="w-full flex items-center justify-between gap-4 py-3.5 cursor-pointer rounded text-left active:transform-none"
       >
         <span className="text-sm font-semibold text-slate-900 dark:text-white">{title}</span>
         <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-0">
@@ -264,7 +264,11 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
 }) => {
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
   // Logo depois de salvar, o botão mostra um check por um instante
-  const [justSaved, setJustSaved] = useState(false);
+  // (só na competência que acabou de ser salva; trocar de mês não leva o "Salvo" junto)
+  const [justSavedMonth, setJustSavedMonth] = useState<string | null>(null);
+  const justSavedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(justSavedTimer.current), []);
+  const justSaved = justSavedMonth === selectedMonth;
   const reduceMotion = Boolean(useReducedMotion());
   const sizeTransition = instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT });
 
@@ -352,8 +356,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
     };
 
     onSaveCurrentMonthToHistory(newRecord);
-    setJustSaved(true);
-    window.setTimeout(() => setJustSaved(false), 1200);
+    setJustSavedMonth(selectedMonth);
+    window.clearTimeout(justSavedTimer.current);
+    justSavedTimer.current = window.setTimeout(() => setJustSavedMonth(null), 1200);
     setSavedSuccessMessage(`Apuração de ${formatCompetence(selectedMonth)} salva no histórico`);
     setTimeout(() => setSavedSuccessMessage(null), 4000);
   };

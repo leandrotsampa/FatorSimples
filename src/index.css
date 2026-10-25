@@ -115,7 +115,6 @@
 /* Linha recém-salva no Histórico: pisca em verde e volta ao normal */
 @keyframes row-flash {
   0%, 35% { background-color: rgb(16 185 129 / 0.22); }
-  100% { background-color: transparent; }
 }
 .row-flash {
   animation: row-flash 1.2s var(--ease-out);
