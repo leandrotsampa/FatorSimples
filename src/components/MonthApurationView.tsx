@@ -246,7 +246,16 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   return (
     <div className="space-y-4 transition-colors duration-200">
       {/* Aviso de sucesso ao salvar */}
+      <AnimatePresence>
       {savedSuccessMessage && (
+        <motion.div
+          key="saved"
+          initial={{ opacity: 0, y: -12, height: 0 }}
+          animate={{ opacity: 1, y: 0, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          className="overflow-hidden"
+        >
         <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-emerald-900 dark:text-emerald-200 px-4 py-2.5 rounded-lg flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -259,7 +268,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             Ver no histórico
           </button>
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Entrada: faturamento, estratégia do pró-labore e salvar */}
       <section className={`${card} p-5`}>

@@ -15,6 +15,7 @@ import {
 import { TaxSettings } from '../types/tax';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
 import { formatCurrency, formatPercent, ANEXO_III_TABLE, ANEXO_V_TABLE } from '../utils/taxCalculations';
+import { ModalShell } from './ui/ModalShell';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -84,8 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     Object.values(OFFICIAL_TAX_TABLES)[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
+    <ModalShell panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
@@ -515,8 +515,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         </form>
-
-      </div>
-    </div>
+    </ModalShell>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { Sidebar } from './components/Sidebar';
 import { MonthApurationView } from './components/MonthApurationView';
@@ -20,6 +20,8 @@ import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransf
 
 import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
+import { AnimatePresence, motion } from 'motion/react';
+import { DURATION, EASE_OUT } from './utils/motion';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -72,7 +74,8 @@ export default function App() {
   const [prolaboreRule, setProlaboreRule] = useState<TaxSettings['prolaboreRule']>('auto_28_month');
   const [manualProlabore, setManualProlabore] = useState<number>(0);
 
-  // Aba ativa
+  // Aba ativa e o container que rola (volta ao topo ao trocar de aba)
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'apuration' | 'history' | 'comparison' | 'report'>('apuration');
 
   // Modais
@@ -312,7 +315,7 @@ export default function App() {
       />
 
       {/* Viewport Principal com Rolagem Independente */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Top Window Bar (Cabeçalho de Aplicação Desktop) */}
         <header className="no-print bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
           <div className="flex items-center gap-3 min-w-0">
@@ -332,6 +335,19 @@ export default function App() {
 
         {/* Main Content View */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {/* Troca de tela: a anterior sai antes da próxima entrar; a rolagem volta ao topo entre as duas */}
+          <AnimatePresence
+            mode="wait"
+            initial={false}
+            onExitComplete={() => scrollRef.current?.scrollTo({ top: 0 })}
+          >
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          >
           {activeTab === 'apuration' && (
             <MonthApurationView
               currentRevenue={currentRevenue}
@@ -385,18 +401,28 @@ export default function App() {
               onPrint={handlePrint}
             />
           )}
+          </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Modais: montados só enquanto abertos, para a saída animar (ModalShell) */}
+      <AnimatePresence>
+      {isSettingsOpen && (
       <SettingsModal
+        key="settings"
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={setSettings}
       />
+      )}
+      </AnimatePresence>
 
+      <AnimatePresence>
+      {isSqliteManagerOpen && (
       <SqliteManagerModal
+        key="sqlite"
         isOpen={isSqliteManagerOpen}
         onClose={() => setIsSqliteManagerOpen(false)}
         settings={settings}
@@ -404,8 +430,13 @@ export default function App() {
         onExportData={handleExportData}
         onImportData={handleImportData}
       />
+      )}
+      </AnimatePresence>
 
+      <AnimatePresence>
+      {isAddMonthOpen && (
       <AddMonthModal
+        key="add-month"
         isOpen={isAddMonthOpen}
         onClose={() => {
           setIsAddMonthOpen(false);
@@ -419,6 +450,8 @@ export default function App() {
         settings={settings}
         existingHistory={history}
       />
+      )}
+      </AnimatePresence>
     </div>
   );
 }

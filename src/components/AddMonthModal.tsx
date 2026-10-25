@@ -8,6 +8,7 @@ import {
   settingsForCompetence,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
+import { ModalShell } from './ui/ModalShell';
 
 interface AddMonthModalProps {
   isOpen: boolean;
@@ -103,8 +104,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden text-xs text-slate-800 dark:text-slate-100">
+    <ModalShell panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden text-xs text-slate-800 dark:text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
           <div className="flex items-center gap-2">
@@ -217,7 +217,6 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 };
