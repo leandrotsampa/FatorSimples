@@ -8,6 +8,7 @@ const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { windowChromeOptions, titleBarOverlayFor, shortcutFor } = require('./windowChrome.cjs');
+const { ensureSettingsColumns } = require('./settingsSchema.cjs');
 
 let mainWindow = null;
 let db = null;
@@ -115,6 +116,8 @@ function initDatabase() {
         SELECT revenue, payroll FROM monthly_history ORDER BY year_month DESC LIMIT 12
       );
     `);
+    // Colunas novas em bancos de versões anteriores (ex.: honorários da contabilidade)
+    ensureSettingsColumns(db);
   } catch (err) {
     console.warn('[FatorSimples] better-sqlite3 não encontrado ou pendente de build nativo. Usando fallback de persistência em arquivo estruturado JSON/SQLite no disco.');
   }
@@ -318,6 +321,7 @@ function setupIpcHandlers() {
           dependentDeduction: row.dependent_deduction,
           prolaboreRule: row.prolabore_rule,
           manualProlaboreAmount: row.manual_prolabore_amount || 2500,
+          accountingFee: row.accounting_fee || 0,
           autoUpdateTables: Boolean(row.auto_update_tables),
           lastTableUpdateDate: row.last_table_update_date,
         };
@@ -342,9 +346,9 @@ function setupIpcHandlers() {
           id, company_name, cnpj, city_state, cnae, tax_version_id, minimum_wage,
           inss_ceiling, inss_rate, dependents_count, simplified_ir_deduction,
           dependent_deduction, prolabore_rule, manual_prolabore_amount, auto_update_tables,
-          last_table_update_date, updated_at
+          last_table_update_date, accounting_fee, updated_at
         ) VALUES (
-          1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+          1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
         )
       `);
       stmt.run(
@@ -362,7 +366,8 @@ function setupIpcHandlers() {
         settings.prolaboreRule,
         settings.manualProlaboreAmount || 2500,
         settings.autoUpdateTables ? 1 : 0,
-        settings.lastTableUpdateDate || ''
+        settings.lastTableUpdateDate || '',
+        Number(settings.accountingFee) || 0
       );
       return true;
     }

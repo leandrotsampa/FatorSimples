@@ -30,6 +30,7 @@ export interface TaxSettings {
   cnae: string;                   // Atividade / CNAE (ex: 6201-5/01 Desenvolvimento de Software)
   prolaboreRule: 'auto_28_month' | 'exact_rbt12' | 'manual';
   manualProlaboreAmount: number;
+  accountingFee?: number;         // Honorários mensais da contabilidade (ficam na conta da empresa)
 }
 
 export interface IrrfBracket {
@@ -116,5 +117,7 @@ export interface MonthSummaryResult {
     totalPocketCash: number;  // Pró-labore líquido + Lucro isento
     totalTaxes: number;       // DAS + INSS + IRRF
     totalTaxBurdenPercent: number; // (totalTaxes / grossRevenue) * 100
+    accountingFee: number;    // Honorários da contabilidade do mês
+    keepInAccount: number;    // Fica na conta da empresa: DAS + INSS + IRRF + IR sobre lucros + contabilidade
   };
 }

@@ -45,6 +45,7 @@ export const DEFAULT_SETTINGS: TaxSettings = {
   cnae: '6201-5/01 - Desenvolvimento de Programas de Computador',
   prolaboreRule: 'auto_28_month',
   manualProlaboreAmount: 2500,
+  accountingFee: 0,
 };
 
 /**
@@ -491,8 +492,11 @@ export function calculateMonthSummary(
   const prolaboreNet = prolabore.net;
   const prolaboreTaxes = prolabore.inss + prolabore.irrf;
 
+  // Honorários da contabilidade: despesa do mês que fica na conta antes de distribuir o lucro
+  const accountingFee = Math.max(0, settings.accountingFee ?? 0);
+
   // Lucro líquido remanescente na PJ disponível para distribuição ao sócio
-  const distributableProfit = Math.max(0, currentMonthRevenue - dasAmount - prolaboreGross);
+  const distributableProfit = Math.max(0, currentMonthRevenue - dasAmount - prolaboreGross - accountingFee);
   // A partir de 2026, distribuição acima de R$ 50 mil no mês sofre retenção de 10% sobre o total
   const dividendWithholding = calculateDividendWithholding(distributableProfit, settings);
   const taxFreeDividends = distributableProfit - dividendWithholding;
@@ -532,6 +536,8 @@ export function calculateMonthSummary(
       totalPocketCash,
       totalTaxes,
       totalTaxBurdenPercent,
+      accountingFee,
+      keepInAccount: dasAmount + prolaboreTaxes + dividendWithholding + accountingFee,
     },
   };
 }
