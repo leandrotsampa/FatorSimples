@@ -28,8 +28,11 @@ import {
   type VersionCheckResult,
 } from '../utils/remoteTables';
 
+export type SettingsTab = 'tables' | 'parameters' | 'company' | 'auto_explain' | 'interface';
+
 interface SettingsModalProps {
   onClose: () => void;
+  initialTab?: SettingsTab;
   settings: TaxSettings;
   onSave: (newSettings: TaxSettings) => void;
   // Busca real: arquivo de tabelas no GitHub e última versão publicada do app
@@ -44,13 +47,14 @@ const formatDateBR = (iso: string) => {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
+  initialTab = 'tables',
   settings,
   onSave,
   onCheckUpdates,
   newVersion,
 }) => {
   const [formData, setFormData] = useState<TaxSettings>({ ...settings });
-  const [activeTab, setActiveTab] = useState<'tables' | 'parameters' | 'company' | 'auto_explain' | 'interface'>('tables');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [uiPrefs, setUiPrefs] = useUiPrefs();
   const [syncStatus, setSyncStatus] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -152,6 +156,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar configurações"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />

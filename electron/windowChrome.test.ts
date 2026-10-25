@@ -10,10 +10,10 @@ const key = (k: string, extra: Partial<{ control: boolean; meta: boolean; shift:
 });
 
 describe('windowChromeOptions', () => {
-  it('no Windows esconde a barra nativa e mantém os botões com 40px de altura', () => {
+  it('no Windows esconde a barra nativa e mantém os botões com 48px de altura', () => {
     const o = windowChromeOptions('win32', 'dark');
     expect(o.titleBarStyle).toBe('hidden');
-    expect(o.titleBarOverlay?.height).toBe(40);
+    expect(o.titleBarOverlay?.height).toBe(48);
   });
 
   it('no macOS usa os botões nativos embutidos, sem overlay', () => {
@@ -25,8 +25,8 @@ describe('windowChromeOptions', () => {
 
 describe('titleBarOverlayFor', () => {
   it('usa as cores do cabeçalho em cada tema', () => {
-    expect(titleBarOverlayFor('light')).toEqual({ color: '#e7eee9', symbolColor: '#334155', height: 40 });
-    expect(titleBarOverlayFor('dark')).toEqual({ color: '#080b0a', symbolColor: '#aeb9b2', height: 40 });
+    expect(titleBarOverlayFor('light')).toEqual({ color: '#e7eee9', symbolColor: '#334155', height: 48 });
+    expect(titleBarOverlayFor('dark')).toEqual({ color: '#080b0a', symbolColor: '#aeb9b2', height: 48 });
   });
 });
 

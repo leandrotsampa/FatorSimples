@@ -5,7 +5,8 @@ import { MonthApurationView } from './components/MonthApurationView';
 import { HistoryTable } from './components/HistoryTable';
 import { ComparisonView } from './components/ComparisonView';
 import { ReportPrintView } from './components/ReportPrintView';
-import { SettingsModal } from './components/SettingsModal';
+import { SettingsModal, type SettingsTab } from './components/SettingsModal';
+import { TopBar } from './components/TopBar';
 import { AddMonthModal } from './components/AddMonthModal';
 import { SqliteManagerModal } from './components/SqliteManagerModal';
 import { MonthRecord, TaxSettings } from './types/tax';
@@ -125,6 +126,11 @@ export default function App() {
 
   // Modais
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('tables');
+  const openSettings = (tab: SettingsTab = 'tables') => {
+    setSettingsTab(tab);
+    setIsSettingsOpen(true);
+  };
   const [isSqliteManagerOpen, setIsSqliteManagerOpen] = useState(false);
   const [isAddMonthOpen, setIsAddMonthOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MonthRecord | null>(null);
@@ -426,7 +432,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => openSettings()}
         onOpenSqliteManager={() => setIsSqliteManagerOpen(true)}
         settings={settings}
         history={history}
@@ -441,22 +447,7 @@ export default function App() {
       {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos */}
-        <header className={`no-print app-drag titlebar-safe h-10 shrink-0 bg-[var(--canvas)] pl-6 flex items-center justify-between z-30`}>
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {settings.companyName || 'Empresa Simples Nacional'}
-            </span>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <span className="text-xs font-num font-bold text-emerald-700 dark:text-emerald-400 hidden sm:inline">
-              {settings.cityState || 'Brusque - SC'}
-            </span>
-            <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
-            <span className="text-[11px] font-num text-slate-500 dark:text-slate-400 hidden md:inline">
-              CNPJ: {settings.cnpj || '00.000.000/0001-00'}
-            </span>
-          </div>
-        </header>
+        <TopBar settings={settings} onEditCompany={() => openSettings('company')} />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
@@ -514,7 +505,7 @@ export default function App() {
               settings={apurationSettings}
               onSaveCurrentMonthToHistory={handleSaveMonthToHistory}
               onNavigateToHistory={() => setActiveTab('history')}
-              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenSettings={() => openSettings()}
             />
           )}
 
@@ -567,6 +558,7 @@ export default function App() {
       <SettingsModal
         key="settings"
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={settingsTab}
         settings={settings}
         onSave={setSettings}
         onCheckUpdates={runUpdateCheck}

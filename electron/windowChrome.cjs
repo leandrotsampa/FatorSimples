@@ -4,7 +4,7 @@
  * Funções puras, testadas em windowChrome.test.ts.
  */
 
-const TITLEBAR_HEIGHT = 40;
+const TITLEBAR_HEIGHT = 48;
 
 // Cores dos botões nativos (minimizar/maximizar/fechar) iguais ao fundo da janela (--canvas em index.css)
 function titleBarOverlayFor(theme) {
