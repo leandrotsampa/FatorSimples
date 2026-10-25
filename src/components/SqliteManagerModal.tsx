@@ -19,7 +19,6 @@ import { generateSqliteDump } from '../utils/sqliteExport';
 import { ModalShell } from './ui/ModalShell';
 
 interface SqliteManagerModalProps {
-  isOpen: boolean;
   onClose: () => void;
   settings: TaxSettings;
   history: MonthRecord[];
@@ -28,7 +27,6 @@ interface SqliteManagerModalProps {
 }
 
 export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
-  isOpen,
   onClose,
   settings,
   history,
@@ -43,15 +41,14 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
   const isSystem = storageMode === 'system';
 
   useEffect(() => {
-    if (isOpen && window.electronAPI?.getDbPath) {
+    if (window.electronAPI?.getDbPath) {
       window.electronAPI.getDbPath().then((p) => {
         if (p) setDbPath(p);
       });
       window.electronAPI.getStorageMode?.().then(setStorageMode);
     }
-  }, [isOpen]);
+  }, []);
 
-  if (!isOpen) return null;
 
   const sqlDump = generateSqliteDump(settings, history);
 
@@ -81,7 +78,7 @@ export const SqliteManagerModal: React.FC<SqliteManagerModalProps> = ({
   };
 
   return (
-    <ModalShell panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
+    <ModalShell ariaLabel="Banco SQLite local" panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">

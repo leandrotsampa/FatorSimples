@@ -11,7 +11,6 @@ import { CurrencyInput } from './CurrencyInput';
 import { ModalShell } from './ui/ModalShell';
 
 interface AddMonthModalProps {
-  isOpen: boolean;
   onClose: () => void;
   onSave: (record: MonthRecord) => void;
   recordToEdit?: MonthRecord | null;
@@ -21,7 +20,6 @@ interface AddMonthModalProps {
 }
 
 export const AddMonthModal: React.FC<AddMonthModalProps> = ({
-  isOpen,
   onClose,
   onSave,
   recordToEdit,
@@ -68,9 +66,8 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
       recalculateTaxes(20000, 5600, defaultYm);
       setNotes('');
     }
-  }, [recordToEdit, isOpen, recalculateTaxes, defaultYearMonth]);
+  }, [recordToEdit, recalculateTaxes, defaultYearMonth]);
 
-  if (!isOpen) return null;
 
   const handleRevenueChange = (val: number) => {
     setRevenue(val);
@@ -104,7 +101,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
   };
 
   return (
-    <ModalShell panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden text-xs text-slate-800 dark:text-slate-100">
+    <ModalShell ariaLabel={recordToEdit ? 'Editar competência no histórico' : 'Adicionar nova competência'} panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden text-xs text-slate-800 dark:text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
           <div className="flex items-center gap-2">
@@ -132,7 +129,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               required
               value={yearMonth}
               onChange={(e) => setYearMonth(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-semibold"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-semibold"
             />
           </div>
 
@@ -147,7 +144,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
                 <span>Folha / Pró-labore:</span>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-bold">
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-num font-bold">
                   {revenue > 0 ? `${((payroll / revenue) * 100).toFixed(1)}%` : ''}
                 </span>
               </label>
@@ -171,7 +168,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
+            <div className="grid grid-cols-3 gap-2 text-[11px] font-num">
               <div>
                 <span className="text-slate-500 block">INSS (11%):</span>
                 <span className="text-slate-800 dark:text-slate-200 font-bold">{formatCurrency(inss)}</span>

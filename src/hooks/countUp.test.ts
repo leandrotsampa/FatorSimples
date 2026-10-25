@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countUpFrame } from './useCountUp';
+import { countUpFrame, INTRO_WINDOW_MS, isFinalFrame, startValueFor } from './useCountUp';
 
 describe('countUpFrame', () => {
   it('começa no valor de origem', () => {
@@ -26,5 +26,29 @@ describe('countUpFrame', () => {
 
   it('com duração zero vai direto ao valor final', () => {
     expect(countUpFrame(0, 2169.22, 0, 0)).toBe(2169.22);
+  });
+});
+
+describe('isFinalFrame', () => {
+  it('para quando chega ao alvo', () => {
+    expect(isFinalFrame(100, 100)).toBe(true);
+    expect(isFinalFrame(99.9, 100)).toBe(false);
+  });
+
+  it('para na hora quando o alvo não é um número finito (sem rAF infinito)', () => {
+    expect(isFinalFrame(Number.NaN, Number.NaN)).toBe(true);
+    expect(isFinalFrame(10, Number.POSITIVE_INFINITY)).toBe(true);
+  });
+});
+
+describe('startValueFor', () => {
+  it('na abertura do app os números contam a partir do zero', () => {
+    expect(startValueFor(2169.22, 0)).toBe(0);
+    expect(startValueFor(2169.22, INTRO_WINDOW_MS - 1)).toBe(0);
+  });
+
+  it('depois da abertura, voltar a uma tela mostra o valor direto, sem recontar', () => {
+    expect(startValueFor(2169.22, INTRO_WINDOW_MS)).toBe(2169.22);
+    expect(startValueFor(2169.22, 60_000)).toBe(2169.22);
   });
 });

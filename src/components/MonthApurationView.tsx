@@ -31,6 +31,8 @@ import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { playSound } from '../hooks/useSound';
 import { crossedBelowTarget } from '../utils/sound';
+import { card, tile } from './ui/card';
+import { PageHeader } from './ui/PageHeader';
 
 interface MonthApurationViewProps {
   currentRevenue: number;
@@ -50,6 +52,16 @@ interface MonthApurationViewProps {
 }
 
 const MONTH_NAMES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MONTH_FULL = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+// "2026-10" -> "Outubro de 2026"
+const formatCompetenceLong = (yearMonth: string) => {
+  const [y, m] = yearMonth.split('-').map(Number);
+  return `${MONTH_FULL[m - 1]} de ${y}`;
+};
 
 // "2026-10" -> "out/2026"
 const formatCompetence = (yearMonth: string) => {
@@ -59,8 +71,6 @@ const formatCompetence = (yearMonth: string) => {
 
 const formatPercent1 = (n: number) => formatPercent(n, 1);
 
-const card =
-  'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors';
 
 const STRATEGIES: { rule: TaxSettings['prolaboreRule']; label: string; title: string }[] = [
   { rule: 'auto_28_month', label: '28% do mês', title: 'Aplica 28% do faturamento do mês' },
@@ -99,9 +109,9 @@ const AnswerCard: React.FC<{
     variants={cascadeItem}
     className={`${card} p-5 ${
       tone === 'good'
-        ? 'border-2 border-emerald-500 dark:border-emerald-500/70'
+        ? 'ring-2 ring-inset ring-emerald-500/70 dark:ring-emerald-500/60'
         : tone === 'bad'
-          ? 'border-2 border-rose-500 dark:border-rose-500/70'
+          ? 'ring-2 ring-inset ring-rose-500/70 dark:ring-rose-500/60'
           : ''
     }`}
   >
@@ -110,7 +120,7 @@ const AnswerCard: React.FC<{
       {label}
     </div>
     <div
-      className={`text-3xl font-bold font-mono tabular-nums tracking-tight mt-1.5 transition-colors duration-[var(--duration-base)] ${
+      className={`text-3xl font-bold font-num tabular-nums tracking-tight mt-1.5 transition-colors duration-[var(--duration-base)] ${
         tone === 'good'
           ? 'text-emerald-700 dark:text-emerald-400'
           : tone === 'bad'
@@ -138,9 +148,9 @@ const Indicator: React.FC<{
   detail,
   valueClass = 'text-slate-900 dark:text-white',
 }) => (
-  <div className="bg-slate-50 dark:bg-slate-950/60 rounded-lg px-3 py-2.5 min-w-0">
+  <div className={`${tile} px-3 py-2.5 min-w-0`}>
     <div className="text-xs text-slate-600 dark:text-slate-400">{label}</div>
-    <div className={`text-base font-bold font-mono tabular-nums mt-0.5 truncate transition-colors ${valueClass}`}>
+    <div className={`text-base font-bold font-num tabular-nums mt-0.5 truncate transition-colors ${valueClass}`}>
       <ValueText value={value} format={format} />
     </div>
     <div className="text-xs text-slate-500 dark:text-slate-500 truncate">{detail}</div>
@@ -156,7 +166,7 @@ const DetailRow: React.FC<{ label: React.ReactNode; value: React.ReactNode; stro
   <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 text-sm">
     <span className="text-slate-600 dark:text-slate-400">{label}</span>
     <span
-      className={`font-mono tabular-nums text-right ${
+      className={`font-num tabular-nums text-right ${
         strong ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-800 dark:text-slate-200'
       }`}
     >
@@ -290,7 +300,45 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
     }`;
 
   return (
-    <div className="space-y-4 transition-colors duration-200">
+    <div className="page-stagger space-y-5">
+      {/* Abertura: a competência e o resumo do que importa no mês */}
+      <PageHeader
+        eyebrow={
+          <span className="flex items-center gap-2">
+            <span>Apuração do mês</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${isReadOnly ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span>{isReadOnly ? 'salva no histórico' : 'em andamento'}</span>
+          </span>
+        }
+        title={formatCompetenceLong(selectedMonth)}
+        description={
+          hasRevenue ? (
+            <>
+              DAS de <b className="font-num font-semibold text-slate-900 dark:text-white">{formatCurrency(simples.dasAmount)}</b>{' '}
+              vence em 20/{dasDueMonth[1]}/{dasDueMonth[0]} ·{' '}
+              {next.isQualifiedForAnexo3 ? (
+                <>
+                  Fator R garantido em {formatCompetence(next.yearMonth)} com folga de{' '}
+                  <b className="font-num font-semibold text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(Math.max(0, margin.prolaboreMargin))}
+                  </b>
+                </>
+              ) : (
+                <>
+                  Fator R abaixo de 28% em {formatCompetence(next.yearMonth)}: faltam{' '}
+                  <b className="font-num font-semibold text-rose-600 dark:text-rose-400">
+                    {formatCurrency(-margin.prolaboreMargin)}
+                  </b>{' '}
+                  de pró-labore
+                </>
+              )}
+            </>
+          ) : (
+            'Comece pelo faturamento das notas emitidas no mês; o resto é calculado na hora.'
+          )
+        }
+      />
+
       {/* Aviso de sucesso ao salvar */}
       <AnimatePresence>
       {savedSuccessMessage && (
@@ -428,7 +476,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             O Fator R de {formatCompetence(selectedMonth)} ficou em {formatPercent(Math.floor(simples.factorRPercentage * 10000) / 10000, 4)}: faltaram{' '}
-            <b className="font-mono">{formatCurrency(Math.max(0.01, simples.factorRShortfall))}</b> de folha nos meses anteriores
+            <b className="font-num">{formatCurrency(Math.max(0.01, simples.factorRShortfall))}</b> de folha nos meses anteriores
             para chegar a 28%. O app aplica o Anexo V. Provavelmente é arredondamento de centavos; confira com a contabilidade
             como o mês foi apurado no PGDAS.
           </span>
@@ -565,13 +613,13 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 <AnimatedNumber
                   value={consolidated.totalPocketCash}
                   format={formatCurrency}
-                  className="text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-400"
+                  className="text-2xl font-bold font-num tabular-nums text-emerald-700 dark:text-emerald-400"
                 />
               </div>
               {savingsThisMonth > 0.005 && (
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   Economia com Fator R neste mês:{' '}
-                  <b className="font-mono text-emerald-700 dark:text-emerald-400">{formatCurrency(savingsThisMonth)}</b> de DAS
+                  <b className="font-num text-emerald-700 dark:text-emerald-400">{formatCurrency(savingsThisMonth)}</b> de DAS
                 </span>
               )}
             </div>
@@ -595,7 +643,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               {breakdown.map((p) => (
                 <span key={p.label} className="flex items-center gap-1.5">
                   <span className={`w-2.5 h-2.5 rounded-sm ${p.color}`} />
-                  {p.label} <span className="font-mono tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.value)}</span>
+                  {p.label} <span className="font-num tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.value)}</span>
                 </span>
               ))}
             </div>
@@ -607,7 +655,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               title="Memória de cálculo do DAS"
               summary={`${formatCurrency(currentRevenue)} × ${formatPercent(simples.effectiveRatePercentage)}`}
             >
-              <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm font-mono space-y-1 mb-2">
+              <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm font-num space-y-1 mb-2">
                 <div className="text-slate-600 dark:text-slate-400 font-sans">
                   Alíquota efetiva (LC 123/2006) = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12
                 </div>

@@ -44,8 +44,13 @@ export default function App() {
 
   // Troca o tema com o círculo saindo do botão clicado; o DOM é a fonte da verdade
   // para o tema atual, assim cliques seguidos nunca usam um estado defasado
+  // Um segundo clique antes de a transição aplicar o primeiro parte do tema pendente
+  const pendingThemeRef = useRef<'dark' | 'light' | null>(null);
   const toggleTheme = (origin?: HTMLElement | null) => {
-    const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    const current =
+      pendingThemeRef.current ?? (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    pendingThemeRef.current = next;
     try {
       localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {
@@ -55,6 +60,7 @@ export default function App() {
     runThemeWipe(origin ?? null, () => {
       document.documentElement.classList.toggle('dark', next === 'dark');
       flushSync(() => setTheme(next));
+      if (pendingThemeRef.current === next) pendingThemeRef.current = null;
     });
   };
 
@@ -81,12 +87,14 @@ export default function App() {
 
   // Menu lateral: preferência salva + largura da janela (recolhe sozinho em janela estreita)
   const [uiPrefs, setUiPrefs] = useUiPrefs();
+  // Só re-renderiza ao cruzar o limite de largura, não a cada pixel do redimensionamento
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
   useEffect(() => {
-    const onResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const query = window.matchMedia(`(min-width: ${SIDEBAR_COLLAPSE_BELOW}px)`);
+    const onChange = () => setWindowWidth(window.innerWidth);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
   }, []);
   useEffect(() => {
     if (windowWidth >= SIDEBAR_COLLAPSE_BELOW) setSidebarOverlayOpen(false);
@@ -116,6 +124,9 @@ export default function App() {
   // Aba ativa e o container que rola (volta ao topo ao trocar de aba)
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'apuration' | 'history' | 'comparison' | 'report'>('apuration');
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [activeTab]);
 
   // Modais
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -356,41 +367,40 @@ export default function App() {
         onCloseOverlay={() => setSidebarOverlayOpen(false)}
       />
 
-      {/* Viewport Principal com Rolagem Independente */}
-      <div ref={scrollRef} className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+      {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
+          (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos.
             Com o menu aberto por cima, deixa de arrastar: o Electron monta a área de arraste pela
             ordem do DOM (ignora z-index) e os botões do menu sobre a barra ficariam sem clique */}
-        <header className={`no-print ${sidebarMode === 'overlay' ? '' : 'app-drag'} titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs`}>
+        <header className={`no-print ${sidebarMode === 'overlay' ? '' : 'app-drag'} titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between z-30`}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
               {settings.companyName || 'Empresa Simples Nacional'}
             </span>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 hidden sm:inline">
+            <span className="text-xs font-num font-bold text-emerald-700 dark:text-emerald-400 hidden sm:inline">
               {settings.cityState || 'Brusque - SC'}
             </span>
             <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
-            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 hidden md:inline">
+            <span className="text-[11px] font-num text-slate-500 dark:text-slate-400 hidden md:inline">
               CNPJ: {settings.cnpj || '00.000.000/0001-00'}
             </span>
           </div>
         </header>
 
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {/* Troca de tela: a anterior sai antes da próxima entrar; a rolagem volta ao topo entre as duas */}
-          <AnimatePresence
-            mode="wait"
-            initial={false}
-            onExitComplete={() => scrollRef.current?.scrollTo({ top: 0 })}
-          >
+        <main className="relative p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {/* Troca de tela sem vazio: a anterior sai por cima (popLayout) enquanto a nova
+              surge de um véu desfocado; os blocos da nova entram em sequência (page-stagger) */}
+          <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: DURATION.base, ease: EASE_OUT }}
+            className="page-transition"
+            initial={{ opacity: 0, filter: 'blur(6px)', scale: 0.995 }}
+            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1, transition: { duration: 0.42, ease: EASE_OUT } }}
+            exit={{ opacity: 0, filter: 'blur(4px)', transition: { duration: 0.18, ease: EASE_OUT } }}
           >
           {activeTab === 'apuration' && (
             <MonthApurationView
@@ -448,6 +458,7 @@ export default function App() {
           </motion.div>
           </AnimatePresence>
         </main>
+        </div>
       </div>
 
       {/* Modais: montados só enquanto abertos, para a saída animar (ModalShell) */}
@@ -455,7 +466,6 @@ export default function App() {
       {isSettingsOpen && (
       <SettingsModal
         key="settings"
-        isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={setSettings}
@@ -467,7 +477,6 @@ export default function App() {
       {isSqliteManagerOpen && (
       <SqliteManagerModal
         key="sqlite"
-        isOpen={isSqliteManagerOpen}
         onClose={() => setIsSqliteManagerOpen(false)}
         settings={settings}
         history={history}
@@ -481,7 +490,6 @@ export default function App() {
       {isAddMonthOpen && (
       <AddMonthModal
         key="add-month"
-        isOpen={isAddMonthOpen}
         onClose={() => {
           setIsAddMonthOpen(false);
           setRecordToEdit(null);

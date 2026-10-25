@@ -34,6 +34,7 @@ const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'se
 const WIDTH_EXPANDED = 288;
 const WIDTH_COLLAPSED = 68;
 const widthSpring = { type: 'spring', stiffness: 400, damping: 40 } as const;
+const pillSpring = { type: 'spring', stiffness: 380, damping: 34, mass: 0.9 } as const;
 
 interface SidebarProps {
   activeTab: 'apuration' | 'history' | 'comparison' | 'report';
@@ -127,7 +128,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
   useEffect(() => {
     if (!monthPanelPos) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMonthPanelPos(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMonthPanelPos(null);
+      monthButtonRef.current?.focus();
+    };
+    // Leva o foco para dentro do painel recém-aberto
+    requestAnimationFrame(() => monthPanelRef.current?.querySelector<HTMLElement>('button, input')?.focus());
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (!monthPanelRef.current?.contains(t) && !monthButtonRef.current?.contains(t)) setMonthPanelPos(null);
@@ -192,11 +199,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const monthShort = MONTH_SHORT[parseInt(monthNum, 10) - 1] ?? '';
 
   const competenceStatus = isMonthSaved ? (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono font-bold">
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-num font-bold">
       Salvo no SQLite
     </span>
   ) : (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono">
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-num">
       Em Apuração
     </span>
   );
@@ -216,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           type="month"
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
+          className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-num font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
         />
       </div>
 
@@ -281,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Reveal show={expanded} className="min-w-0 flex-1">
                   <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
                     FatorSimples
-                    <span className="ml-1.5 text-[10px] font-normal font-mono text-slate-400 dark:text-slate-500">
+                    <span className="ml-1.5 text-[10px] font-normal font-num text-slate-400 dark:text-slate-500">
                       v{__APP_VERSION__}
                     </span>
                   </h1>
@@ -327,7 +334,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="relative w-full flex flex-col items-center gap-0.5 py-1.5 rounded-md text-emerald-700 dark:text-emerald-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     <CalendarDays className="w-4 h-4" />
-                    <span className="text-[10px] font-mono font-bold">{monthShort}</span>
+                    <span className="text-[10px] font-num font-bold">{monthShort}</span>
                     <span
                       className={`absolute top-1 right-2 w-1.5 h-1.5 rounded-full ${
                         isMonthSaved ? 'bg-emerald-500' : 'bg-amber-500'
@@ -360,8 +367,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       aria-current={isActive ? 'page' : undefined}
                       aria-label={collapsed ? item.label : undefined}
-                      className={`group relative w-full flex items-center rounded-lg text-left transition-colors cursor-pointer border border-transparent ${
-                        collapsed ? 'justify-center p-2' : 'justify-between p-2.5'
+                      className={`group relative w-full flex items-center rounded-xl text-left transition-colors cursor-pointer border border-transparent ${
+                        collapsed ? 'justify-center p-1.5' : 'justify-between p-2.5'
                       } ${
                         isActive
                           ? 'text-emerald-900 font-bold dark:text-emerald-300'
@@ -372,22 +379,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {isActive && (
                         <motion.span
                           layoutId="nav-active"
-                          className="absolute inset-0 rounded-lg bg-emerald-50 border border-emerald-300 shadow-xs dark:bg-emerald-500/15 dark:border-emerald-500/40"
-                          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                          className={`absolute inset-0 ${
+                            collapsed
+                              ? 'rounded-xl bg-emerald-600 shadow-[0_6px_16px_-6px_rgba(5,150,105,0.6)] dark:bg-emerald-500'
+                              : 'rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30'
+                          }`}
+                          transition={pillSpring}
                         />
                       )}
                       <div className="relative flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
+                          className={`relative rounded-lg flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
+                            collapsed ? 'w-9 h-9' : 'w-7 h-7'
+                          } ${
                             isActive
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:translate-x-0.5'
+                              ? collapsed
+                                ? 'text-white dark:text-emerald-950'
+                                : 'bg-emerald-600 text-white'
+                              : collapsed
+                                ? 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:translate-x-0.5'
                           }`}
                         >
-                          <Icon className="w-4 h-4" />
-                          {/* No menu recolhido o contador vira um ponto */}
+                          <Icon className={collapsed ? 'w-[18px] h-[18px]' : 'w-4 h-4'} />
+                          {/* No menu recolhido o contador vira uma bolinha com o número */}
                           {collapsed && item.badge && history.length > 0 && (
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-950" />
+                            <span className="absolute -top-1 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold font-num leading-4 text-center ring-2 ring-white dark:ring-slate-950">
+                              {history.length > 99 ? '99+' : history.length}
+                            </span>
                           )}
                         </div>
                         <Reveal show={expanded} className="min-w-0">
@@ -404,7 +423,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           initial={{ scale: 0.8, opacity: 0.6 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ type: 'spring', stiffness: 600, damping: 20 }}
-                          className={`relative text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                          className={`relative text-[10px] px-1.5 py-0.2 rounded font-num font-bold ${
                             isActive
                               ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
                               : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -428,8 +447,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                   <span>Fator R {selectedMonth}:</span>
                   <span
-                    className={`font-mono font-bold ${
-                      factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    className={`font-num font-bold ${
+                      factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}
                   >
                     {monthsCount > 0 ? <AnimatedNumber value={factorR} format={formatPercent1} /> : '—'}
@@ -439,7 +458,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span title={isProportional && monthsCount > 0 ? `Média de ${monthsCount} meses × 12` : undefined}>
                     RBT12 {isProportional ? '(proporcional)' : '(12m anteriores)'}:
                   </span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="font-num font-semibold text-slate-800 dark:text-slate-200">
                     {monthsCount > 0 ? <AnimatedNumber value={rbt12} format={formatCurrency} /> : 'sem histórico'}
                   </span>
                 </div>
@@ -460,7 +479,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   label={`Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : '—'}`}
                   detail={`RBT12: ${monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'}`}
                 >
-                  <span tabIndex={0} className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                  <span
+                    tabIndex={0}
+                    role="img"
+                    aria-label={`Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : 'sem histórico'}. RBT12: ${
+                      monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'
+                    }`}
+                    className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
                     <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" className="-rotate-90">
                       <circle cx="16" cy="16" r="12" fill="none" strokeWidth="4" className="stroke-slate-200 dark:stroke-slate-800" />
                       {monthsCount > 0 && (
@@ -471,7 +497,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           fill="none"
                           strokeWidth="4"
                           strokeLinecap="round"
-                          className={ringOk ? 'stroke-emerald-500' : 'stroke-amber-500'}
+                          className={ringOk ? 'stroke-emerald-500' : 'stroke-rose-500'}
                           initial={reduceMotion ? false : { pathLength: 0 }}
                           animate={{ pathLength: ringPct }}
                           transition={instantIf(reduceMotion, { duration: DURATION.number, ease: EASE_OUT })}
@@ -490,28 +516,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
               collapsed ? 'p-2' : 'p-3'
             }`}
           >
-            {/* Toggle Theme */}
-            <RailTooltip enabled={collapsed} label="Modo Visual" detail={theme === 'dark' ? 'Escuro (Dark)' : 'Claro (Light)'}>
-              <button
-                onClick={(e) => toggleTheme(e.currentTarget)}
-                className={footerButtonClass}
-                aria-label={collapsed ? 'Modo Visual' : undefined}
-              >
-                <span className="flex items-center gap-2">
-                  {theme === 'dark' ? (
-                    <Sun className="w-4 h-4 text-amber-400" />
-                  ) : (
-                    <Moon className="w-4 h-4 text-indigo-600" />
-                  )}
-                  {expanded && <span className="whitespace-nowrap">Modo Visual</span>}
-                </span>
-                {expanded && (
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                    {theme === 'dark' ? 'Escuro (Dark)' : 'Claro (Light)'}
-                  </span>
-                )}
-              </button>
-            </RailTooltip>
+            {/* Tema: par claro/escuro; o círculo da troca nasce no botão clicado */}
+            <div
+              role="group"
+              aria-label="Tema"
+              className={`relative flex p-1 mb-1 rounded-xl bg-slate-200/70 dark:bg-slate-900 ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}
+            >
+              {(['light', 'dark'] as const).map((t) => {
+                const active = theme === t;
+                const ThemeIcon = t === 'light' ? Sun : Moon;
+                const label = t === 'light' ? 'Claro' : 'Escuro';
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={(e) => {
+                      if (!active) toggleTheme(e.currentTarget);
+                    }}
+                    aria-pressed={active}
+                    aria-label={`Tema ${label.toLowerCase()}`}
+                    title={`Tema ${label.toLowerCase()}`}
+                    className={`relative flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      active ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="theme-active"
+                        className="absolute inset-0 rounded-lg bg-white shadow-sm dark:bg-slate-700"
+                        transition={pillSpring}
+                      />
+                    )}
+                    <ThemeIcon className={`relative w-4 h-4 ${active ? (t === 'light' ? 'text-amber-500' : 'text-indigo-300') : ''}`} />
+                    {expanded && <span className="relative whitespace-nowrap">{label}</span>}
+                  </button>
+                );
+              })}
+            </div>
 
             {/* SQLite Manager */}
             <RailTooltip enabled={collapsed} label="Banco SQLite" detail={storageMode === 'system' ? 'Local' : 'Portátil'}>
@@ -525,7 +566,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {expanded && <span className="whitespace-nowrap">Banco SQLite</span>}
                 </span>
                 {expanded && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-num">
                     {storageMode === 'system' ? 'Local' : 'Portátil'}
                   </span>
                 )}
@@ -544,7 +585,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {expanded && <span className="whitespace-nowrap">Configurações</span>}
                 </span>
                 {expanded && (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono whitespace-nowrap">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-num whitespace-nowrap">
                     Tabelas 2026/27
                   </span>
                 )}

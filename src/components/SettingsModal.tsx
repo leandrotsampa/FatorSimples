@@ -20,14 +20,12 @@ import { useUiPrefs } from '../hooks/useUiPrefs';
 import { playSound } from '../hooks/useSound';
 
 interface SettingsModalProps {
-  isOpen: boolean;
   onClose: () => void;
   settings: TaxSettings;
   onSave: (newSettings: TaxSettings) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
   onClose,
   settings,
   onSave,
@@ -38,7 +36,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  if (!isOpen) return null;
 
   // Lógica de sincronização / checagem automática das tabelas da Receita Federal
   const handleSyncTables = () => {
@@ -88,7 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     Object.values(OFFICIAL_TAX_TABLES)[0];
 
   return (
-    <ModalShell panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
+    <ModalShell ariaLabel="Parâmetros fiscais e tabelas de cálculo" panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
@@ -280,13 +277,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="space-y-2">
                 <div className="font-bold text-slate-800 dark:text-slate-300 text-xs flex items-center justify-between">
                   <span>Faixas da Tabela Progressiva Mensal do IRPF:</span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-num">
                     Desconto Simplificado: {formatCurrency(formData.simplifiedIrDeduction)}
                   </span>
                 </div>
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs">
-                  <table className="w-full text-left font-mono text-[11px]">
+                  <table className="w-full text-left font-num text-[11px]">
                     <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-bold">
                       <tr>
                         <th className="p-2">Faixa</th>
@@ -358,7 +355,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Salário Mínimo Nacional (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-mono">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -367,7 +364,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     step="1"
                     value={formData.minimumWage}
                     onChange={(e) => setFormData({ ...formData, minimumWage: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Piso legal obrigatório para retirada de pró-labore.
@@ -380,7 +377,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Teto Máximo do INSS (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-mono">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -389,7 +386,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     step="0.01"
                     value={formData.inssCeiling}
                     onChange={(e) => setFormData({ ...formData, inssCeiling: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Limite máximo de contribuição individual (11%).
@@ -402,7 +399,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Número de Dependentes (IRRF):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-mono">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-num">
                       R$ 189,59/dep
                     </span>
                   </div>
@@ -412,7 +409,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     max="15"
                     value={formData.dependentsCount}
                     onChange={(e) => setFormData({ ...formData, dependentsCount: parseInt(e.target.value, 10) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Dedução legal de R$ 189,59 por dependente cadastrado.
@@ -425,7 +422,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="text-slate-700 dark:text-slate-300 font-semibold">
                       Desconto Simplificado IRPF (R$):
                     </label>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-mono">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
                       Auto ({activeVersion.year})
                     </span>
                   </div>
@@ -434,7 +431,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     step="0.10"
                     value={formData.simplifiedIrDeduction}
                     onChange={(e) => setFormData({ ...formData, simplifiedIrDeduction: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
                   />
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Aplicado automaticamente quando for mais vantajoso que as deduções legais.
@@ -478,7 +475,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="text"
                       value={formData.cnpj}
                       onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
                       placeholder="00.000.000/0001-00"
                     />
                   </div>
@@ -547,7 +544,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className={uiPrefs.soundEnabled ? '' : 'opacity-50'}>
                   <label htmlFor="ui-sound-volume" className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     <span>Volume</span>
-                    <span className="font-mono tabular-nums">{Math.round(uiPrefs.soundVolume * 100)}%</span>
+                    <span className="font-num tabular-nums">{Math.round(uiPrefs.soundVolume * 100)}%</span>
                   </label>
                   <input
                     id="ui-sound-volume"

@@ -21,6 +21,8 @@ import {
   shiftYearMonth,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
+import { card } from './ui/card';
+import { PageHeader } from './ui/PageHeader';
 
 interface HistoryTableProps {
   history: MonthRecord[];
@@ -71,70 +73,62 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   const maxRevenue = Math.max(...sortedHistory.map((m) => m.revenue), 10000);
 
   return (
-    <div className="space-y-6 transition-colors duration-200">
-      {/* Top Banner & Quick Metrics */}
-      <section className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase">
-              Memória Fiscal Permanente
-            </span>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2 mt-0.5">
-              <span>Histórico de Faturamento e Folha (RBT12)</span>
-            </h1>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
-              O Simples Nacional calcula a alíquota com base na receita bruta acumulada dos 12 meses anteriores à apuração. Cadastre ou edite as competências abaixo.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
+    <div className="page-stagger space-y-5">
+      <PageHeader
+        eyebrow="Memória fiscal permanente"
+        title="Histórico de faturamento e folha"
+        description="O Simples Nacional calcula a alíquota pela receita bruta dos 12 meses anteriores à apuração (RBT12). Cadastre ou edite as competências abaixo."
+        actions={
+          <>
             {history.length === 0 && (
               <button
                 onClick={onGenerateSample}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-full transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
                 title="Preenche 11 meses anteriores com dados realistas para simulação imediata"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <span>Gerar 11 Meses Exemplo</span>
               </button>
             )}
-
             <button
               onClick={onAddMonth}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-full transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Nova Competência</span>
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
+      {/* Métricas rápidas */}
+      <section className={`${card} p-5`}>
         {/* 4 Key Metrics Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* RBT12 Acumulado */}
-          <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">RBT12 (Últimos 12 Meses):</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-white font-mono mt-0.5 tabular-nums">
+            <div className="text-lg font-bold text-slate-900 dark:text-white font-num mt-0.5 tabular-nums">
               {formatCurrency(totalRevenue12)}
             </div>
             <div className="text-[10px] text-slate-500 mt-1">Base da Alíquota do Simples</div>
           </div>
 
           {/* Folha 12 Acumulada */}
-          <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Folha Total (12 Meses):</div>
-            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-mono mt-0.5 tabular-nums">
+            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-num mt-0.5 tabular-nums">
               {formatCurrency(totalPayroll12)}
             </div>
             <div className="text-[10px] text-slate-500 mt-1">Pró-labore + Encargos pagos</div>
           </div>
 
           {/* Fator R Geral */}
-          <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
               Fator R {nextCompetence ? `para ${nextCompetence}` : 'Acumulado 12m'}:
             </div>
-            <div className="text-lg font-bold font-mono mt-0.5 tabular-nums flex items-center gap-1.5">
+            <div className="text-lg font-bold font-num mt-0.5 tabular-nums flex items-center gap-1.5">
               <span className={isOverallQualified ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
                 {formatPercent(overallFactorR, 2)}
               </span>
@@ -150,9 +144,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
           </div>
 
           {/* Total Simples Pago */}
-          <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Total DAS Recolhido (12m):</div>
-            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-mono mt-0.5 tabular-nums">
+            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-num mt-0.5 tabular-nums">
               {formatCurrency(totalDas12)}
             </div>
             <div className="text-[10px] text-slate-500 mt-1">
@@ -164,13 +158,13 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
 
       {/* Visual Timeline Chart: Receita vs Folha vs Meta 28% */}
       {sortedHistory.length > 0 && (
-        <section className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors">
+        <section className={`${card} p-5`}>
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800 text-xs">
             <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Evolução Mensal (Faturamento vs Folha / Fator R)</span>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+            <div className="flex items-center gap-4 text-[11px] text-slate-600 dark:text-slate-400 font-num">
               <span className="flex items-center gap-1.5 font-medium">
                 <span className="w-2.5 h-2.5 bg-emerald-500 rounded-xs inline-block" /> Faturamento
               </span>
@@ -195,10 +189,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               return (
                 <div key={item.id} className="group text-xs">
                   <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-300 w-20">
+                    <span className="font-num font-bold text-slate-800 dark:text-slate-300 w-20">
                       {item.yearMonth}
                     </span>
-                    <div className="flex items-center gap-3 font-mono">
+                    <div className="flex items-center gap-3 font-num">
                       <span className="text-slate-700 dark:text-slate-300">Rev: {formatCurrency(item.revenue)}</span>
                       <span className="text-amber-700 dark:text-amber-400 font-semibold">Folha: {formatCurrency(item.payroll)}</span>
                       <span className={`font-bold ${isMonthOk ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -234,7 +228,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
       )}
 
       {/* Main Table View */}
-      <section className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors">
+      <section className={`${card} overflow-hidden`}>
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <input
@@ -242,7 +236,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Filtrar por competência (ex: 2026-08)..."
-              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:border-emerald-500 w-full sm:w-64 font-mono shadow-2xs"
+              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:border-emerald-500 w-full sm:w-64 font-num shadow-2xs"
             />
             {searchTerm && (
               <button
@@ -291,7 +285,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-mono uppercase text-[11px]">
+              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-num uppercase text-[11px]">
                 <tr>
                   <th className="py-3 px-4 font-bold">Competência</th>
                   <th className="py-3 px-4 font-bold text-right">Receita Bruta</th>
@@ -308,7 +302,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   <th className="py-3 px-4 font-bold text-center">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-num">
                 {filteredHistory.map((item, idx) => {
                   const apuration = apurationByMonth.get(item.yearMonth);
                   const factorR = apuration?.factorRPercentage ?? 0;

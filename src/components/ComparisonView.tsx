@@ -21,6 +21,8 @@ import {
   StrategyCost,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
+import { card } from './ui/card';
+import { PageHeader } from './ui/PageHeader';
 
 interface ComparisonViewProps {
   currentRevenue: number;
@@ -62,26 +64,26 @@ const StrategyRows: React.FC<{ cost: StrategyCost; revenue: number }> = ({ cost,
     ].map(([label, value]) => (
       <div key={label as string} className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
         <span className="text-slate-600 dark:text-slate-400">{label}</span>
-        <span className="font-mono tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(value as number)}</span>
+        <span className="font-num tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(value as number)}</span>
       </div>
     ))}
     <div className="flex justify-between py-1.5 px-2 rounded bg-slate-50 dark:bg-slate-950/40">
       <span className="font-semibold text-slate-700 dark:text-slate-300">Tributos (DAS + INSS + IRRF)</span>
-      <span className="font-mono font-bold tabular-nums text-slate-900 dark:text-white">
+      <span className="font-num font-bold tabular-nums text-slate-900 dark:text-white">
         {formatCurrency(cost.totalTaxes)} ({formatPercent(revenue > 0 ? (cost.totalTaxes / revenue) * 100 : 0, 1)})
       </span>
     </div>
     {cost.dividendWithholding > 0 && (
       <div className="flex justify-between py-1 px-2">
         <span className="text-slate-600 dark:text-slate-400">IR retido sobre lucros (10%, acima de R$ 50 mil)</span>
-        <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">
+        <span className="font-num tabular-nums text-rose-600 dark:text-rose-400">
           −{formatCurrency(cost.dividendWithholding)}
         </span>
       </div>
     )}
     <div className="flex justify-between py-1.5 px-2">
       <span className="text-slate-600 dark:text-slate-400">Disponível ao sócio</span>
-      <span className="font-mono font-semibold tabular-nums text-slate-900 dark:text-white">
+      <span className="font-num font-semibold tabular-nums text-slate-900 dark:text-white">
         {formatCurrency(cost.availableToPartner)}
       </span>
     </div>
@@ -133,28 +135,19 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
     f === 1 ? baseRevenue : Math.round((baseRevenue * f) / 100) * 100
   );
 
-  const card =
-    'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors';
 
   return (
-    <div className="space-y-6 transition-colors duration-200">
-      {/* Cabeçalho + resultado real */}
-      <section className={`${card} p-5`}>
-        <div className="pb-4 border-b border-slate-200 dark:border-slate-800">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase">
-            Comparador de Anexos · baseado no seu histórico
-          </span>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">
-            O Fator R está valendo a pena para você?
-          </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-3xl">
-            Comparamos o que você efetivamente pagou (DAS + INSS + IRRF registrados) com o que pagaria sem o Fator R:
-            Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência.
-          </p>
-        </div>
+    <div className="page-stagger space-y-5">
+      <PageHeader
+        eyebrow="Comparador de anexos · baseado no seu histórico"
+        title="O Fator R está valendo a pena para você?"
+        description="Comparamos o que você efetivamente pagou (DAS + INSS + IRRF registrados) com o que pagaria sem o Fator R: Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência."
+      />
 
+      {/* Resultado real */}
+      <section className={`${card} p-5`}>
         {realized.length === 0 ? (
-          <div className="mt-4 flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
             <History className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
               Nenhuma competência registrada até {formatYearMonth(selectedMonth)}. Cadastre os meses no Histórico para ver
@@ -162,43 +155,43 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             </span>
           </div>
         ) : (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-lg border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 Resultado real em {realized.length} {realized.length === 1 ? 'mês' : 'meses'}
               </div>
-              <div className="text-lg font-extrabold font-mono tabular-nums mt-0.5">
+              <div className="text-lg font-extrabold font-num tabular-nums mt-0.5">
                 <SignedCurrency value={totalResult} />
               </div>
               <div className="text-[11px] text-slate-600 dark:text-slate-400">
                 {totalResult >= 0 ? 'economizados frente ao Anexo V' : 'pagos a mais que no Anexo V'}
               </div>
             </div>
-            <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Tributos pagos × sem Fator R</div>
-              <div className="text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
+              <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
                 {formatCurrency(totalReal)}
               </div>
-              <div className="text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
+              <div className="text-[11px] font-num tabular-nums text-slate-500 dark:text-slate-400">
                 vs {formatCurrency(totalSemFatorR)}
               </div>
             </div>
-            <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Meses no Anexo III</div>
-              <div className="text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
+              <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
                 {monthsInIII} de {realized.length}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">Fator R ≥ 28% na apuração</div>
             </div>
             <div
-              className={`p-3.5 rounded-lg border ${
+              className={`p-3.5 rounded-xl border ${
                 totalMissed > 0
                   ? 'border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/30'
                   : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40'
               }`}
             >
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Economia perdida</div>
-              <div className="text-sm font-bold font-mono tabular-nums mt-1">
+              <div className="text-sm font-bold font-num tabular-nums mt-1">
                 {totalMissed > 0 ? (
                   <span className="text-rose-600 dark:text-rose-400">{formatCurrency(totalMissed)}</span>
                 ) : (
@@ -230,13 +223,13 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
         ) : (
           <>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Fator R</div>
-                <div className="mt-1 font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   {formatYearMonth(selectedMonth)}: <b>{formatPercent(currentSimples.factorRPercentage)}</b> (Anexo{' '}
                   {currentSimples.anexoUsed})
                 </div>
-                <div className="font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="font-num tabular-nums text-slate-900 dark:text-white">
                   {formatYearMonth(margin.nextYearMonth)}:{' '}
                   <b className={margin.isNextQualified ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                     {formatPercent(margin.nextFactorRPercentage)}
@@ -245,18 +238,18 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Pró-labore deste mês</div>
-                <div className="mt-1 font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginProlabore)}</b>
                 </div>
-                <div className="font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="font-num tabular-nums text-slate-900 dark:text-white">
                   Mínimo p/ manter: <b>{formatCurrency(margin.minProlabore)}</b>
                 </div>
                 <div className="mt-1">
                   {margin.prolaboreMargin >= 0 ? (
                     <span className="text-slate-600 dark:text-slate-400">
-                      Pode reduzir até <SignedCurrency value={margin.prolaboreMargin} className="font-mono font-bold" />
+                      Pode reduzir até <SignedCurrency value={margin.prolaboreMargin} className="font-num font-bold" />
                       {margin.marginCost > 0.005 && <> e economizar {formatCurrency(margin.marginCost)} de INSS/IRRF</>}
                     </span>
                   ) : (
@@ -267,18 +260,18 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Faturamento deste mês</div>
-                <div className="mt-1 font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginRevenue)}</b>
                 </div>
-                <div className="font-mono tabular-nums text-slate-900 dark:text-white">
+                <div className="font-num tabular-nums text-slate-900 dark:text-white">
                   Limite c/ pró-labore atual: <b>{formatCurrency(margin.revenueCeiling)}</b>
                 </div>
                 <div className="mt-1">
                   {margin.revenueMargin >= 0 ? (
                     <span className="text-slate-600 dark:text-slate-400">
-                      Ainda pode faturar <SignedCurrency value={margin.revenueMargin} className="font-mono font-bold" />
+                      Ainda pode faturar <SignedCurrency value={margin.revenueMargin} className="font-num font-bold" />
                     </span>
                   ) : (
                     <span className="text-rose-600 dark:text-rose-400 font-semibold">
@@ -305,7 +298,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 {margin.isNextQualified
                   ? `Fator R garantido para ${formatYearMonth(margin.nextYearMonth)}.`
                   : `Com estes valores, ${formatYearMonth(margin.nextYearMonth)} cai no Anexo V.`}{' '}
-                O que está em jogo: cerca de <b className="font-mono">{formatCurrency(margin.dasAtStake)}</b> a mais de DAS
+                O que está em jogo: cerca de <b className="font-num">{formatCurrency(margin.dasAtStake)}</b> a mais de DAS
                 em {formatYearMonth(margin.nextYearMonth)}, se o faturamento se repetir.
               </span>
             </div>
@@ -329,7 +322,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-mono uppercase text-[11px]">
+              <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-num uppercase text-[11px]">
                 <tr>
                   <th className="py-2.5 px-4 font-bold">Competência</th>
                   <th className="py-2.5 px-4 text-right font-bold">Receita</th>
@@ -341,7 +334,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                   <th className="py-2.5 px-4 text-right font-bold">Resultado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-num">
                 {[...realized].reverse().map((r) => {
                   const qualified = r.anexoUsed === 'III';
                   const barWidth = Math.min(100, (r.factorRPercentage / 40) * 100);
@@ -423,7 +416,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                   );
                 })}
               </tbody>
-              <tfoot className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 font-mono">
+              <tfoot className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 font-num">
                 <tr>
                   <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white" colSpan={5}>
                     Total
@@ -468,7 +461,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             <label htmlFor="sim-revenue" className="text-xs font-semibold text-slate-700 dark:text-slate-200">
               Faturamento do mês
             </label>
-            <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">
+            <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 font-num tabular-nums">
               {formatCurrency(simulatedRevenue)}
             </span>
           </div>
@@ -482,7 +475,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             onChange={(e) => setSimulatedRevenue(parseFloat(e.target.value))}
             className="w-full accent-emerald-500 cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+          <div className="flex justify-between text-[10px] text-slate-500 font-num mt-1">
             <span>{formatCurrency(1000)}</span>
             <button
               type="button"
@@ -526,8 +519,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           {simulation.savings >= 0 ? (
             <span>
-              Manter o Fator R economiza <SignedCurrency value={simulation.savings} className="font-mono font-bold" /> por mês
-              (<SignedCurrency value={simulation.savings * 12} className="font-mono" /> em 12 meses).
+              Manter o Fator R economiza <SignedCurrency value={simulation.savings} className="font-num font-bold" /> por mês
+              (<SignedCurrency value={simulation.savings * 12} className="font-num" /> em 12 meses).
             </span>
           ) : (
             <span>
@@ -538,7 +531,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
           <table className="w-full text-xs text-left">
-            <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-mono uppercase text-[11px]">
+            <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-num uppercase text-[11px]">
               <tr>
                 <th className="py-2 px-4 font-bold">Faturamento</th>
                 <th className="py-2 px-4 text-right font-bold">Tributos c/ Fator R</th>
@@ -546,7 +539,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 <th className="py-2 px-4 text-right font-bold">Diferença no mês</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-num">
               {tiers.map((rev) => {
                 const t = compareFactorRStrategies(rev, history, monthSettings, selectedMonth);
                 return (

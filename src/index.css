@@ -15,6 +15,8 @@
 @theme {
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Valores e números: a sans do app com algarismos tabulares (alinhados, sem "pular" na contagem) */
+  --font-num: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   /* Movimento: durações e curvas compartilhadas */
   --duration-micro: 150ms;
@@ -40,9 +42,15 @@
     font-family: var(--font-sans);
   }
 
-  code, pre, .font-mono, .tabular-nums {
+  code, pre, .font-mono {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+  }
+
+  .font-num, .tabular-nums {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
   }
 }
 
@@ -68,6 +76,26 @@
   padding-right: max(1.5rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.75rem));
 }
 
+/* Entrada das telas: cada bloco sobe e aparece em sequência (o wrapper da tela anima o desfoque) */
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-stagger > * {
+  animation: page-rise 420ms var(--ease-out) both;
+}
+.page-stagger > :nth-child(2) { animation-delay: 50ms; }
+.page-stagger > :nth-child(3) { animation-delay: 100ms; }
+.page-stagger > :nth-child(4) { animation-delay: 150ms; }
+.page-stagger > :nth-child(5) { animation-delay: 200ms; }
+.page-stagger > :nth-child(n + 6) { animation-delay: 250ms; }
+
 /* Custom scrollbars for native desktop feel */
 ::-webkit-scrollbar {
   width: 8px;
@@ -75,7 +103,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -99,10 +127,15 @@
   .print-only {
     display: block !important;
   }
-  /* Nada pela metade no papel */
+  /* Nada pela metade no papel (inclusive estilos inline das animações em JS) */
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
+  }
+  .page-transition {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 }
 

@@ -14,6 +14,7 @@ import {
   calculateMonthSummary,
 } from '../utils/taxCalculations';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
+import { PageHeader } from './ui/PageHeader';
 
 interface ReportPrintViewProps {
   currentRevenue: number;
@@ -47,28 +48,28 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
     Object.values(OFFICIAL_TAX_TABLES)[0];
 
   return (
-    <div className="space-y-6">
-      {/* Action Toolbar on Screen (hidden on print) */}
-      <div className="no-print bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <FileCheck2 className="w-4 h-4 text-emerald-400" />
-            <span>Relatório Oficial de Apuração Contábil</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Documento pronto para envio à contabilidade ou arquivamento fiscal do fechamento mensal.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onPrint}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-lg transition-colors shadow-sm cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Imprimir / Salvar em PDF</span>
-          </button>
-        </div>
+    <div className="page-stagger space-y-5">
+      {/* Cabeçalho na tela (some na impressão) */}
+      <div className="no-print">
+        <PageHeader
+          eyebrow={
+            <span className="flex items-center gap-1.5">
+              <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Relatório oficial de apuração contábil
+            </span>
+          }
+          title="Demonstrativo do mês"
+          description="Documento pronto para envio à contabilidade ou arquivamento fiscal do fechamento mensal."
+          actions={
+            <button
+              onClick={onPrint}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-full transition-colors shadow-sm cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Imprimir / Salvar em PDF</span>
+            </button>
+          }
+        />
       </div>
 
       {/* Printable Sheet (styled with crisp white on print and dark slate preview on screen) */}
@@ -80,7 +81,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
             <div className="text-xl font-extrabold tracking-tight text-slate-900 uppercase">
               {settings.companyName || 'EMPRESA CONTRIBUINTE DO SIMPLES NACIONAL'}
             </div>
-            <div className="text-xs text-slate-600 mt-1 space-y-0.5 font-mono">
+            <div className="text-xs text-slate-600 mt-1 space-y-0.5 font-num">
               <div>CNPJ: <span className="font-semibold text-slate-800">{settings.cnpj || '00.000.000/0001-00'}</span></div>
               <div>Município / UF: <span className="font-semibold text-slate-800">{settings.cityState || 'Brusque - SC'}</span></div>
               <div>CNAE Principal: <span className="font-semibold text-slate-800">{settings.cnae}</span></div>
@@ -88,7 +89,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           </div>
 
           <div className="text-left sm:text-right shrink-0">
-            <div className="inline-block bg-slate-100 border border-slate-300 px-3 py-1.5 rounded text-xs font-mono">
+            <div className="inline-block bg-slate-100 border border-slate-300 px-3 py-1.5 rounded text-xs font-num">
               <span className="text-slate-500 uppercase block text-[10px]">Competência:</span>
               <span className="font-bold text-slate-900 text-sm">{selectedMonth}</span>
             </div>
@@ -120,22 +121,22 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="bg-slate-50 p-2.5 rounded border border-slate-200">
               <span className="text-slate-500 block text-[11px]">Receita do Mês:</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">{formatCurrency(currentRevenue)}</span>
+              <span className="font-num font-bold text-slate-900 text-sm">{formatCurrency(currentRevenue)}</span>
             </div>
 
             <div className="bg-slate-50 p-2.5 rounded border border-slate-200">
               <span className="text-slate-500 block text-[11px]">RBT12 Acumulado:</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">{formatCurrency(simples.rbt12)}</span>
+              <span className="font-num font-bold text-slate-900 text-sm">{formatCurrency(simples.rbt12)}</span>
             </div>
 
             <div className="bg-slate-50 p-2.5 rounded border border-slate-200">
               <span className="text-slate-500 block text-[11px]">Folha 12m Acumulada:</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">{formatCurrency(simples.folha12)}</span>
+              <span className="font-num font-bold text-slate-900 text-sm">{formatCurrency(simples.folha12)}</span>
             </div>
 
             <div className="bg-emerald-50 p-2.5 rounded border border-emerald-200">
               <span className="text-emerald-800 block text-[11px] font-semibold">Fator R Apurado:</span>
-              <span className="font-mono font-bold text-emerald-700 text-sm">
+              <span className="font-num font-bold text-emerald-700 text-sm">
                 {formatPercent(simples.factorRPercentage, 2)}
               </span>
             </div>
@@ -158,15 +159,15 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
 
             <div className="flex justify-between border-b border-slate-200 pb-1.5">
               <span>Alíquota Nominal:</span>
-              <span className="font-mono text-slate-900">{formatPercent(simples.nominalRate * 100)}</span>
+              <span className="font-num text-slate-900">{formatPercent(simples.nominalRate * 100)}</span>
             </div>
 
             <div className="flex justify-between border-b border-slate-200 pb-1.5">
               <span>Parcela a Deduzir:</span>
-              <span className="font-mono text-slate-900">{formatCurrency(simples.deduction)}</span>
+              <span className="font-num text-slate-900">{formatCurrency(simples.deduction)}</span>
             </div>
 
-            <div className="bg-white p-2 rounded border border-slate-200 font-mono text-[11px]">
+            <div className="bg-white p-2 rounded border border-slate-200 font-num text-[11px]">
               <span className="text-slate-500 block font-sans text-[10px] uppercase font-semibold">Fórmula da Alíquota Efetiva:</span>
               <span>({formatCurrency(simples.rbt12)} × {formatPercent(simples.nominalRate * 100)} - {formatCurrency(simples.deduction)}) ÷ {formatCurrency(simples.rbt12)} = </span>
               <span className="font-bold text-emerald-700">{formatPercent(simples.effectiveRatePercentage, 4)}</span>
@@ -174,7 +175,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
 
             <div className="flex justify-between pt-1 text-sm font-bold">
               <span>Valor da Guia DAS a Recolher:</span>
-              <span className="font-mono text-slate-900">{formatCurrency(simples.dasAmount)}</span>
+              <span className="font-num text-slate-900">{formatCurrency(simples.dasAmount)}</span>
             </div>
           </div>
         </div>
@@ -186,14 +187,14 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           </h3>
 
           <table className="w-full text-xs border border-slate-200 rounded">
-            <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 font-mono">
+            <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 font-num">
               <tr>
                 <th className="py-2 px-3 text-left">Rubrica</th>
                 <th className="py-2 px-3 text-left">Base de Cálculo / Alíquota</th>
                 <th className="py-2 px-3 text-right">Valor (R$)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 font-mono">
+            <tbody className="divide-y divide-slate-200 font-num">
               <tr>
                 <td className="py-2 px-3 font-medium font-sans">Pró-labore Bruto (Folha)</td>
                 <td className="py-2 px-3 text-slate-600">Proporcional Fator R (28%)</td>
@@ -233,29 +234,29 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           <div className="bg-slate-50 p-3.5 rounded border border-slate-200 text-xs space-y-1.5">
             <div className="flex justify-between">
               <span>Faturamento Bruto da PJ:</span>
-              <span className="font-mono font-semibold">{formatCurrency(currentRevenue)}</span>
+              <span className="font-num font-semibold">{formatCurrency(currentRevenue)}</span>
             </div>
             <div className="flex justify-between text-rose-700">
               <span>(-) Imposto Simples Nacional (DAS):</span>
-              <span className="font-mono">- {formatCurrency(simples.dasAmount)}</span>
+              <span className="font-num">- {formatCurrency(simples.dasAmount)}</span>
             </div>
             <div className="flex justify-between text-rose-700">
               <span>(-) Pró-labore Bruto pago:</span>
-              <span className="font-mono">- {formatCurrency(prolabore.gross)}</span>
+              <span className="font-num">- {formatCurrency(prolabore.gross)}</span>
             </div>
             <div className="flex justify-between border-t border-slate-200 pt-1.5 font-bold text-slate-900">
               <span>(=) Lucro Líquido Distribuível:</span>
-              <span className="font-mono text-emerald-700">{formatCurrency(consolidated.distributableProfit)}</span>
+              <span className="font-num text-emerald-700">{formatCurrency(consolidated.distributableProfit)}</span>
             </div>
             {consolidated.dividendWithholding > 0 && (
               <div className="flex justify-between text-rose-700">
                 <span>(-) IR Retido sobre Lucros (10% sobre o total, Lei 15.270/2025):</span>
-                <span className="font-mono">- {formatCurrency(consolidated.dividendWithholding)}</span>
+                <span className="font-num">- {formatCurrency(consolidated.dividendWithholding)}</span>
               </div>
             )}
             <div className="flex justify-between border-t border-slate-300 pt-1.5 font-bold text-sm text-slate-900">
               <span>Total Creditado na Pessoa Física (Pró-labore Líquido + Lucros):</span>
-              <span className="font-mono text-emerald-800">{formatCurrency(consolidated.totalPocketCash)}</span>
+              <span className="font-num text-emerald-800">{formatCurrency(consolidated.totalPocketCash)}</span>
             </div>
           </div>
         </div>
