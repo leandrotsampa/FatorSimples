@@ -7,7 +7,9 @@ export const CopyButton: React.FC<{ text: string; label: string; className?: str
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
+  const [failed, setFailed] = useState(false);
   const copy = async () => {
+    let ok = true;
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -18,12 +20,16 @@ export const CopyButton: React.FC<{ text: string; label: string; className?: str
       area.style.opacity = '0';
       document.body.appendChild(area);
       area.select();
-      document.execCommand('copy');
+      ok = document.execCommand('copy');
       area.remove();
     }
-    setCopied(true);
+    setCopied(ok);
+    setFailed(!ok);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopied(false), 1400);
+    timer.current = window.setTimeout(() => {
+      setCopied(false);
+      setFailed(false);
+    }, 1400);
   };
 
   return (
@@ -39,7 +45,7 @@ export const CopyButton: React.FC<{ text: string; label: string; className?: str
       } ${className}`}
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-      <span aria-live="polite">{copied ? 'Copiado' : 'Copiar'}</span>
+      <span aria-live="polite">{copied ? 'Copiado' : failed ? 'Não copiou' : 'Copiar'}</span>
     </button>
   );
 };

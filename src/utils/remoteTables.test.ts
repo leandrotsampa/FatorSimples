@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { isNewerVersion, mergeTables, parseStoredRemoteTables, selectTableForCompetence, validateRemoteTables } from './remoteTables';
+import { isNewerThanBuiltin, isNewerVersion, mergeTables, parseStoredRemoteTables, selectTableForCompetence, validateRemoteTables } from './remoteTables';
+import { BUILTIN_TABLES_DATE } from './taxTablesRegistry';
 import { OFFICIAL_TAX_TABLES, getTaxTableForCompetence, type TaxTableVersion } from './taxTablesRegistry';
 
 const table = (over: Partial<TaxTableVersion> & { id: string; validFrom: string }): TaxTableVersion => ({
@@ -140,5 +141,41 @@ describe('parseStoredRemoteTables', () => {
   it('banco sem nada ou com conteúdo inválido não aplica tabela nenhuma', () => {
     expect(parseStoredRemoteTables(null)).toEqual({ doc: null, checkedAt: null });
     expect(parseStoredRemoteTables({ doc: { lixo: true }, checkedAt: 5 })).toEqual({ doc: null, checkedAt: null });
+  });
+});
+
+describe('ids e valores do arquivo baixado (entrada não confiável)', () => {
+  it('recusa ids perigosos ou que colidem com o registro', () => {
+    for (const id of ['__proto__', '2025_2026_vigente', '2026', 'Ano-2027', 'constructor', '']) {
+      const json = JSON.parse(JSON.stringify(doc([table({ id, validFrom: '2027-01' })])));
+      expect(validateRemoteTables(json)).toBeNull();
+    }
+  });
+
+  it('recusa valores fora da realidade (ex.: erro de digitação no salário mínimo)', () => {
+    const bad = [
+      table({ id: 'a_2027', validFrom: '2027-01', minimumWage: 16210 }),
+      table({ id: 'b_2027', validFrom: '2027-01', inssCeiling: 100 }),
+      table({ id: 'c_2027', validFrom: '2027-01', dependentDeduction: 99999 }),
+    ];
+    for (const t of bad) expect(validateRemoteTables(JSON.parse(JSON.stringify(doc([t]))))).toBeNull();
+  });
+
+  it('recusa arquivo com tabelas demais', () => {
+    const many = Array.from({ length: 60 }, (_, i) => table({ id: `t_${i}`, validFrom: '2027-01' }));
+    expect(validateRemoteTables(JSON.parse(JSON.stringify(doc(many))))).toBeNull();
+  });
+});
+
+describe('tabelas guardadas mais velhas que as embutidas', () => {
+  it('só valem se o arquivo for mais novo que as tabelas desta versão do app', () => {
+    expect(isNewerThanBuiltin('2026-11-02')).toBe(true);
+    expect(isNewerThanBuiltin(BUILTIN_TABLES_DATE)).toBe(false);
+    expect(isNewerThanBuiltin('2025-01-01')).toBe(false);
+  });
+
+  it('o arquivo publicado tem a data das tabelas embutidas', () => {
+    const json = JSON.parse(readFileSync('tax-tables/tabelas.json', 'utf-8'));
+    expect(json.publishedAt).toBe(BUILTIN_TABLES_DATE);
   });
 });

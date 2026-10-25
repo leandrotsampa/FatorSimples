@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateMonthSummary, DEFAULT_SETTINGS } from './taxCalculations';
+import { calculateMonthSummary, compareFactorRStrategies, DEFAULT_SETTINGS } from './taxCalculations';
 import type { MonthRecord, TaxSettings } from '../types/tax';
 
 const history: MonthRecord[] = Array.from({ length: 11 }, (_, i) => {
@@ -39,5 +39,28 @@ describe('honorários da contabilidade no fechamento do mês', () => {
     const c = summary(undefined).consolidated;
     expect(c.accountingFee).toBe(0);
     expect(c.taxFreeDividends).toBe(summary(0).consolidated.taxFreeDividends);
+  });
+});
+
+describe('falta de dinheiro na conta', () => {
+  it('sem falta quando o faturamento cobre pró-labore, DAS e contabilidade', () => {
+    expect(summary(500).consolidated.shortfall).toBe(0);
+  });
+
+  it('honorários acima do que sobra viram falta, com o valor exato', () => {
+    const c = summary(1_000_000).consolidated;
+    const expected = c.prolaboreGross + c.dasAmount + 1_000_000 - 26800;
+    expect(c.shortfall).toBeCloseTo(expected, 6);
+    expect(c.shortfall).toBeGreaterThan(0);
+  });
+});
+
+describe('Comparador com honorários', () => {
+  it('o disponível ao sócio desconta a contabilidade, igual à Apuração', () => {
+    const sem = compareFactorRStrategies(26800, history, { ...DEFAULT_SETTINGS, accountingFee: 0 } as TaxSettings, '2025-12');
+    const com = compareFactorRStrategies(26800, history, { ...DEFAULT_SETTINGS, accountingFee: 500 } as TaxSettings, '2025-12');
+    expect(sem.comFatorR.availableToPartner - com.comFatorR.availableToPartner).toBeCloseTo(500, 6);
+    expect(sem.semFatorR.availableToPartner - com.semFatorR.availableToPartner).toBeCloseTo(500, 6);
+    expect(com.savings).toBeCloseTo(sem.savings, 6);
   });
 });

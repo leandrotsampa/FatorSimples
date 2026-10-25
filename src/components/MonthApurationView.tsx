@@ -826,6 +826,20 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               ))}
             </div>
 
+            {consolidated.shortfall > 0.005 && (
+              <div
+                role="alert"
+                className="mt-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 ring-1 ring-inset ring-rose-300/70 dark:ring-rose-500/30 text-sm text-rose-900 dark:text-rose-200"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  ⚠ O faturamento não cobre o pró-labore, o DAS e a contabilidade: faltam{' '}
+                  <b className="font-num">{formatCurrency(consolidated.shortfall)}</b> na conta da empresa. Reduza o
+                  pró-labore (opção Manual) ou deposite a diferença antes de pagar os impostos.
+                </span>
+              </div>
+            )}
+
             <div className="mt-4 space-y-2">
               <TransferRow
                 step={1}

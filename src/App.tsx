@@ -226,14 +226,15 @@ export default function App() {
   const [remoteTablesLoaded, setRemoteTablesLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
-    loadStoredRemoteTables().then((stored) => {
+    Promise.all([
+      loadStoredRemoteTables(),
+      // No Electron a configuração verdadeira está no banco (o estado inicial vem do localStorage)
+      storageAdapter.isElectron() ? storageAdapter.loadSettings() : Promise.resolve(settings),
+    ]).then(([stored, savedSettings]) => {
       if (!alive) return;
-      if (stored.doc) {
-        applyRemoteTables(stored.doc);
-        setTablesRevision((r) => r + 1);
-      }
+      if (applyRemoteTables(stored.doc)) setTablesRevision((r) => r + 1);
       setRemoteTablesLoaded(true);
-      if (settings.autoUpdateTables && shouldAutoCheck(stored.checkedAt)) void runUpdateCheck();
+      if (savedSettings.autoUpdateTables && shouldAutoCheck(stored.checkedAt)) void runUpdateCheck();
     });
     return () => {
       alive = false;

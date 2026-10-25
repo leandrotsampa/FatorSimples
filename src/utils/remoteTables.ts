@@ -1,4 +1,4 @@
-import { OFFICIAL_TAX_TABLES, selectTableForCompetence, type TaxTableVersion } from './taxTablesRegistry';
+import { BUILTIN_TABLES_DATE, OFFICIAL_TAX_TABLES, selectTableForCompetence, type TaxTableVersion } from './taxTablesRegistry';
 
 /**
  * Atualização real das tabelas fiscais: o app baixa o arquivo tax-tables/tabelas.json publicado no
@@ -13,6 +13,11 @@ export const LATEST_RELEASE_API = `https://api.github.com/repos/${REPO}/releases
 export const RELEASES_PAGE = `https://github.com/${REPO}/releases/latest`;
 
 const SUPPORTED_SCHEMA = 1;
+const MAX_TABLES = 50;
+// Ids aceitos: minúsculas, dígitos e "_", com ao menos uma letra ou "_" (id só de dígitos mudaria a
+// ordem do objeto); nunca nomes especiais nem o apelido antigo do registro
+const ID_PATTERN = /^(?=.*[a-z_])[a-z0-9_]{1,40}$/;
+const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype', '2025_2026_vigente']);
 const STORAGE_KEY = 'fatorsimples_remote_tables_v1';
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -32,11 +37,13 @@ const isText = (v: unknown): v is string => typeof v === 'string' && v.trim().le
 function validateTable(raw: unknown): TaxTableVersion | null {
   if (!raw || typeof raw !== 'object') return null;
   const t = raw as Record<string, unknown>;
-  if (!isText(t.id) || !isText(t.name) || !isText(t.legalBasis) || !isMonth(t.validFrom)) return null;
+  if (!isText(t.id) || !ID_PATTERN.test(t.id) || RESERVED_IDS.has(t.id)) return null;
+  if (!isText(t.name) || !isText(t.legalBasis) || !isMonth(t.validFrom)) return null;
   if (t.validTo !== undefined && (!isMonth(t.validTo) || t.validTo < t.validFrom)) return null;
   if (!isNum(t.year, 2000, 2100) || typeof t.effectiveDate !== 'string') return null;
-  if (!isNum(t.minimumWage, 1) || !isNum(t.inssCeiling, 1) || !isNum(t.inssRate, 0, 1)) return null;
-  if (!isNum(t.dependentDeduction) || !isNum(t.simplifiedIrDeduction)) return null;
+  if (!isNum(t.minimumWage, 500, 10_000) || !isNum(t.inssRate, 0, 0.5)) return null;
+  if (!isNum(t.inssCeiling, t.minimumWage, 100_000)) return null;
+  if (!isNum(t.dependentDeduction, 0, 2_000) || !isNum(t.simplifiedIrDeduction, 0, 5_000)) return null;
   if (!Array.isArray(t.irrfBrackets) || t.irrfBrackets.length === 0) return null;
 
   const brackets: TaxTableVersion['irrfBrackets'] = [];
@@ -45,8 +52,8 @@ function validateTable(raw: unknown): TaxTableVersion | null {
     const last = i === t.irrfBrackets.length - 1;
     // JSON não tem Infinity: a última faixa (sem teto) vem como null
     const limit = last && (b?.limit === null || b?.limit === undefined) ? Infinity : b?.limit;
-    if (!b || !isNum(b.faixa, 1, 50) || !isNum(b.rate, 0, 1) || !isNum(b.deduction)) return null;
-    if (!(limit === Infinity || isNum(limit, 0))) return null;
+    if (!b || !isNum(b.faixa, 1, 50) || !isNum(b.rate, 0, 0.6) || !isNum(b.deduction, 0, 50_000)) return null;
+    if (!(limit === Infinity || isNum(limit, 0, 1_000_000))) return null;
     if (brackets.length > 0 && (limit as number) <= brackets[brackets.length - 1].limit) return null;
     brackets.push({ faixa: b.faixa, limit: limit as number, rate: b.rate, deduction: b.deduction });
   }
@@ -86,9 +93,8 @@ function validateTable(raw: unknown): TaxTableVersion | null {
 export function validateRemoteTables(raw: unknown): RemoteTablesDoc | null {
   if (!raw || typeof raw !== 'object') return null;
   const d = raw as Record<string, unknown>;
-  if (d.schemaVersion !== SUPPORTED_SCHEMA || !isText(d.publishedAt) || !Array.isArray(d.tables) || d.tables.length === 0) {
-    return null;
-  }
+  if (d.schemaVersion !== SUPPORTED_SCHEMA || !isText(d.publishedAt) || !Array.isArray(d.tables)) return null;
+  if (d.tables.length === 0 || d.tables.length > MAX_TABLES) return null;
   const tables: TaxTableVersion[] = [];
   for (const t of d.tables) {
     const v = validateTable(t);
@@ -96,6 +102,11 @@ export function validateRemoteTables(raw: unknown): RemoteTablesDoc | null {
     tables.push(v);
   }
   return { schemaVersion: SUPPORTED_SCHEMA, publishedAt: d.publishedAt, tables };
+}
+
+// O arquivo só vale se for mais novo que as tabelas embutidas nesta versão do app
+export function isNewerThanBuiltin(publishedAt: string): boolean {
+  return publishedAt > BUILTIN_TABLES_DATE;
 }
 
 // Tabela baixada substitui a embutida de mesmo id; ids novos entram no fim
@@ -165,9 +176,10 @@ async function saveStoredRemoteTables(stored: StoredRemoteTables): Promise<void>
 }
 
 // Aplica as tabelas baixadas por cima das embutidas (o registro é lido a cada cálculo)
-export function applyRemoteTables(doc: RemoteTablesDoc | null) {
-  if (!doc) return;
+export function applyRemoteTables(doc: RemoteTablesDoc | null): boolean {
+  if (!doc || !isNewerThanBuiltin(doc.publishedAt)) return false;
   for (const t of doc.tables) OFFICIAL_TAX_TABLES[t.id] = t;
+  return true;
 }
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -206,6 +218,11 @@ export async function checkRemoteTables(): Promise<TablesCheckResult> {
   if (!doc) {
     await saveStoredRemoteTables({ ...(await loadStoredRemoteTables()), checkedAt });
     return { kind: 'invalid' };
+  }
+  // Arquivo publicado igual ou mais velho que as tabelas desta versão: nada a aplicar
+  if (!isNewerThanBuiltin(doc.publishedAt)) {
+    await saveStoredRemoteTables({ doc: null, checkedAt });
+    return { kind: 'up-to-date', publishedAt: doc.publishedAt };
   }
   const changed = doc.tables.filter((t) => !sameTable(OFFICIAL_TAX_TABLES[t.id], t)).length;
   applyRemoteTables(doc);

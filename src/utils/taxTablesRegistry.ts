@@ -68,6 +68,10 @@ const LEI_15270_REDUCTION: IrrfReductionRule = {
   phaseOutRate: 0.133145,
 };
 
+// Data em que as tabelas embutidas foram revisadas pela última vez. Um arquivo baixado só vale
+// se for mais novo que isto: atualizar o app nunca volta para tabelas velhas guardadas no banco
+export const BUILTIN_TABLES_DATE = '2026-10-25';
+
 /**
  * Tabelas fiscais embutidas no app (IRRF, INSS, salário mínimo e teto), cada uma com a sua vigência.
  * Podem ser substituídas ou complementadas pelo arquivo publicado no GitHub (ver remoteTables.ts).

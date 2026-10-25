@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { AlertTriangle, Info } from 'lucide-react';
 import { ModalShell } from './ModalShell';
@@ -37,6 +37,19 @@ export function useAppDialog(): {
     await open({ confirmLabel: 'OK', ...req, cancelLabel: undefined });
   };
 
+  // Esc cancela enquanto houver um diálogo aberto, esteja o foco onde estiver
+  useEffect(() => {
+    if (!request) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      close(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
+
   const danger = request?.tone === 'danger';
   const dialog = (
     <AnimatePresence>
@@ -46,11 +59,7 @@ export function useAppDialog(): {
           ariaLabel={request.title}
           panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl p-6 text-slate-800 dark:text-slate-100"
         >
-          <div
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') close(false);
-            }}
-          >
+          <div>
             <div className="flex items-start gap-3">
               <span
                 className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center ${

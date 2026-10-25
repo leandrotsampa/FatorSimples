@@ -125,7 +125,13 @@ function initDatabase() {
       );
     `);
     // Colunas novas em bancos de versões anteriores (ex.: honorários da contabilidade)
-    ensureSettingsColumns(db);
+    try {
+      ensureSettingsColumns(db);
+    } catch (migrationErr) {
+      console.error('[FatorSimples] Falha ao atualizar a estrutura do banco; usando o arquivo JSON de fallback.', migrationErr);
+      try { db.close(); } catch (e) {}
+      db = null;
+    }
   } catch (err) {
     console.warn('[FatorSimples] better-sqlite3 não encontrado ou pendente de build nativo. Usando fallback de persistência em arquivo estruturado JSON/SQLite no disco.');
   }

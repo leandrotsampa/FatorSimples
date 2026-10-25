@@ -538,6 +538,8 @@ export function calculateMonthSummary(
       totalTaxBurdenPercent,
       accountingFee,
       keepInAccount: dasAmount + prolaboreTaxes + dividendWithholding + accountingFee,
+      // O faturamento não cobre pró-labore bruto + DAS + contabilidade: quanto falta na conta
+      shortfall: Math.max(0, prolaboreGross + dasAmount + accountingFee - currentMonthRevenue),
     },
   };
 }
@@ -681,8 +683,10 @@ function buildStrategyCost(
   const das = revenue * rate;
   const prolabore = calculateProlabore(prolaboreGross, settings);
   const totalTaxes = das + prolabore.inss + prolabore.irrf;
+  // Mesma base da Apuração: os honorários da contabilidade saem antes do lucro
+  const accountingFee = Math.max(0, settings.accountingFee ?? 0);
   const dividendWithholding = calculateDividendWithholding(
-    Math.max(0, revenue - das - prolabore.gross),
+    Math.max(0, revenue - das - prolabore.gross - accountingFee),
     settings
   );
   return {
@@ -694,7 +698,7 @@ function buildStrategyCost(
     irrf: prolabore.irrf,
     totalTaxes,
     dividendWithholding,
-    availableToPartner: revenue - totalTaxes - dividendWithholding,
+    availableToPartner: revenue - totalTaxes - dividendWithholding - accountingFee,
   };
 }
 

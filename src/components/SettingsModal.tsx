@@ -65,6 +65,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSyncTables = async () => {
     setIsSyncing(true);
     setSyncStatus(null);
+    try {
+      await runSync();
+    } catch {
+      setSyncStatus({ tone: 'warn', text: 'Não foi possível verificar agora. O app segue com as tabelas que já tem.' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const runSync = async () => {
     const { tables, version } = await onCheckUpdates();
     setStored(await loadStoredRemoteTables());
     if (version.kind === 'newer') setLatestVersion(version.version);
@@ -101,7 +111,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         text: 'O arquivo de tabelas publicado está incompleto e foi ignorado. O app segue com as tabelas que já tem.',
       });
     }
-    setIsSyncing(false);
   };
 
   const handleTableVersionChange = (versionId: string) => {

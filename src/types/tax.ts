@@ -119,5 +119,6 @@ export interface MonthSummaryResult {
     totalTaxBurdenPercent: number; // (totalTaxes / grossRevenue) * 100
     accountingFee: number;    // Honorários da contabilidade do mês
     keepInAccount: number;    // Fica na conta da empresa: DAS + INSS + IRRF + IR sobre lucros + contabilidade
+    shortfall: number;        // Quanto falta na conta quando o faturamento não cobre pró-labore + DAS + contabilidade
   };
 }
