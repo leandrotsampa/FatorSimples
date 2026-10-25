@@ -2,6 +2,17 @@
 
 Todas as versões do FatorSimples e o que mudou em cada uma.
 
+## v1.3.0 (2026-10-25)
+
+### ✨ Novidades
+
+- Instalador para Windows (abre em ~1 s e atualiza por cima) e versão 1.3.0 (3630687)
+- Botões de minimizar, maximizar e fechar do próprio app (2437fce)
+
+### ⚡ Desempenho
+
+- App empacotado menor e interface carregada sob demanda (58fc56d)
+
 ## v1.2.0 (2026-10-25)
 
 ### ✨ Novidades
