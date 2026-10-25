@@ -149,13 +149,23 @@ function createWindow() {
     ...windowChromeOptions(process.platform),
     // Ícone da janela/barra de tarefas (copiado de public/ para dist/ no build)
     icon: path.join(__dirname, '..', 'dist', 'icon.png'),
+    // Só aparece com a interface desenhada (sem janela vazia piscando na abertura)
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      // Corretor ortográfico não é usado (só números e nomes); guarda o JS compilado para as próximas aberturas
+      spellcheck: false,
+      v8CacheOptions: 'bypassHeatCheck',
     },
   });
+  mainWindow.once('ready-to-show', () => mainWindow.show());
+  // Garantia: se a interface demorar ou falhar ao carregar, a janela aparece mesmo assim
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) mainWindow.show();
+  }, 4000);
 
   // Em desenvolvimento abre porta 3000, em produção carrega dist/index.html
   const devUrl = 'http://localhost:3000';

@@ -1,5 +1,5 @@
-import { driver, type DriveStep } from 'driver.js';
-import 'driver.js/dist/driver.css';
+// O driver.js (e o CSS dele) só carrega quando um tutorial abre: não pesa na abertura do app
+import type { DriveStep, Driver } from 'driver.js';
 
 // Passos do tutorial por tela. Na do mês, a ordem do uso real: mês → faturamento → nota → transferências →
 // Fator R → fechar. O id é o que fica marcado como visto; passo com id novo numa versão futura aparece
@@ -187,7 +187,7 @@ export const ALL_TOUR_STEP_IDS = Object.values(TOUR_SCREENS).flat().map((s) => s
  * Roda o tutorial com os passos pedidos (todos, ou só as novidades). Passo cujo elemento não está
  * na tela é pulado. onDone recebe os ids mostrados, para marcar como vistos.
  */
-export function runTour(opts: {
+export async function runTour(opts: {
   screen: TourScreen;
   ids?: string[];
   news?: boolean;
@@ -196,7 +196,11 @@ export function runTour(opts: {
   onDone: (ids: string[]) => void;
 }) {
   const chosen = TOUR_SCREENS[opts.screen].filter((s) => !opts.ids || opts.ids.includes(s.id));
-  if (chosen.length === 0) return;
+  if (chosen.length === 0 || starting) return;
+  starting = true;
+  const [{ driver }] = await Promise.all([import('driver.js'), import('driver.js/dist/driver.css')]).finally(() => {
+    starting = false;
+  });
 
   const steps: DriveStep[] = chosen.map((s) => ({
     element: `[data-tour="${s.id}"]`,
@@ -235,6 +239,7 @@ export function runTour(opts: {
   return tour;
 }
 
-// Um tutorial por vez: a entrada numa tela não abre outro por cima do que está rodando
-let current: ReturnType<typeof driver> | null = null;
-export const isTourRunning = () => current?.isActive() ?? false;
+// Um tutorial por vez: a entrada numa tela não abre outro por cima do que está rodando (nem enquanto carrega)
+let current: Driver | null = null;
+let starting = false;
+export const isTourRunning = () => starting || (current?.isActive() ?? false);

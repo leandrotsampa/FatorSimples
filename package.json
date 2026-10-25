@@ -30,9 +30,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
-    "driver.js": "1.9.0",
-    "motion": "^12.43.0"
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",
@@ -42,11 +40,11 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "autoprefixer": "^10.4.21",
+    "driver.js": "1.9.0",
     "electron": "^45.0.0",
     "electron-builder": "^26.15.3",
-    "esbuild": "^0.28.0",
     "lucide-react": "^0.546.0",
+    "motion": "^12.43.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "tailwindcss": "^4.3.3",
@@ -65,7 +63,14 @@
       "dist/**/*",
       "electron/**/*",
       "package.json",
-      "!electron/**/*.test.ts"
+      "!electron/**/*.test.ts",
+      "!node_modules/better-sqlite3/{src,deps,docs,benchmark}/**",
+      "!node_modules/better-sqlite3/build/{Release/obj,Release/.deps,deps}/**",
+      "!**/*.{md,map,ts,cc,h,gyp,gypi}"
+    ],
+    "electronLanguages": [
+      "pt-BR",
+      "en-US"
     ],
     "win": {
       "target": [

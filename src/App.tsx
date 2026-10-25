@@ -1,14 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { Sidebar } from './components/Sidebar';
 import { MonthApurationView } from './components/MonthApurationView';
-import { HistoryTable } from './components/HistoryTable';
-import { ComparisonView } from './components/ComparisonView';
-import { ReportPrintView } from './components/ReportPrintView';
-import { SettingsModal, type SettingsTab } from './components/SettingsModal';
+import type { SettingsTab } from './components/SettingsModal';
 import { TopBar } from './components/TopBar';
-import { AddMonthModal } from './components/AddMonthModal';
-import { SqliteManagerModal } from './components/SqliteManagerModal';
 import { MonthRecord, TaxSettings } from './types/tax';
 import {
   DEFAULT_SETTINGS,
@@ -42,6 +37,24 @@ import { completeTour, loadTourState, planScreenTour, planTour, saveTourState, s
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
+// Telas e diálogos fora da tela do mês carregam sob demanda (pacote inicial menor) e são
+// pré-carregados logo depois da abertura, para a navegação continuar instantânea
+const loadHistory = () => import('./components/HistoryTable');
+const loadComparison = () => import('./components/ComparisonView');
+const loadReport = () => import('./components/ReportPrintView');
+const loadSettings = () => import('./components/SettingsModal');
+const loadAddMonth = () => import('./components/AddMonthModal');
+const loadSqlite = () => import('./components/SqliteManagerModal');
+const HistoryTable = lazy(() => loadHistory().then((m) => ({ default: m.HistoryTable })));
+const ComparisonView = lazy(() => loadComparison().then((m) => ({ default: m.ComparisonView })));
+const ReportPrintView = lazy(() => loadReport().then((m) => ({ default: m.ReportPrintView })));
+const SettingsModal = lazy(() => loadSettings().then((m) => ({ default: m.SettingsModal })));
+const AddMonthModal = lazy(() => loadAddMonth().then((m) => ({ default: m.AddMonthModal })));
+const SqliteManagerModal = lazy(() => loadSqlite().then((m) => ({ default: m.SqliteManagerModal })));
+const preloadDeferredChunks = () => {
+  for (const load of [loadHistory, loadComparison, loadReport, loadSettings, loadAddMonth, loadSqlite]) void load();
+};
+
 const THEME_STORAGE_KEY = 'fatorsimples_theme_v2';
 
 export default function App() {
@@ -328,6 +341,12 @@ export default function App() {
   // Primeira abertura: boas-vindas; depois de atualizar o app: só os passos novos da tela do mês
   const tourChecked = useRef(false);
   const appReady = isHistoryLoaded && remoteTablesLoaded;
+  // Com a primeira tela pronta, baixa o resto em segundo plano (quando o navegador estiver livre)
+  useEffect(() => {
+    if (!appReady) return;
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
+    idle(preloadDeferredChunks);
+  }, [appReady]);
   useEffect(() => {
     if (!appReady || tourChecked.current) return;
     tourChecked.current = true;
@@ -545,7 +564,7 @@ export default function App() {
           {!(isHistoryLoaded && remoteTablesLoaded) ? (
             <PageSkeleton />
           ) : (
-          <>
+          <Suspense fallback={<PageSkeleton />}>
           {activeTab === 'apuration' && (
             <MonthApurationView
               currentRevenue={currentRevenue}
@@ -601,7 +620,7 @@ export default function App() {
               onPrint={handlePrint}
             />
           )}
-          </>
+          </Suspense>
           )}
           </motion.div>
           </AnimatePresence>
@@ -612,8 +631,8 @@ export default function App() {
       {/* Modais: montados só enquanto abertos, para a saída animar (ModalShell) */}
       <AnimatePresence>
       {isSettingsOpen && (
+      <Suspense key="settings" fallback={null}>
       <SettingsModal
-        key="settings"
         onClose={() => setIsSettingsOpen(false)}
         initialTab={settingsTab}
         settings={settings}
@@ -621,26 +640,28 @@ export default function App() {
         onCheckUpdates={runUpdateCheck}
         newVersion={newVersion}
       />
+      </Suspense>
       )}
       </AnimatePresence>
 
       <AnimatePresence>
       {isSqliteManagerOpen && (
+      <Suspense key="sqlite" fallback={null}>
       <SqliteManagerModal
-        key="sqlite"
         onClose={() => setIsSqliteManagerOpen(false)}
         settings={settings}
         history={history}
         onExportData={handleExportData}
         onImportData={handleImportData}
       />
+      </Suspense>
       )}
       </AnimatePresence>
 
       <AnimatePresence>
       {isAddMonthOpen && (
+      <Suspense key="add-month" fallback={null}>
       <AddMonthModal
-        key="add-month"
         onClose={() => {
           setIsAddMonthOpen(false);
           setRecordToEdit(null);
@@ -653,6 +674,7 @@ export default function App() {
         settings={settings}
         existingHistory={history}
       />
+      </Suspense>
       )}
       </AnimatePresence>
       {dialog}
