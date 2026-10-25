@@ -11,8 +11,25 @@ export function monthLongName(yearMonth: string): string {
   return MONTH_LONG_NAMES[Number(yearMonth.slice(5, 7)) - 1] ?? '';
 }
 
-// Navegação pelo teclado na grade de meses (3 colunas): devolve o novo mês ou null se a tecla não navega
-export function navigateMonth(yearMonth: string, key: string): string | null {
+// Mês de hoje no formato da competência ("2026-10")
+export function currentYearMonth(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// Competência que ainda não chegou: não dá para apurar nem lançar
+export function isFutureMonth(yearMonth: string, current: string = currentYearMonth()): boolean {
+  return yearMonth > current;
+}
+
+// Navegação pelo teclado na grade de meses (3 colunas): devolve o novo mês ou null se a tecla não navega.
+// Com `max`, nunca passa dele (o mês atual)
+export function navigateMonth(yearMonth: string, key: string, max?: string): string | null {
+  const next = stepByKey(yearMonth, key);
+  if (next === null || !max || next <= max) return next;
+  return yearMonth < max ? max : null;
+}
+
+function stepByKey(yearMonth: string, key: string): string | null {
   const month = Number(yearMonth.slice(5, 7));
   switch (key) {
     case 'ArrowLeft':

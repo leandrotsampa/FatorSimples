@@ -235,7 +235,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               options={[
                 { value: '12m', label: '12 meses' },
                 { value: '6m', label: '6 meses' },
-                { value: 'year', label: 'Ano' },
+                { value: 'year', label: 'Este ano' },
               ]}
               value={range}
               onChange={setRange}

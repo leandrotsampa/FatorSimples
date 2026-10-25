@@ -9,6 +9,7 @@ import {
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
 import { ModalShell } from './ui/ModalShell';
+import { currentYearMonth, isFutureMonth } from '../utils/monthPicker';
 
 interface AddMonthModalProps {
   onClose: () => void;
@@ -83,7 +84,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!yearMonth) return;
+    if (!yearMonth || isFutureMonth(yearMonth)) return;
 
     const newRecord: MonthRecord = {
       id: recordToEdit ? recordToEdit.id : `month-${yearMonth}-${Date.now()}`,
@@ -127,10 +128,16 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             <input
               type="month"
               required
+              max={currentYearMonth()}
               value={yearMonth}
               onChange={(e) => setYearMonth(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-semibold"
             />
+            {isFutureMonth(yearMonth) && (
+              <p role="alert" className="mt-1.5 text-xs text-rose-700 dark:text-rose-300">
+                Este mês ainda não chegou. Escolha o mês atual ou um anterior.
+              </p>
+            )}
             {!recordToEdit && existingHistory.some((h) => h.yearMonth === yearMonth) && (
               <p role="alert" className="mt-1.5 text-xs text-amber-800 dark:text-amber-300">
                 Já existe um registro para este mês. Salvar vai substituir os valores dele.
@@ -213,7 +220,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={!yearMonth || revenue <= 0}
+              disabled={!yearMonth || isFutureMonth(yearMonth) || revenue <= 0}
               title={revenue <= 0 ? 'Informe o faturamento do mês' : undefined}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors shadow-2xs cursor-pointer"
             >

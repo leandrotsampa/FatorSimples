@@ -1,17 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MONTH_SHORT_NAMES, monthLongName, navigateMonth } from '../../utils/monthPicker';
+import { currentYearMonth, MONTH_SHORT_NAMES, monthLongName, navigateMonth } from '../../utils/monthPicker';
 import { instantIf } from '../../utils/motion';
 
 const pad = (m: number) => String(m).padStart(2, '0');
-const todayYearMonth = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-};
 
 // Grade de meses da competência: ano com setas, 12 meses (o escolhido em verde, os salvos com um ponto,
 // o mês atual com contorno) e atalho para o mês atual. Teclado: setas, Home/End, PageUp/PageDown e Enter.
+// Meses depois do atual ficam bloqueados: a competência ainda não chegou.
 export const MonthPickerPanel: React.FC<{
   value: string;
   savedMonths: Set<string>;
@@ -21,7 +18,8 @@ export const MonthPickerPanel: React.FC<{
   const [viewYear, setViewYear] = useState(() => Number(value.slice(0, 4)));
   const [focused, setFocused] = useState(value);
   const gridRef = useRef<HTMLDivElement>(null);
-  const today = todayYearMonth();
+  const today = currentYearMonth();
+  const todayYear = Number(today.slice(0, 4));
 
   // Foco segue o mês navegado pelo teclado (inclusive ao entrar no painel)
   useEffect(() => {
@@ -29,7 +27,7 @@ export const MonthPickerPanel: React.FC<{
   }, [focused, viewYear]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const next = navigateMonth(focused, e.key);
+    const next = navigateMonth(focused, e.key, today);
     if (!next) return;
     e.preventDefault();
     setFocused(next);
@@ -37,9 +35,10 @@ export const MonthPickerPanel: React.FC<{
   };
 
   const changeYear = (delta: number) => {
-    const y = viewYear + delta;
+    const y = Math.min(todayYear, viewYear + delta);
+    const ym = `${y}-${focused.slice(5, 7)}`;
     setViewYear(y);
-    setFocused(`${y}-${focused.slice(5, 7)}`);
+    setFocused(ym > today ? today : ym);
   };
 
   return (
@@ -59,7 +58,8 @@ export const MonthPickerPanel: React.FC<{
         <button
           type="button"
           onClick={() => changeYear(1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          disabled={viewYear >= todayYear}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           aria-label="Próximo ano"
         >
           <ChevronRight className="w-4 h-4" />
@@ -72,6 +72,7 @@ export const MonthPickerPanel: React.FC<{
           const selected = ym === value;
           const saved = savedMonths.has(ym);
           const isToday = ym === today;
+          const future = ym > today;
           return (
             <button
               key={ym}
@@ -79,13 +80,17 @@ export const MonthPickerPanel: React.FC<{
               data-month={ym}
               tabIndex={ym === focused ? 0 : -1}
               aria-pressed={selected}
-              aria-label={`${monthLongName(ym)} de ${viewYear}${saved ? ', salvo no histórico' : ''}${isToday ? ', mês atual' : ''}`}
+              disabled={future}
+              title={future ? 'Este mês ainda não chegou' : undefined}
+              aria-label={`${monthLongName(ym)} de ${viewYear}${saved ? ', salvo no histórico' : ''}${isToday ? ', mês atual' : ''}${future ? ', ainda não chegou' : ''}`}
               onClick={() => onSelect(ym)}
               onFocus={() => setFocused(ym)}
-              className={`relative h-11 rounded-lg text-sm capitalize transition-colors cursor-pointer ${
+              className={`relative h-11 rounded-lg text-sm capitalize transition-colors ${
                 selected
-                  ? 'text-white font-semibold dark:text-emerald-950'
-                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                  ? 'text-white font-semibold dark:text-emerald-950 cursor-pointer'
+                  : future
+                    ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                    : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer'
               } ${isToday && !selected ? 'ring-1 ring-inset ring-emerald-500/60' : ''}`}
             >
               {selected && (

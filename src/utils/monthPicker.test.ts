@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { monthLongName, navigateMonth } from './monthPicker';
+import { currentYearMonth, isFutureMonth, monthLongName, navigateMonth } from './monthPicker';
 
 describe('navigateMonth', () => {
   it('setas laterais andam um mês, atravessando o ano', () => {
@@ -31,5 +31,28 @@ describe('monthLongName', () => {
   it('nome do mês por extenso', () => {
     expect(monthLongName('2026-10')).toBe('Outubro');
     expect(monthLongName('2026-03')).toBe('Março');
+  });
+});
+
+describe('competência futura bloqueada', () => {
+  it('o mês atual vem da data de hoje', () => {
+    expect(currentYearMonth(new Date(2026, 9, 25))).toBe('2026-10');
+    expect(currentYearMonth(new Date(2027, 0, 1))).toBe('2027-01');
+  });
+
+  it('só meses depois do atual são futuros', () => {
+    expect(isFutureMonth('2026-11', '2026-10')).toBe(true);
+    expect(isFutureMonth('2027-01', '2026-10')).toBe(true);
+    expect(isFutureMonth('2026-10', '2026-10')).toBe(false);
+    expect(isFutureMonth('2025-12', '2026-10')).toBe(false);
+  });
+
+  it('o teclado na grade não passa do mês atual', () => {
+    expect(navigateMonth('2026-09', 'ArrowRight', '2026-10')).toBe('2026-10');
+    expect(navigateMonth('2026-10', 'ArrowRight', '2026-10')).toBeNull();
+    expect(navigateMonth('2026-08', 'ArrowDown', '2026-10')).toBe('2026-10');
+    expect(navigateMonth('2026-03', 'End', '2026-10')).toBe('2026-10');
+    expect(navigateMonth('2025-11', 'PageDown', '2026-10')).toBe('2026-10');
+    expect(navigateMonth('2026-10', 'ArrowLeft', '2026-10')).toBe('2026-09');
   });
 });

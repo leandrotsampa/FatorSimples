@@ -21,7 +21,7 @@ import { AnimatedNumber } from './ui/AnimatedNumber';
 import { RailTooltip } from './ui/RailTooltip';
 import { LiquidIndicator } from './ui/LiquidIndicator';
 import { MonthPickerPanel } from './ui/MonthPickerPanel';
-import { MONTH_SHORT_NAMES, monthLongName } from '../utils/monthPicker';
+import { currentYearMonth, isFutureMonth, MONTH_SHORT_NAMES, monthLongName } from '../utils/monthPicker';
 import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR, shiftYearMonth } from '../utils/taxCalculations';
@@ -100,8 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Stepper para avançar ou retroceder o mês rapidamente
   // Troca pelas setas: o mês desliza na direção usada (digitar no campo não anima)
   const [step, setStep] = useState<{ n: number; dir: number }>({ n: 0, dir: 0 });
+  // Competência que ainda não chegou fica bloqueada
+  const atCurrentMonth = selectedMonth >= currentYearMonth();
   const goToMonth = (next: string) => {
-    if (next === selectedMonth) return;
+    if (next === selectedMonth || isFutureMonth(next)) return;
     playSound('tick');
     setStep((s) => ({ n: s.n + 1, dir: next > selectedMonth ? 1 : -1 }));
     setSelectedMonth(next);
@@ -262,7 +264,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </motion.div>
       </button>
 
-      <button type="button" onClick={() => handleStepMonth(1)} className={stepButtonClass} title="Próximo mês" aria-label="Próximo mês">
+      <button
+        type="button"
+        onClick={() => handleStepMonth(1)}
+        disabled={atCurrentMonth}
+        className={`${stepButtonClass} disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
+        title={atCurrentMonth ? 'O próximo mês ainda não chegou' : 'Próximo mês'}
+        aria-label={atCurrentMonth ? 'Próximo mês (ainda não chegou)' : 'Próximo mês'}
+      >
         <ChevronRight className="w-4 h-4" />
       </button>
     </div>
