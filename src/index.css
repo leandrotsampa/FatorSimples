@@ -121,6 +121,17 @@
   animation: row-flash 1.2s var(--ease-out);
 }
 
+/* Esqueleto de carregamento com brilho passando */
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgb(148 163 184 / 0.18) 25%, rgb(148 163 184 / 0.32) 50%, rgb(148 163 184 / 0.18) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
 /* Custom scrollbars for native desktop feel */
 ::-webkit-scrollbar {
   width: 8px;

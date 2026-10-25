@@ -20,6 +20,7 @@ import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransf
 import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
 import { competenceInputs } from './utils/competenceInputs';
+import { PageSkeleton } from './components/ui/Skeleton';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -175,11 +176,16 @@ export default function App() {
       ? manualProlabore
       : undefined;
 
-  // Carrega do SQLite na inicialização se estiver rodando no Electron
+  // Carrega do SQLite na inicialização se estiver rodando no Electron. Até a primeira leitura
+  // as telas mostram o esqueleto, em vez de piscar o aviso de "nenhuma competência"
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(() => !storageAdapter.isElectron());
   useEffect(() => {
     if (storageAdapter.isElectron()) {
       storageAdapter.loadSettings().then((s) => s && setSettings(s));
-      storageAdapter.loadHistory().then(setHistory);
+      storageAdapter
+        .loadHistory()
+        .then(setHistory)
+        .finally(() => setIsHistoryLoaded(true));
     }
   }, []);
 
@@ -353,6 +359,7 @@ export default function App() {
         history={history}
         theme={theme}
         toggleTheme={toggleTheme}
+        isLoading={!isHistoryLoaded}
         mode={sidebarMode}
         onToggleMode={toggleSidebar}
       />
@@ -390,6 +397,10 @@ export default function App() {
             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1, transition: instantIf(reduceMotion, { duration: 0.42, ease: EASE_OUT }) }}
             exit={{ opacity: 0, filter: 'blur(4px)', transition: instantIf(reduceMotion, { duration: 0.18, ease: EASE_OUT }) }}
           >
+          {!isHistoryLoaded ? (
+            <PageSkeleton />
+          ) : (
+          <>
           {activeTab === 'apuration' && (
             <MonthApurationView
               currentRevenue={currentRevenue}
@@ -443,6 +454,8 @@ export default function App() {
               settings={apurationSettings}
               onPrint={handlePrint}
             />
+          )}
+          </>
           )}
           </motion.div>
           </AnimatePresence>

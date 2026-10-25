@@ -46,6 +46,7 @@ interface SidebarProps {
   history: MonthRecord[];
   theme: 'dark' | 'light';
   toggleTheme: (origin?: HTMLElement | null) => void;
+  isLoading?: boolean;
   mode: 'expanded' | 'collapsed';
   onToggleMode: () => void;
 }
@@ -78,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   history,
   theme,
   toggleTheme,
+  isLoading = false,
   mode,
   onToggleMode,
 }) => {
@@ -456,7 +458,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     RBT12 {isProportional ? '(proporcional)' : '(12m anteriores)'}:
                   </span>
                   <span className="font-num font-semibold text-slate-800 dark:text-slate-200">
-                    {monthsCount > 0 ? <AnimatedNumber value={rbt12} format={formatCurrency} /> : 'sem histórico'}
+                    {isLoading ? (
+                      <span className="skeleton inline-block h-3 w-20 rounded align-middle" />
+                    ) : monthsCount > 0 ? (
+                      <AnimatedNumber value={rbt12} format={formatCurrency} />
+                    ) : (
+                      'sem histórico'
+                    )}
                   </span>
                 </div>
                 <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
