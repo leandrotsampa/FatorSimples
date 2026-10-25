@@ -683,10 +683,9 @@ function buildStrategyCost(
   const das = revenue * rate;
   const prolabore = calculateProlabore(prolaboreGross, settings);
   const totalTaxes = das + prolabore.inss + prolabore.irrf;
-  // Mesma base da Apuração: os honorários da contabilidade saem antes do lucro
-  const accountingFee = Math.max(0, settings.accountingFee ?? 0);
+  // "Vale a pena?" compara só impostos: os honorários da contabilidade ficam de fora
   const dividendWithholding = calculateDividendWithholding(
-    Math.max(0, revenue - das - prolabore.gross - accountingFee),
+    Math.max(0, revenue - das - prolabore.gross),
     settings
   );
   return {
@@ -698,7 +697,7 @@ function buildStrategyCost(
     irrf: prolabore.irrf,
     totalTaxes,
     dividendWithholding,
-    availableToPartner: revenue - totalTaxes - dividendWithholding - accountingFee,
+    availableToPartner: revenue - totalTaxes - dividendWithholding,
   };
 }
 

@@ -55,12 +55,10 @@ describe('falta de dinheiro na conta', () => {
   });
 });
 
-describe('Comparador com honorários', () => {
-  it('o disponível ao sócio desconta a contabilidade, igual à Apuração', () => {
+describe('Comparador ignora os honorários', () => {
+  it('"Vale a pena?" compara só os impostos: a contabilidade não muda nenhum valor', () => {
     const sem = compareFactorRStrategies(26800, history, { ...DEFAULT_SETTINGS, accountingFee: 0 } as TaxSettings, '2025-12');
     const com = compareFactorRStrategies(26800, history, { ...DEFAULT_SETTINGS, accountingFee: 500 } as TaxSettings, '2025-12');
-    expect(sem.comFatorR.availableToPartner - com.comFatorR.availableToPartner).toBeCloseTo(500, 6);
-    expect(sem.semFatorR.availableToPartner - com.semFatorR.availableToPartner).toBeCloseTo(500, 6);
-    expect(com.savings).toBeCloseTo(sem.savings, 6);
+    expect(com).toEqual(sem);
   });
 });
