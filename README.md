@@ -5,7 +5,7 @@
 <br />
 
 **Apuração mensal do Simples Nacional e do Fator R para quem presta serviço.**<br />
-Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiza de verdade.
+A alíquota para a nota, quanto transferir para você e quanto deixar na conta da empresa, sem precisar perguntar à contabilidade.
 
 <br />
 
@@ -36,7 +36,7 @@ Quanto pagar de DAS, quanto retirar de pró-labore e quanto o Anexo III economiz
 
 Empresas do Simples Nacional que prestam serviços sujeitos ao **Fator R** (desenvolvimento de software, consultoria, engenharia, saúde e outras) pagam o DAS pelo **Anexo III**, a partir de 6%, quando a folha de salários dos últimos 12 meses chega a **28% da receita**. Abaixo disso, vão para o **Anexo V**, a partir de 15,5%.
 
-Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró-labore retirar para manter os 28%, quanto isso custa de INSS e IRRF e se a troca compensa. O **FatorSimples** faz essa conta com as regras do PGDAS-D e com o seu histórico real, e mostra o resultado de forma direta.
+Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota informar na nota fiscal, quanto de pró-labore retirar para manter os 28%, quanto isso custa de INSS e IRRF e quanto pode ir para a sua conta. O **FatorSimples** faz essa conta com as regras do PGDAS-D e com o seu histórico real, e mostra o resultado de forma direta, pensado para quem não é contador.
 
 > Validado contra recibos reais do PGDAS-D: com a mesma receita e folha, o app chega ao **mesmo RBT12, Fator R e valor do DAS**, com diferença máxima de R$ 0,01 por arredondamento dos tributos.
 
@@ -46,16 +46,17 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 <tr>
 <td width="50%" valign="top">
 
-### 📅 Apuração do mês
-- **Três respostas no topo:** DAS a pagar (com vencimento), pró-labore a retirar e o Fator R garantido para o mês seguinte
-- Indicadores sempre visíveis: alíquota efetiva e nominal, anexo e faixa, RBT12, alíquota sem Fator R e carga total
-- Estratégias de pró-labore: **28% do mês**, **ajuste exato pelo RBT12** ou **manual**
-- Memória de cálculo completa, recolhida por padrão
+### 📅 Mês
+- **Três respostas no topo:** a **alíquota para a nota** (com botão de copiar), o DAS com vencimento e o Fator R garantido para o mês seguinte
+- **Transferências do mês:** pró-labore líquido e antecipação de lucros para a sua conta, e o que fica na conta da empresa (DAS, INSS, IRRF e contabilidade)
+- Pró-labore em **28% do mês**, **sem folga** (o mínimo que mantém os 28%) ou **manual**. O botão **Tirar a folga** mostra quanto a mais vai para você
+- Honorários da contabilidade na conta e aviso quando o faturamento não cobre pró-labore, DAS e contabilidade
+- Indicadores do mês e memória de cálculo completa, recolhida por padrão
 
 </td>
 <td width="50%" valign="top">
 
-### ⚖️ Comparador de anexos
+### ⚖️ Vale a pena?
 - **Realizado × sem Fator R** mês a mês, com o que você pagou de fato
 - **Folga do Fator R:** quanto ainda dá para faturar ou reduzir de pró-labore sem cair no Anexo V
 - Simulador "e se" centrado no seu faturamento real
@@ -66,7 +67,7 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 <tr>
 <td valign="top">
 
-### 🗂️ Histórico de 12 meses
+### 🗂️ Histórico
 - Receita, folha, INSS, IRRF e DAS por competência
 - Fator R **de apuração** de cada mês (12 meses anteriores), com o anexo
 - Importação e exportação em JSON, com cálculo automático de INSS, IRRF e DAS que vierem zerados
@@ -77,9 +78,29 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 
 ### 🧾 Tabelas e regras atualizadas
 - Tabelas oficiais por competência: salário mínimo, teto do INSS e IRRF (2024 a 2027)
+- **Atualização pelo GitHub:** o app já vem com as tabelas e confere se há tabelas novas (no máximo uma vez por dia). Também avisa quando sai uma versão nova do app
 - **Lei 15.270/2025:** redução do IRRF até R$ 7.350 e retenção de 10% sobre lucros acima de R$ 50 mil/mês
 - Regras da Resolução CGSN 140/2018 para folha ou receita zeradas
-- Relatório de apuração pronto para imprimir ou salvar em PDF
+- **Resumo do mês** pronto para imprimir, salvar em PDF ou mandar para a contabilidade
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🎓 Fácil de começar
+- **Tutorial guiado** na primeira abertura, em 1 minuto, com a opção de explorar sozinho
+- Cada tela se apresenta na primeira visita, e o botão **Como usar** mostra o passo a passo da tela atual
+- Depois de atualizar o app, só as **novidades** aparecem, uma vez
+
+</td>
+<td valign="top">
+
+### 🎨 Interface
+- Temas **claro e escuro**, com a troca animada a partir do botão
+- Menu lateral recolhível, que lembra a sua escolha
+- Animações suaves e sons sutis, que podem ser desligados nas Configurações
+- Barra de título própria, com os dados da empresa a um clique
 
 </td>
 </tr>
@@ -91,13 +112,13 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 
 <div align="center">
 
-<img src="docs/screenshots/apuracao.png" alt="Apuração do mês" width="100%" />
-<sub><b>Apuração do mês:</b> DAS, pró-labore e Fator R do mês seguinte, com os indicadores logo abaixo</sub>
+<img src="docs/screenshots/apuracao.png" alt="Mês: alíquota para a nota, DAS, Fator R e transferências" width="100%" />
+<sub><b>Mês:</b> a alíquota para a nota, o DAS, o Fator R do mês seguinte e as transferências do mês</sub>
 
 <br /><br />
 
-<img src="docs/screenshots/comparador.png" alt="Comparador de anexos" width="100%" />
-<sub><b>Comparador de anexos:</b> economia real com o Fator R, folga do mês e o realizado mês a mês</sub>
+<img src="docs/screenshots/comparador.png" alt="Vale a pena?" width="100%" />
+<sub><b>Vale a pena?:</b> economia real com o Fator R, folga do mês e o realizado mês a mês</sub>
 
 </div>
 
@@ -105,13 +126,13 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: quanto de pró
 <summary><b>Ver mais telas</b></summary>
 <br />
 
-| Memória de cálculo | Simulador "e se" |
+| Transferências e memória de cálculo | Simulador "e se" |
 |:---:|:---:|
-| <img src="docs/screenshots/apuracao-detalhes.png" alt="Memória de cálculo" /> | <img src="docs/screenshots/comparador-simulador.png" alt="Simulador" /> |
-| **Histórico de 12 meses** | **Relatório de apuração** |
-| <img src="docs/screenshots/historico.png" alt="Histórico" /> | <img src="docs/screenshots/relatorio.png" alt="Relatório" /> |
-| **Tema claro** | |
-| <img src="docs/screenshots/apuracao-claro.png" alt="Tema claro" /> | |
+| <img src="docs/screenshots/apuracao-detalhes.png" alt="Transferências e memória de cálculo" /> | <img src="docs/screenshots/comparador-simulador.png" alt="Simulador" /> |
+| **Histórico** | **Resumo do mês** |
+| <img src="docs/screenshots/historico.png" alt="Histórico" /> | <img src="docs/screenshots/relatorio.png" alt="Resumo do mês" /> |
+| **Tema claro** | **Tutorial guiado** |
+| <img src="docs/screenshots/apuracao-claro.png" alt="Tema claro" /> | <img src="docs/screenshots/tutorial.png" alt="Tutorial guiado" /> |
 
 </details>
 
@@ -157,6 +178,22 @@ O pró-labore do mês entra no Fator R das **próximas** competências, não no 
 | Compara | DAS + INSS + IRRF | DAS + INSS + IRRF |
 
 O pró-labore em si não é custo: é dinheiro que vai para o sócio. Por isso a comparação é feita pelos **impostos** de cada cenário. O "realizado" usa os valores efetivamente pagos que estão no histórico.
+
+</details>
+
+<details>
+<summary><b>Transferências do mês e o que fica na conta</b></summary>
+<br />
+
+Depois de receber, o faturamento do mês se divide em três partes, que somam exatamente o valor recebido:
+
+| Parte | Conta |
+|---|---|
+| **Pró-labore líquido** (para você) | Pró-labore bruto − INSS − IRRF |
+| **Antecipação de lucros** (para você) | Faturamento − DAS − pró-labore bruto − contabilidade − IR retido sobre lucros |
+| **Fica na conta da empresa** | DAS + INSS + IRRF + IR retido sobre lucros + contabilidade |
+
+Se o faturamento não cobre o pró-labore, o DAS e a contabilidade, a tela avisa quanto falta na conta.
 
 </details>
 
@@ -220,11 +257,11 @@ chmod +x FatorSimples-*.AppImage
 
 </details>
 
-Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Banco SQLite** do app mostra onde ele está e abre a pasta.
+Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Dados e backup** do app mostra onde ele está e abre a pasta.
 
 ## 🔄 Importando o seu histórico
 
-Pelo menu **Banco SQLite → Importar dados**, o app aceita um JSON no formato abaixo. As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
+Pelo menu **Dados e backup → Importar Dados**, o app aceita um JSON no formato abaixo. As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
 
 ```json
 {
@@ -265,6 +302,7 @@ npm run dev
 | `npm run dev` | Interface no navegador em `http://localhost:3000`, com dados no `localStorage` |
 | `npm run electron:dev` | Abre o app desktop (usa o build em `dist/` se existir; senão, o servidor em `:3000`) |
 | `npm run lint` | Checagem de tipos com TypeScript |
+| `npm test` | Testes automatizados (Vitest) dos cálculos, das tabelas e da interface |
 | `npm run build` | Build de produção da interface em `dist/` |
 | `npm run dist:portable` | Gera `release/FatorSimples-<versão>-portable.exe` (Windows) |
 | `npm run dist:mac` | Gera os `.dmg` para Mac com chip Apple e Intel (macOS) |
@@ -286,28 +324,43 @@ O changelog agrupa os commits pelo prefixo: `feat:` (novidades), `fix:` (correç
 fatorsimples/
 ├── electron/              # processo principal: janela, SQLite local e ponte segura (preload)
 ├── src/
-│   ├── components/        # telas: Apuração, Histórico, Comparador, Relatório e modais
+│   ├── components/        # telas: Mês, Histórico, Vale a pena?, Resumo do mês e modais
+│   ├── tour/              # tutorial guiado (driver.js): passos por tela e o que já foi visto
+│   ├── hooks/             # preferências da interface, sons e contagem animada
 │   ├── utils/
-│   │   ├── taxCalculations.ts    # Fator R, RBT12, DAS, INSS, IRRF, folga e comparativos
+│   │   ├── taxCalculations.ts    # Fator R, RBT12, DAS, INSS, IRRF, folga, transferências e comparativos
 │   │   ├── taxTablesRegistry.ts  # tabelas oficiais por competência
+│   │   ├── remoteTables.ts       # atualização das tabelas pelo GitHub e aviso de versão nova
 │   │   ├── dataTransfer.ts       # importação e exportação em JSON
 │   │   └── storageAdapter.ts     # SQLite (desktop) ou localStorage (navegador)
 │   └── types/             # tipos do domínio fiscal
-├── scripts/               # preparação do Electron para o empacotamento
+├── tax-tables/            # tabelas.json publicado para os apps já instalados
+├── scripts/               # empacotamento, notas de release e exportação das tabelas
 ├── build/                 # ícones do app (Windows, macOS e Linux)
 └── docs/                  # banner e capturas do README
 ```
 
 ### Tabelas fiscais
 
-As tabelas ficam em [`src/utils/taxTablesRegistry.ts`](src/utils/taxTablesRegistry.ts), uma por vigência, com salário mínimo, teto do INSS, faixas do IRRF, desconto simplificado e as regras da Lei 15.270/2025. A competência escolhe a tabela automaticamente. Quando sair uma tabela nova, basta adicionar a versão e apontá-la em `getTaxTableForCompetence`. A tabela de 2027 repete os valores de 2026 até a publicação oficial.
+As tabelas ficam em [`src/utils/taxTablesRegistry.ts`](src/utils/taxTablesRegistry.ts), uma por vigência (`validFrom` e `validTo`), com salário mínimo, teto do INSS, faixas do IRRF, desconto simplificado e as regras da Lei 15.270/2025. A competência escolhe a tabela automaticamente. A tabela de 2027 repete os valores de 2026 até a publicação oficial.
+
+O app já nasce com essas tabelas. Os apps instalados recebem alterações pelo arquivo [`tax-tables/tabelas.json`](tax-tables/tabelas.json) da `main`, validado antes de entrar no banco local e aplicado só se for mais novo que as tabelas embutidas. Quando sair uma tabela nova:
+
+1. Adicione ou ajuste a versão em `taxTablesRegistry.ts` e atualize `BUILTIN_TABLES_DATE`
+2. Gere o arquivo publicado:
+
+```bash
+npx tsx scripts/export-tax-tables.ts
+```
+
+3. Faça o commit e o push na `main`. Os apps instalados aplicam as tabelas na próxima verificação
 
 ## 🗺️ Próximos passos
 
 - [ ] Importar recibos do PGDAS-D e a lista de pagamentos do e-CAC direto em PDF
 - [ ] Indicar quando a linha do histórico não tem os 12 meses anteriores disponíveis
 - [ ] Suporte a mais de um sócio na distribuição de lucros
-- [ ] Testes automatizados dos cálculos com casos reais
+- [x] Testes automatizados dos cálculos com casos reais
 
 ## ⚠️ Aviso
 
