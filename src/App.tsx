@@ -36,6 +36,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { playSound } from './hooks/useSound';
+import { runTour, TOUR_STEP_IDS } from './tour/tour';
+import { completeTour, loadTourState, planTour, saveTourState, skipTour } from './tour/tourState';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -303,6 +305,51 @@ export default function App() {
   // Confirmações e avisos no tema do app
   const { dialog, confirm, notify } = useAppDialog();
 
+  // Tutorial: na tela do mês; mês vazio ganha um faturamento de exemplo que volta a zero no fim
+  const TOUR_DEMO_REVENUE = 20000;
+  const startTour = (ids?: string[], news = false) => {
+    setActiveTab('apuration');
+    const demo = !selectedRecord && currentRevenue <= 0;
+    if (demo) setCurrentRevenue(TOUR_DEMO_REVENUE);
+    // Espera a tela do mês montar com os cartões antes de destacar
+    window.setTimeout(() => {
+      runTour({
+        ids,
+        news,
+        demoRevenue: demo,
+        reduceMotion,
+        onDone: (shown) => {
+          if (demo) setCurrentRevenue((r) => (r === TOUR_DEMO_REVENUE ? 0 : r));
+          saveTourState(completeTour(loadTourState(), shown));
+        },
+      });
+    }, 450);
+  };
+
+  // Primeira abertura: boas-vindas; depois de atualizar o app: só os passos novos
+  const tourChecked = useRef(false);
+  const appReady = isHistoryLoaded && remoteTablesLoaded;
+  useEffect(() => {
+    if (!appReady || tourChecked.current) return;
+    tourChecked.current = true;
+    const plan = planTour(TOUR_STEP_IDS, loadTourState());
+    if (plan.kind === 'news') {
+      startTour(plan.ids, true);
+    } else if (plan.kind === 'welcome') {
+      void confirm({
+        title: 'Bem-vindo ao FatorSimples',
+        message:
+          'Em 1 minuto você vê o essencial: a alíquota para a nota, quanto transferir para você e como o Fator R economiza imposto.',
+        confirmLabel: 'Mostrar como funciona',
+        cancelLabel: 'Explorar sozinho',
+      }).then((ok) => {
+        if (ok) startTour();
+        else saveTourState(skipTour(loadTourState(), TOUR_STEP_IDS));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appReady]);
+
   const handleDeleteMonth = async (id: string) => {
     const rec = history.find((h) => h.id === id);
     const ok = await confirm({
@@ -434,6 +481,7 @@ export default function App() {
         setSelectedMonth={setSelectedMonth}
         onOpenSettings={() => openSettings()}
         onOpenSqliteManager={() => setIsSqliteManagerOpen(true)}
+        onOpenTutorial={() => startTour()}
         settings={settings}
         history={history}
         theme={theme}

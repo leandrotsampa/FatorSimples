@@ -14,6 +14,7 @@ import {
   CalendarDays,
   PanelLeftClose,
   PanelLeftOpen,
+  LifeBuoy,
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
@@ -45,6 +46,7 @@ interface SidebarProps {
   setSelectedMonth: (month: string) => void;
   onOpenSettings: () => void;
   onOpenSqliteManager: () => void;
+  onOpenTutorial: () => void;
   settings: TaxSettings;
   history: MonthRecord[];
   theme: 'dark' | 'light';
@@ -80,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setSelectedMonth,
   onOpenSettings,
   onOpenSqliteManager,
+  onOpenTutorial,
   settings,
   history,
   theme,
@@ -325,6 +328,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Competência */}
             <div
+              data-tour="competencia"
               className={`border-b border-slate-900/[0.06] dark:border-white/[0.06] ${
                 collapsed ? 'p-2' : 'p-3'
               }`}
@@ -392,6 +396,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       aria-current={isActive ? 'page' : undefined}
                       data-liquid-active={isActive}
+                      data-tour={`nav-${item.id}`}
                       aria-label={collapsed ? item.label : undefined}
                       className={`group relative w-full flex items-center rounded-xl text-left transition-colors cursor-pointer border border-transparent ${
                         collapsed ? 'justify-center p-1.5' : 'justify-between p-2.5'
@@ -559,6 +564,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {theme === 'dark' ? 'Escuro' : 'Claro'}
                   </span>
+                )}
+              </button>
+            </RailTooltip>
+
+            {/* Tutorial: rever o passo a passo quando quiser */}
+            <RailTooltip enabled={collapsed} label="Como usar" detail="Rever o passo a passo">
+              <button
+                onClick={onOpenTutorial}
+                data-tour="como-usar"
+                className={footerButtonClass}
+                aria-label={collapsed ? 'Como usar' : undefined}
+              >
+                <span className="flex items-center gap-2">
+                  <LifeBuoy className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                  {expanded && <span className="whitespace-nowrap">Como usar</span>}
+                </span>
+                {expanded && (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">1 min</span>
                 )}
               </button>
             </RailTooltip>

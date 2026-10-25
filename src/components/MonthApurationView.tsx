@@ -112,9 +112,11 @@ const AnswerCard: React.FC<{
   detail: React.ReactNode;
   tone?: 'neutral' | 'good' | 'bad';
   aside?: React.ReactNode;
-}> = ({ icon, label, value, format, detail, tone = 'neutral', aside }) => (
+  tourId?: string; // âncora do tutorial
+}> = ({ icon, label, value, format, detail, tone = 'neutral', aside, tourId }) => (
   <motion.div
     variants={cascadeItem}
+    data-tour={tourId}
     className={`${card} p-5 ${
       tone === 'good'
         ? 'ring-2 ring-inset ring-emerald-500/70 dark:ring-emerald-500/60'
@@ -487,7 +489,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
       {/* Entrada: faturamento, estratégia do pró-labore e salvar */}
       <section className={`${card} p-5`}>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-5 gap-y-4 lg:items-start">
-          <div className="min-w-0">
+          <div className="min-w-0" data-tour="faturamento">
             <label htmlFor="apuration-revenue" className="block h-5 text-sm text-slate-600 dark:text-slate-400 mb-1.5">
               Faturamento de {formatCompetence(selectedMonth)}
             </label>
@@ -706,6 +708,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <AnswerCard
               icon={<FileText className="w-4 h-4" />}
               label="Alíquota para a nota"
+              tourId="aliquota"
               value={simples.effectiveRatePercentage}
               format={formatPercent}
               aside={<CopyButton text={formatForCopy(simples.effectiveRatePercentage, 'percent')} label="alíquota para a nota" />}
@@ -721,6 +724,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <AnswerCard
               icon={next.isQualifiedForAnexo3 ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               label={`Fator R em ${formatCompetence(next.yearMonth)}`}
+              tourId="fator-r"
               aside={<FactorRGauge value={next.factorRPercentage} size="sm" />}
               value={next.factorRPercentage}
               format={formatPercent}
@@ -813,7 +817,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
           </section>
 
           {/* Transferências do mês: o que vai para você e o que fica na conta da empresa */}
-          <section className={`${card} p-5`}>
+          <section className={`${card} p-5`} data-tour="transferencias">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Transferências do mês</span>
