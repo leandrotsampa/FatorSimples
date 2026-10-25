@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useRef } from 'react';
 import { playSound } from '../../hooks/useSound';
+import { LiquidIndicator } from './LiquidIndicator';
 
 interface SegmentedOption<T extends string> {
   value: T;
@@ -29,13 +29,22 @@ export function SegmentedControl<T extends string>({
   layoutId,
   className = '',
 }: SegmentedControlProps<T>) {
+  const groupRef = useRef<HTMLDivElement>(null);
   return (
     <div
-      className={`grid h-10 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-300 dark:border-slate-700 text-sm ${className}`}
+      ref={groupRef}
+      className={`relative grid h-10 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-300 dark:border-slate-700 text-sm ${className}`}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       role="group"
       aria-label={ariaLabel}
     >
+      {/* Pílula da opção ativa: escorre até a opção escolhida */}
+      <LiquidIndicator
+        containerRef={groupRef}
+        axis="x"
+        activeKey={`${layoutId}:${value}`}
+        className="rounded-md bg-emerald-600 dark:bg-emerald-500"
+      />
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -48,6 +57,7 @@ export function SegmentedControl<T extends string>({
             }}
             disabled={disabled}
             aria-pressed={active}
+            data-liquid-active={active}
             title={o.title}
             className={`relative px-2 rounded-md cursor-pointer disabled:cursor-not-allowed transition-colors duration-[var(--duration-base)] ${
               active
@@ -55,13 +65,6 @@ export function SegmentedControl<T extends string>({
                 : 'text-slate-600 dark:text-slate-400 enabled:hover:text-slate-900 dark:enabled:hover:text-slate-200'
             }`}
           >
-            {active && (
-              <motion.span
-                layoutId={layoutId}
-                className="absolute inset-0 rounded-md bg-emerald-600 dark:bg-emerald-500"
-                transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-              />
-            )}
             <span className="relative">{o.label}</span>
           </button>
         );

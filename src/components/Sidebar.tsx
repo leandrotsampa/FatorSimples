@@ -18,6 +18,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { RailTooltip } from './ui/RailTooltip';
+import { LiquidIndicator } from './ui/LiquidIndicator';
 import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
@@ -115,6 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   // Seletor de competência no menu recolhido: painel flutuante à direita do botão
+  const navRef = useRef<HTMLElement>(null);
   const monthButtonRef = useRef<HTMLButtonElement>(null);
   const monthPanelRef = useRef<HTMLDivElement>(null);
   const [monthPanelPos, setMonthPanelPos] = useState<{ x: number; y: number } | null>(null);
@@ -346,7 +348,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {/* Navigation Links */}
-            <nav className={`space-y-1 overflow-y-auto overflow-x-hidden flex-1 ${collapsed ? 'p-2' : 'p-3'}`}>
+            <nav
+              ref={navRef}
+              className={`relative space-y-1 overflow-y-auto overflow-x-hidden flex-1 ${collapsed ? 'p-2' : 'p-3'}`}
+            >
+              {/* Destaque do item ativo: escorre de um item para o outro, como líquido */}
+              <LiquidIndicator
+                containerRef={navRef}
+                axis="y"
+                activeKey={activeTab}
+                layoutKey={mode}
+                className={`rounded-xl ${
+                  collapsed
+                    ? 'bg-emerald-600 shadow-[0_6px_16px_-6px_rgba(5,150,105,0.6)] dark:bg-emerald-500'
+                    : 'bg-emerald-50 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:ring-emerald-500/30'
+                }`}
+              />
               <Reveal
                 show={expanded}
                 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-1 whitespace-nowrap"
@@ -366,6 +383,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (mode === 'overlay') onCloseOverlay();
                       }}
                       aria-current={isActive ? 'page' : undefined}
+                      data-liquid-active={isActive}
                       aria-label={collapsed ? item.label : undefined}
                       className={`group relative w-full flex items-center rounded-xl text-left transition-colors cursor-pointer border border-transparent ${
                         collapsed ? 'justify-center p-1.5' : 'justify-between p-2.5'
@@ -375,18 +393,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
                       }`}
                     >
-                      {/* Destaque do item ativo: desliza entre os itens */}
-                      {isActive && (
-                        <motion.span
-                          layoutId="nav-active"
-                          className={`absolute inset-0 ${
-                            collapsed
-                              ? 'rounded-xl bg-emerald-600 shadow-[0_6px_16px_-6px_rgba(5,150,105,0.6)] dark:bg-emerald-500'
-                              : 'rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30'
-                          }`}
-                          transition={pillSpring}
-                        />
-                      )}
                       <div className="relative flex items-center gap-2.5 min-w-0">
                         <div
                           className={`relative rounded-lg flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
