@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Calculator,
   History,
@@ -10,18 +10,29 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
-  Building2,
   HardDrive,
+  CalendarDays,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
+import { RailTooltip } from './ui/RailTooltip';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
+import { DURATION, EASE_OUT } from '../utils/motion';
+import type { SidebarMode } from '../utils/sidebarMode';
 import type { StorageMode } from '../types/electron';
 
 const formatPercent1 = (n: number) => formatPercent(n, 1);
+
+const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+// Larguras do menu: expandido (o de sempre) e recolhido em trilho de ícones
+const WIDTH_EXPANDED = 288;
+const WIDTH_COLLAPSED = 68;
+const widthSpring = { type: 'spring', stiffness: 400, damping: 40 } as const;
 
 interface SidebarProps {
   activeTab: 'apuration' | 'history' | 'comparison' | 'report';
@@ -34,7 +45,27 @@ interface SidebarProps {
   history: MonthRecord[];
   theme: 'dark' | 'light';
   toggleTheme: (origin?: HTMLElement | null) => void;
+  mode: SidebarMode;
+  onToggleMode: () => void;
+  onCloseOverlay: () => void;
 }
+
+// Texto que some na hora ao recolher e aparece logo depois da largura ao expandir
+const Reveal: React.FC<{ show: boolean; children: React.ReactNode; className?: string }> = ({
+  show,
+  children,
+  className,
+}) =>
+  show ? (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: DURATION.micro, delay: 0.06 }}
+    >
+      {children}
+    </motion.div>
+  ) : null;
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -47,7 +78,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   history,
   theme,
   toggleTheme,
+  mode,
+  onToggleMode,
+  onCloseOverlay,
 }) => {
+  const expanded = mode !== 'collapsed';
+  const collapsed = !expanded;
+
   // Stepper para avançar ou retroceder o mês rapidamente
   const handleStepMonth = (delta: number) => {
     const [yearStr, monthStr] = selectedMonth.split('-');
@@ -71,6 +108,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     storageAdapter.getStorageMode().then(setStorageMode);
   }, []);
+
+  // Seletor de competência no menu recolhido: painel flutuante à direita do botão
+  const monthButtonRef = useRef<HTMLButtonElement>(null);
+  const monthPanelRef = useRef<HTMLDivElement>(null);
+  const [monthPanelPos, setMonthPanelPos] = useState<{ x: number; y: number } | null>(null);
+  const toggleMonthPanel = () => {
+    if (monthPanelPos) {
+      setMonthPanelPos(null);
+      return;
+    }
+    const r = monthButtonRef.current?.getBoundingClientRect();
+    if (r) setMonthPanelPos({ x: r.right + 10, y: r.top });
+  };
+  useEffect(() => {
+    if (!monthPanelPos) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMonthPanelPos(null);
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!monthPanelRef.current?.contains(t) && !monthButtonRef.current?.contains(t)) setMonthPanelPos(null);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [monthPanelPos]);
+  // Ao expandir o menu o painel não faz mais sentido
+  useEffect(() => {
+    if (expanded) setMonthPanelPos(null);
+  }, [expanded]);
 
   // Verifica se a competência selecionada já está salva no histórico
   const isMonthSaved = history.some((h) => h.yearMonth === selectedMonth);
@@ -116,230 +184,394 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  const [, monthNum] = selectedMonth.split('-');
+  const monthShort = MONTH_SHORT[parseInt(monthNum, 10) - 1] ?? '';
+
+  const competenceStatus = isMonthSaved ? (
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono font-bold">
+      Salvo no SQLite
+    </span>
+  ) : (
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono">
+      Em Apuração
+    </span>
+  );
+
+  const monthStepper = (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => handleStepMonth(-1)}
+        className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        title="Mês anterior"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+
+      <div className="flex-1 relative">
+        <input
+          type="month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
+        />
+      </div>
+
+      <button
+        onClick={() => handleStepMonth(1)}
+        className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        title="Próximo mês"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
+  // Anel do Fator R no menu recolhido (0 a 40%, meta em 28%)
+  const ringPct = Math.min(1, Math.max(0, factorR / 40));
+  const ringOk = factorR >= 28;
+
+  const footerButtonClass = `w-full flex items-center rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
+    collapsed ? 'justify-center h-9' : 'justify-between px-2.5 py-1.5'
+  }`;
+
   return (
-    <aside className="no-print w-64 md:w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/90 flex flex-col justify-between select-none shadow-xs transition-colors duration-200 shrink-0 h-screen sticky top-0 z-40">
-      
-      {/* Top Section */}
-      <div className="flex flex-col flex-1 min-h-0">
-        
-        {/* Brand & Traffic lights */}
-        {/* Topo: também arrasta a janela; no macOS deixa espaço para os botões nativos */}
-        <div
-          className={`app-drag p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950 ${
-            window.electronAPI?.platform === 'darwin' ? 'pt-9' : ''
-          }`}
+    <>
+      {/* Fundo escurecido quando o menu abre por cima do conteúdo (janela estreita) */}
+      <AnimatePresence>
+        {mode === 'overlay' && (
+          <motion.div
+            key="sidebar-scrim"
+            className="no-print fixed inset-0 z-40 bg-slate-950/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: DURATION.base }}
+            onClick={onCloseOverlay}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Espaço que o menu ocupa no layout; em sobreposição continua com a largura recolhida */}
+      <motion.div
+        className="no-print shrink-0 h-screen sticky top-0 z-50"
+        initial={false}
+        animate={{ width: mode === 'expanded' ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
+        transition={widthSpring}
+      >
+        <motion.aside
+          className="absolute inset-y-0 left-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/90 flex flex-col justify-between select-none shadow-xs overflow-x-hidden"
+          initial={false}
+          animate={{ width: expanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
+          transition={widthSpring}
         >
-          <div className="flex items-center gap-2.5">
-            <img src="./icon.png" alt="" className="w-9 h-9 shrink-0" draggable={false} />
-            <div className="min-w-0">
-              <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
-                FatorSimples
-                <span className="ml-1.5 text-[10px] font-normal font-mono text-slate-400 dark:text-slate-500">
-                  v{__APP_VERSION__}
-                </span>
-              </h1>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                <span className="truncate">{settings.cityState || 'Brusque - SC'}</span>
-                <span className="w-1 h-1 rounded-full bg-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Simples</span>
+          {/* Top Section */}
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Topo: também arrasta a janela; no macOS deixa espaço para os botões nativos */}
+            <div
+              className={`app-drag border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950 ${
+                collapsed ? 'px-2 py-3' : 'p-4'
+              } ${window.electronAPI?.platform === 'darwin' ? 'pt-9' : ''}`}
+            >
+              <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-2.5'}`}>
+                <img src="./icon.png" alt="" className="w-9 h-9 shrink-0" draggable={false} />
+                <Reveal show={expanded} className="min-w-0 flex-1">
+                  <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
+                    FatorSimples
+                    <span className="ml-1.5 text-[10px] font-normal font-mono text-slate-400 dark:text-slate-500">
+                      v{__APP_VERSION__}
+                    </span>
+                  </h1>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="truncate">{settings.cityState || 'Brusque - SC'}</span>
+                    <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Simples</span>
+                  </div>
+                </Reveal>
+                <button
+                  onClick={onToggleMode}
+                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                  title={expanded ? 'Recolher menu (Ctrl+B)' : 'Expandir menu (Ctrl+B)'}
+                  aria-label={expanded ? 'Recolher menu' : 'Expandir menu'}
+                  aria-expanded={expanded}
+                >
+                  {expanded ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Competência Selector Widget */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800/70 bg-slate-100/60 dark:bg-slate-900/40">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-            <span className="uppercase tracking-wider">Competência Ativa:</span>
-            {isMonthSaved ? (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono font-bold">
-                Salvo no SQLite
-              </span>
-            ) : (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono">
-                Em Apuração
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleStepMonth(-1)}
-              className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Mês anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex-1 relative">
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
-              />
-            </div>
-
-            <button
-              onClick={() => handleStepMonth(1)}
-              className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Próximo mês"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Navigation Links */}
-        <nav className="p-3 space-y-1 overflow-y-auto flex-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-1">
-            Menu de Navegação
-          </div>
-
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                aria-current={isActive ? 'page' : undefined}
-                className={`group relative w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-colors cursor-pointer border border-transparent ${
-                  isActive
-                    ? 'text-emerald-900 font-bold dark:text-emerald-300'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
-                }`}
-              >
-                {/* Destaque do item ativo: desliza entre os itens */}
-                {isActive && (
-                  <motion.span
-                    layoutId="nav-active"
-                    className="absolute inset-0 rounded-lg bg-emerald-50 border border-emerald-300 shadow-xs dark:bg-emerald-500/15 dark:border-emerald-500/40"
-                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                  />
-                )}
-                <div className="relative flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
-                      isActive
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:translate-x-0.5'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs truncate">{item.label}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate">
-                      {item.description}
-                    </div>
-                  </div>
-                </div>
-
-                {item.badge && (
-                  <motion.span
-                    key={item.badge}
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', stiffness: 600, damping: 20 }}
-                    className={`relative text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                      isActive
-                        ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
-                        : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {item.badge}
-                  </motion.span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Mini Fiscal Summary Box */}
-        <div className="m-3 p-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-1.5 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
-            <span>Fator R {selectedMonth}:</span>
-            <span
-              className={`font-mono font-bold ${
-                factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+            {/* Competência */}
+            <div
+              className={`border-b border-slate-200 dark:border-slate-800/70 bg-slate-100/60 dark:bg-slate-900/40 ${
+                collapsed ? 'p-2' : 'p-3'
               }`}
             >
-              {monthsCount > 0 ? <AnimatedNumber value={factorR} format={formatPercent1} /> : '—'}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
-            <span title={isProportional && monthsCount > 0 ? `Média de ${monthsCount} meses × 12` : undefined}>
-              RBT12 {isProportional ? '(proporcional)' : '(12m anteriores)'}:
-            </span>
-            <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-              {monthsCount > 0 ? <AnimatedNumber value={rbt12} format={formatCurrency} /> : 'sem histórico'}
-            </span>
-          </div>
-          <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1">
-              <HardDrive className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-              <span>fatorsimples.sqlite</span>
-            </span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-              {storageMode === 'system' ? 'Dados do sistema' : 'Junto ao app'}
-            </span>
-          </div>
-        </div>
+              {expanded ? (
+                <Reveal show>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                    <span className="uppercase tracking-wider">Competência Ativa:</span>
+                    {competenceStatus}
+                  </div>
+                  {monthStepper}
+                </Reveal>
+              ) : (
+                <RailTooltip enabled={!monthPanelPos} label="Competência ativa" detail={selectedMonth}>
+                  <button
+                    ref={monthButtonRef}
+                    onClick={toggleMonthPanel}
+                    aria-label={`Competência ${selectedMonth}`}
+                    aria-expanded={Boolean(monthPanelPos)}
+                    className="relative w-full flex flex-col items-center gap-0.5 py-1.5 rounded-md text-emerald-700 dark:text-emerald-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="text-[10px] font-mono font-bold">{monthShort}</span>
+                    <span
+                      className={`absolute top-1 right-2 w-1.5 h-1.5 rounded-full ${
+                        isMonthSaved ? 'bg-emerald-500' : 'bg-amber-500'
+                      }`}
+                    />
+                  </button>
+                </RailTooltip>
+              )}
+            </div>
 
-      </div>
+            {/* Navigation Links */}
+            <nav className={`space-y-1 overflow-y-auto overflow-x-hidden flex-1 ${collapsed ? 'p-2' : 'p-3'}`}>
+              <Reveal
+                show={expanded}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-1 whitespace-nowrap"
+              >
+                Menu de Navegação
+              </Reveal>
 
-      {/* Sidebar Footer Controls */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 space-y-1 text-xs">
-        
-        {/* Toggle Theme */}
-        <button
-          onClick={(e) => toggleTheme(e.currentTarget)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <RailTooltip key={item.id} enabled={collapsed} label={item.label} detail={item.description}>
+                    <button
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        if (mode === 'overlay') onCloseOverlay();
+                      }}
+                      aria-current={isActive ? 'page' : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                      className={`group relative w-full flex items-center rounded-lg text-left transition-colors cursor-pointer border border-transparent ${
+                        collapsed ? 'justify-center p-2' : 'justify-between p-2.5'
+                      } ${
+                        isActive
+                          ? 'text-emerald-900 font-bold dark:text-emerald-300'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      }`}
+                    >
+                      {/* Destaque do item ativo: desliza entre os itens */}
+                      {isActive && (
+                        <motion.span
+                          layoutId="nav-active"
+                          className="absolute inset-0 rounded-lg bg-emerald-50 border border-emerald-300 shadow-xs dark:bg-emerald-500/15 dark:border-emerald-500/40"
+                          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                        />
+                      )}
+                      <div className="relative flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-[color,background-color,translate] duration-[var(--duration-micro)] ${
+                            isActive
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:translate-x-0.5'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {/* No menu recolhido o contador vira um ponto */}
+                          {collapsed && item.badge && history.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-950" />
+                          )}
+                        </div>
+                        <Reveal show={expanded} className="min-w-0">
+                          <div className="text-xs truncate">{item.label}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate">
+                            {item.description}
+                          </div>
+                        </Reveal>
+                      </div>
+
+                      {expanded && item.badge && (
+                        <motion.span
+                          key={item.badge}
+                          initial={{ scale: 0.8, opacity: 0.6 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: 'spring', stiffness: 600, damping: 20 }}
+                          className={`relative text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                            isActive
+                              ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {item.badge}
+                        </motion.span>
+                      )}
+                    </button>
+                  </RailTooltip>
+                );
+              })}
+            </nav>
+
+            {/* Mini Fiscal Summary Box */}
+            {expanded ? (
+              <Reveal
+                show
+                className="m-3 p-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-1.5 shadow-2xs whitespace-nowrap"
+              >
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
+                  <span>Fator R {selectedMonth}:</span>
+                  <span
+                    className={`font-mono font-bold ${
+                      factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    {monthsCount > 0 ? <AnimatedNumber value={factorR} format={formatPercent1} /> : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
+                  <span title={isProportional && monthsCount > 0 ? `Média de ${monthsCount} meses × 12` : undefined}>
+                    RBT12 {isProportional ? '(proporcional)' : '(12m anteriores)'}:
+                  </span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                    {monthsCount > 0 ? <AnimatedNumber value={rbt12} format={formatCurrency} /> : 'sem histórico'}
+                  </span>
+                </div>
+                <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <HardDrive className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>fatorsimples.sqlite</span>
+                  </span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                    {storageMode === 'system' ? 'Dados do sistema' : 'Junto ao app'}
+                  </span>
+                </div>
+              </Reveal>
             ) : (
-              <Moon className="w-4 h-4 text-indigo-600" />
+              <div className="flex justify-center py-3">
+                <RailTooltip
+                  enabled
+                  label={`Fator R ${selectedMonth}: ${monthsCount > 0 ? formatPercent1(factorR) : '—'}`}
+                  detail={`RBT12: ${monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'}`}
+                >
+                  <span tabIndex={0} className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" className="-rotate-90">
+                      <circle cx="16" cy="16" r="12" fill="none" strokeWidth="4" className="stroke-slate-200 dark:stroke-slate-800" />
+                      {monthsCount > 0 && (
+                        <motion.circle
+                          cx="16"
+                          cy="16"
+                          r="12"
+                          fill="none"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          className={ringOk ? 'stroke-emerald-500' : 'stroke-amber-500'}
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: ringPct }}
+                          transition={{ duration: DURATION.number, ease: EASE_OUT }}
+                        />
+                      )}
+                    </svg>
+                  </span>
+                </RailTooltip>
+              </div>
             )}
-            <span>Modo Visual</span>
-          </span>
-          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            {theme === 'dark' ? 'Escuro (Dark)' : 'Claro (Light)'}
-          </span>
-        </button>
+          </div>
 
-        {/* SQLite Manager */}
-        <button
-          onClick={onOpenSqliteManager}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Banco SQLite</span>
-          </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono">
-            {storageMode === 'system' ? 'Local' : 'Portátil'}
-          </span>
-        </button>
+          {/* Sidebar Footer Controls */}
+          <div
+            className={`border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 space-y-1 text-xs ${
+              collapsed ? 'p-2' : 'p-3'
+            }`}
+          >
+            {/* Toggle Theme */}
+            <RailTooltip enabled={collapsed} label="Modo Visual" detail={theme === 'dark' ? 'Escuro (Dark)' : 'Claro (Light)'}>
+              <button
+                onClick={(e) => toggleTheme(e.currentTarget)}
+                className={footerButtonClass}
+                aria-label={collapsed ? 'Modo Visual' : undefined}
+              >
+                <span className="flex items-center gap-2">
+                  {theme === 'dark' ? (
+                    <Sun className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-indigo-600" />
+                  )}
+                  {expanded && <span className="whitespace-nowrap">Modo Visual</span>}
+                </span>
+                {expanded && (
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    {theme === 'dark' ? 'Escuro (Dark)' : 'Claro (Light)'}
+                  </span>
+                )}
+              </button>
+            </RailTooltip>
 
-        {/* Configurações Fiscais */}
-        <button
-          onClick={onOpenSettings}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-            <span>Configurações</span>
-          </span>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-            Tabelas 2026/27
-          </span>
-        </button>
+            {/* SQLite Manager */}
+            <RailTooltip enabled={collapsed} label="Banco SQLite" detail={storageMode === 'system' ? 'Local' : 'Portátil'}>
+              <button
+                onClick={onOpenSqliteManager}
+                className={footerButtonClass}
+                aria-label={collapsed ? 'Banco SQLite' : undefined}
+              >
+                <span className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {expanded && <span className="whitespace-nowrap">Banco SQLite</span>}
+                </span>
+                {expanded && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono">
+                    {storageMode === 'system' ? 'Local' : 'Portátil'}
+                  </span>
+                )}
+              </button>
+            </RailTooltip>
 
-      </div>
+            {/* Configurações Fiscais */}
+            <RailTooltip enabled={collapsed} label="Configurações" detail="Tabelas 2026/27">
+              <button
+                onClick={onOpenSettings}
+                className={footerButtonClass}
+                aria-label={collapsed ? 'Configurações' : undefined}
+              >
+                <span className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  {expanded && <span className="whitespace-nowrap">Configurações</span>}
+                </span>
+                {expanded && (
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono whitespace-nowrap">
+                    Tabelas 2026/27
+                  </span>
+                )}
+              </button>
+            </RailTooltip>
+          </div>
+        </motion.aside>
+      </motion.div>
 
-    </aside>
+      {/* Painel da competência aberto a partir do menu recolhido */}
+      <AnimatePresence>
+        {collapsed && monthPanelPos && (
+          <motion.div
+            ref={monthPanelRef}
+            key="month-panel"
+            role="dialog"
+            aria-label="Competência ativa"
+            className="no-print fixed z-[60] w-64 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl"
+            style={{ left: monthPanelPos.x, top: monthPanelPos.y }}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          >
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+              <span className="uppercase tracking-wider">Competência Ativa:</span>
+              {competenceStatus}
+            </div>
+            {monthStepper}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };

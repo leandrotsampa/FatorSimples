@@ -22,6 +22,8 @@ import { storageAdapter } from './utils/storageAdapter';
 import { runThemeWipe } from './utils/themeTransition';
 import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from './utils/motion';
+import { useUiPrefs } from './hooks/useUiPrefs';
+import { resolveSidebarMode, SIDEBAR_COLLAPSE_BELOW } from './utils/sidebarMode';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -74,6 +76,39 @@ export default function App() {
   // Estratégia do pró-labore da competência (padrão: 28%) e valor usado no modo manual
   const [prolaboreRule, setProlaboreRule] = useState<TaxSettings['prolaboreRule']>('auto_28_month');
   const [manualProlabore, setManualProlabore] = useState<number>(0);
+
+  // Menu lateral: preferência salva + largura da janela (recolhe sozinho em janela estreita)
+  const [uiPrefs, setUiPrefs] = useUiPrefs();
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
+  const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  useEffect(() => {
+    if (windowWidth >= SIDEBAR_COLLAPSE_BELOW) setSidebarOverlayOpen(false);
+  }, [windowWidth]);
+  const sidebarMode = resolveSidebarMode(uiPrefs.sidebar, windowWidth, sidebarOverlayOpen);
+  const toggleSidebar = () => {
+    if (window.innerWidth < SIDEBAR_COLLAPSE_BELOW) {
+      setSidebarOverlayOpen((open) => !open);
+    } else {
+      setUiPrefs({ sidebar: uiPrefs.sidebar === 'expanded' ? 'collapsed' : 'expanded' });
+    }
+  };
+  const toggleSidebarRef = useRef(toggleSidebar);
+  toggleSidebarRef.current = toggleSidebar;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebarRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Aba ativa e o container que rola (volta ao topo ao trocar de aba)
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -313,6 +348,9 @@ export default function App() {
         history={history}
         theme={theme}
         toggleTheme={toggleTheme}
+        mode={sidebarMode}
+        onToggleMode={toggleSidebar}
+        onCloseOverlay={() => setSidebarOverlayOpen(false)}
       />
 
       {/* Viewport Principal com Rolagem Independente */}
