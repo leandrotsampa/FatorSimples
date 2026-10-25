@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_UI_PREFS, parseUiPrefs } from './useUiPrefs';
 
 describe('parseUiPrefs', () => {
-  it('sem nada salvo usa o padrão: sons desligados, volume 40%, menu expandido na primeira abertura', () => {
-    expect(parseUiPrefs(null)).toEqual({ soundEnabled: false, soundVolume: 0.4, sidebar: 'expanded' });
-    expect(DEFAULT_UI_PREFS).toEqual({ soundEnabled: false, soundVolume: 0.4, sidebar: 'expanded' });
+  it('sem nada salvo usa o padrão: sons ligados, volume 40%, menu expandido na primeira abertura', () => {
+    expect(parseUiPrefs(null)).toEqual({ soundEnabled: true, soundVolume: 0.4, sidebar: 'expanded' });
+    expect(DEFAULT_UI_PREFS).toEqual({ soundEnabled: true, soundVolume: 0.4, sidebar: 'expanded' });
   });
 
   it('JSON inválido volta ao padrão', () => {

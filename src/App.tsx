@@ -32,6 +32,7 @@ import { runThemeWipe } from './utils/themeTransition';
 import { competenceInputs } from './utils/competenceInputs';
 import { PageSkeleton } from './components/ui/Skeleton';
 import { useAppDialog } from './components/ui/AppDialog';
+import { resolveInitialTheme } from './utils/initialTheme';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -47,12 +48,10 @@ export default function App() {
   // Tema visual (dark ou light)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
-      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+      return resolveInitialTheme(localStorage.getItem(THEME_STORAGE_KEY));
     } catch {
-      // Fallback
+      return resolveInitialTheme(null);
     }
-    return 'dark';
   });
 
   // Troca o tema com o círculo saindo do botão clicado; o DOM é a fonte da verdade

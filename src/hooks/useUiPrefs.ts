@@ -7,7 +7,7 @@ export interface UiPrefs {
   sidebar: 'expanded' | 'collapsed';
 }
 
-export const DEFAULT_UI_PREFS: UiPrefs = { soundEnabled: false, soundVolume: 0.4, sidebar: 'expanded' };
+export const DEFAULT_UI_PREFS: UiPrefs = { soundEnabled: true, soundVolume: 0.4, sidebar: 'expanded' };
 
 const UI_PREFS_STORAGE_KEY = 'fatorsimples_ui_v1';
 

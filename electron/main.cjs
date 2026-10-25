@@ -144,9 +144,9 @@ function createWindow() {
     minWidth: 980,
     minHeight: 650,
     title: 'FatorSimples - Calculadora Simples Nacional & Fator R',
-    backgroundColor: '#020617',
+    backgroundColor: '#e7eee9', // fundo do tema claro (padrão) até a interface carregar
     // Barra de título desenhada pelo app; abre no tema escuro (padrão) e o renderer corrige via IPC
-    ...windowChromeOptions(process.platform, 'dark'),
+    ...windowChromeOptions(process.platform, 'light'),
     // Ícone da janela/barra de tarefas (copiado de public/ para dist/ no build)
     icon: path.join(__dirname, '..', 'dist', 'icon.png'),
     webPreferences: {

@@ -60,7 +60,7 @@ describe('soundRecipe', () => {
 describe('createSoundPlayer', () => {
   it('com os sons desligados não cria contexto de áudio', () => {
     const a = fakeAudio();
-    const p = createSoundPlayer(() => DEFAULT_UI_PREFS, { AudioContext: a.FakeContext as never, now: () => 0 });
+    const p = createSoundPlayer(() => ({ ...DEFAULT_UI_PREFS, soundEnabled: false }), { AudioContext: a.FakeContext as never, now: () => 0 });
     p.play('success');
     expect(a.contexts()).toBe(0);
   });

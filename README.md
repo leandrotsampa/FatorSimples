@@ -97,9 +97,9 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 <td valign="top">
 
 ### 🎨 Interface
-- Temas **claro e escuro**, com a troca animada a partir do botão
+- Tema **claro** por padrão e **escuro** a um clique, com a troca animada a partir do botão
 - Menu lateral recolhível, que lembra a sua escolha
-- Animações suaves e sons sutis, que podem ser desligados nas Configurações
+- Animações suaves e sons sutis (ligados por padrão), que podem ser desligados nas Configurações
 - Barra de título própria, com os dados da empresa a um clique
 
 </td>
@@ -131,8 +131,8 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 | <img src="docs/screenshots/apuracao-detalhes.png" alt="Transferências e memória de cálculo" /> | <img src="docs/screenshots/comparador-simulador.png" alt="Simulador" /> |
 | **Histórico** | **Resumo do mês** |
 | <img src="docs/screenshots/historico.png" alt="Histórico" /> | <img src="docs/screenshots/relatorio.png" alt="Resumo do mês" /> |
-| **Tema claro** | **Tutorial guiado** |
-| <img src="docs/screenshots/apuracao-claro.png" alt="Tema claro" /> | <img src="docs/screenshots/tutorial.png" alt="Tutorial guiado" /> |
+| **Tema escuro** | **Tutorial guiado** |
+| <img src="docs/screenshots/apuracao-escuro.png" alt="Tema escuro" /> | <img src="docs/screenshots/tutorial.png" alt="Tutorial guiado" /> |
 
 </details>
 
