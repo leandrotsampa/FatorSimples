@@ -28,6 +28,7 @@ import { CurrencyInput } from './CurrencyInput';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from '../utils/motion';
+import { AnimatedNumber } from './ui/AnimatedNumber';
 
 interface MonthApurationViewProps {
   currentRevenue: number;
@@ -54,6 +55,8 @@ const formatCompetence = (yearMonth: string) => {
   return `${MONTH_NAMES[m - 1]}/${y}`;
 };
 
+const formatPercent1 = (n: number) => formatPercent(n, 1);
+
 const card =
   'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm ring-1 ring-slate-900/5 dark:ring-transparent transition-colors';
 
@@ -67,15 +70,31 @@ const STRATEGIES: { rule: TaxSettings['prolaboreRule']; label: string; title: st
   { rule: 'manual', label: 'Manual', title: 'Definir manualmente o valor bruto do pró-labore' },
 ];
 
+// Entrada em cascata dos blocos da apuração (só na montagem, não a cada tecla)
+const cascade = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+const cascadeItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: DURATION.base, ease: EASE_OUT } },
+};
+
+// Valor numérico conta até o resultado; texto (ex.: "Anexo III") aparece direto
+const ValueText: React.FC<{ value: number | string; format?: (n: number) => string }> = ({ value, format }) =>
+  typeof value === 'number' && format ? <AnimatedNumber value={value} format={format} /> : <>{value}</>;
+
 // Resposta principal do mês (DAS, pró-labore, Fator R)
 const AnswerCard: React.FC<{
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: number | string;
+  format?: (n: number) => string;
   detail: React.ReactNode;
   tone?: 'neutral' | 'good' | 'bad';
-}> = ({ icon, label, value, detail, tone = 'neutral' }) => (
-  <div
+}> = ({ icon, label, value, format, detail, tone = 'neutral' }) => (
+  <motion.div
+    variants={cascadeItem}
     className={`${card} p-5 ${
       tone === 'good'
         ? 'border-2 border-emerald-500 dark:border-emerald-500/70'
@@ -89,7 +108,7 @@ const AnswerCard: React.FC<{
       {label}
     </div>
     <div
-      className={`text-3xl font-bold font-mono tabular-nums tracking-tight mt-1.5 ${
+      className={`text-3xl font-bold font-mono tabular-nums tracking-tight mt-1.5 transition-colors duration-[var(--duration-base)] ${
         tone === 'good'
           ? 'text-emerald-700 dark:text-emerald-400'
           : tone === 'bad'
@@ -97,22 +116,31 @@ const AnswerCard: React.FC<{
             : 'text-slate-900 dark:text-white'
       }`}
     >
-      {value}
+      <ValueText value={value} format={format} />
     </div>
     <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{detail}</div>
-  </div>
+  </motion.div>
 );
 
 // Indicador da faixa sempre visível
-const Indicator: React.FC<{ label: string; value: string; detail: string; valueClass?: string }> = ({
+const Indicator: React.FC<{
+  label: string;
+  value: number | string;
+  format?: (n: number) => string;
+  detail: string;
+  valueClass?: string;
+}> = ({
   label,
   value,
+  format,
   detail,
   valueClass = 'text-slate-900 dark:text-white',
 }) => (
   <div className="bg-slate-50 dark:bg-slate-950/60 rounded-lg px-3 py-2.5 min-w-0">
     <div className="text-xs text-slate-600 dark:text-slate-400">{label}</div>
-    <div className={`text-base font-bold font-mono tabular-nums mt-0.5 truncate ${valueClass}`}>{value}</div>
+    <div className={`text-base font-bold font-mono tabular-nums mt-0.5 truncate transition-colors ${valueClass}`}>
+      <ValueText value={value} format={format} />
+    </div>
     <div className="text-xs text-slate-500 dark:text-slate-500 truncate">{detail}</div>
   </div>
 );
@@ -410,13 +438,15 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Indicator
                 label="Fator R deste mês"
-                value={formatPercent(simples.factorRPercentage)}
+                value={simples.factorRPercentage}
+                format={formatPercent}
                 detail={`Anexo ${simples.anexoUsed} · definido pelos meses anteriores`}
                 valueClass={simples.isQualifiedForAnexo3 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
               />
               <Indicator
                 label={`RBT12${simples.isProportional ? ' (proporcional)' : ''}`}
-                value={formatCurrency(simples.rbt12)}
+                value={simples.rbt12}
+                format={formatCurrency}
                 detail={
                   simples.isProportional
                     ? `Média de ${simples.monthsCount} ${simples.monthsCount === 1 ? 'mês' : 'meses'} × 12`
@@ -425,7 +455,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label="Alíquota efetiva do DAS"
-                value={formatPercent(simples.effectiveRatePercentage)}
+                value={simples.effectiveRatePercentage}
+                format={formatPercent}
                 detail={`Anexo ${simples.anexoUsed}, faixa ${simples.faixa} · DAS = faturamento × alíquota`}
               />
             </div>
@@ -438,23 +469,26 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
       ) : (
         <>
           {/* Três respostas do mês */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4" variants={cascade} initial="hidden" animate="show">
             <AnswerCard
               icon={<Receipt className="w-4 h-4" />}
               label="Pagar de DAS"
-              value={formatCurrency(simples.dasAmount)}
+              value={simples.dasAmount}
+              format={formatCurrency}
               detail={`Vence em 20/${dasDueMonth[1]}/${dasDueMonth[0]}`}
             />
             <AnswerCard
               icon={<UserRound className="w-4 h-4" />}
               label="Retirar de pró-labore"
-              value={formatCurrency(prolabore.gross)}
+              value={prolabore.gross}
+              format={formatCurrency}
               detail={`Líquido ${formatCurrency(prolabore.net)}`}
             />
             <AnswerCard
               icon={next.isQualifiedForAnexo3 ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               label={`Fator R em ${formatCompetence(next.yearMonth)}`}
-              value={formatPercent(next.factorRPercentage)}
+              value={next.factorRPercentage}
+              format={formatPercent}
               tone={next.isQualifiedForAnexo3 ? 'good' : 'bad'}
               detail={
                 next.isQualifiedForAnexo3
@@ -462,7 +496,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                   : `Cai no Anexo V · faltam ${formatCurrency(-margin.prolaboreMargin)} de pró-labore`
               }
             />
-          </div>
+          </motion.div>
 
           {/* Indicadores do mês, sempre visíveis */}
           <section className={`${card} p-3`}>
@@ -472,29 +506,34 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
               <Indicator
                 label="Alíquota efetiva"
-                value={formatPercent(simples.effectiveRatePercentage)}
+                value={simples.effectiveRatePercentage}
+                format={formatPercent}
                 detail={`nominal ${formatPercent(simples.nominalRate * 100)}`}
               />
               <Indicator label="Enquadramento" value={`Anexo ${simples.anexoUsed}`} detail={`faixa ${simples.faixa}`} />
               <Indicator
                 label="Fator R do mês"
-                value={formatPercent(simples.factorRPercentage)}
+                value={simples.factorRPercentage}
+                format={formatPercent}
                 detail={simples.monthsCount === 0 ? 'primeiro mês' : '12 meses anteriores'}
                 valueClass={simples.isQualifiedForAnexo3 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
               />
               <Indicator
                 label="RBT12"
-                value={formatCurrency(simples.rbt12)}
+                value={simples.rbt12}
+                format={formatCurrency}
                 detail={simples.isProportional ? 'proporcional' : '12 meses completos'}
               />
               <Indicator
                 label="Sem Fator R"
-                value={formatPercent(simples.anexoVEffectiveRate * 100)}
+                value={simples.anexoVEffectiveRate * 100}
+                format={formatPercent}
                 detail={`DAS ${formatCurrency(simples.anexoVDasAmount)}`}
               />
               <Indicator
                 label="Carga total"
-                value={formatPercent(consolidated.totalTaxBurdenPercent, 1)}
+                value={consolidated.totalTaxBurdenPercent}
+                format={formatPercent1}
                 detail={formatCurrency(consolidated.totalTaxes)}
               />
             </div>
@@ -505,9 +544,11 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm text-slate-600 dark:text-slate-400">No bolso do sócio</span>
-                <span className="text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-400">
-                  {formatCurrency(consolidated.totalPocketCash)}
-                </span>
+                <AnimatedNumber
+                  value={consolidated.totalPocketCash}
+                  format={formatCurrency}
+                  className="text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-400"
+                />
               </div>
               {savingsThisMonth > 0.005 && (
                 <span className="text-sm text-slate-600 dark:text-slate-400">
@@ -516,9 +557,20 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 </span>
               )}
             </div>
-            <div className="flex h-2.5 rounded overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800" aria-hidden="true">
+            {/* Barra cresce a partir de zero a cada competência e se ajusta suave ao mudar os valores */}
+            <div
+              key={selectedMonth}
+              className="flex h-2.5 rounded overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800"
+              aria-hidden="true"
+            >
               {breakdown.map((p) => (
-                <div key={p.label} className={p.color} style={{ width: `${(p.value / breakdownTotal) * 100}%` }} />
+                <motion.div
+                  key={p.label}
+                  className={p.color}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(p.value / breakdownTotal) * 100}%` }}
+                  transition={{ duration: DURATION.number, ease: EASE_OUT }}
+                />
               ))}
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2.5 text-sm text-slate-600 dark:text-slate-400">

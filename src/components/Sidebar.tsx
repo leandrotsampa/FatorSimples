@@ -15,10 +15,13 @@ import {
   HardDrive,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { AnimatedNumber } from './ui/AnimatedNumber';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
 import type { StorageMode } from '../types/electron';
+
+const formatPercent1 = (n: number) => formatPercent(n, 1);
 
 interface SidebarProps {
   activeTab: 'apuration' | 'history' | 'comparison' | 'report';
@@ -261,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
               }`}
             >
-              {monthsCount > 0 ? formatPercent(factorR, 1) : '—'}
+              {monthsCount > 0 ? <AnimatedNumber value={factorR} format={formatPercent1} /> : '—'}
             </span>
           </div>
           <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
@@ -269,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               RBT12 {isProportional ? '(proporcional)' : '(12m anteriores)'}:
             </span>
             <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-              {monthsCount > 0 ? formatCurrency(rbt12) : 'sem histórico'}
+              {monthsCount > 0 ? <AnimatedNumber value={rbt12} format={formatCurrency} /> : 'sem histórico'}
             </span>
           </div>
           <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
