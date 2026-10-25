@@ -35,7 +35,6 @@ const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'se
 const WIDTH_EXPANDED = 288;
 const WIDTH_COLLAPSED = 68;
 const widthSpring = { type: 'spring', stiffness: 400, damping: 40 } as const;
-const pillSpring = { type: 'spring', stiffness: 380, damping: 34, mass: 0.9 } as const;
 
 interface SidebarProps {
   activeTab: 'apuration' | 'history' | 'comparison' | 'report';
@@ -522,43 +521,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
               collapsed ? 'p-2' : 'p-3'
             }`}
           >
-            {/* Tema: par claro/escuro; o círculo da troca nasce no botão clicado */}
-            <div
-              role="group"
-              aria-label="Tema"
-              className={`relative flex p-1 mb-1 rounded-xl bg-slate-200/70 dark:bg-slate-900 ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}
-            >
-              {(['light', 'dark'] as const).map((t) => {
-                const active = theme === t;
-                const ThemeIcon = t === 'light' ? Sun : Moon;
-                const label = t === 'light' ? 'Claro' : 'Escuro';
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={(e) => {
-                      if (!active) toggleTheme(e.currentTarget);
-                    }}
-                    aria-pressed={active}
-                    aria-label={`Tema ${label.toLowerCase()}`}
-                    title={`Tema ${label.toLowerCase()}`}
-                    className={`relative flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                      active ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {active && (
+            {/* Tema: um botão; o ícone gira entre sol e lua e o círculo da troca nasce nele */}
+            <RailTooltip enabled={collapsed} label="Tema" detail={theme === 'dark' ? 'Escuro (clique para claro)' : 'Claro (clique para escuro)'}>
+              <button
+                onClick={(e) => toggleTheme(e.currentTarget)}
+                className={footerButtonClass}
+                aria-label={`Tema ${theme === 'dark' ? 'escuro' : 'claro'}. Trocar para ${theme === 'dark' ? 'claro' : 'escuro'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="relative w-4 h-4">
+                    <AnimatePresence initial={false}>
                       <motion.span
-                        layoutId="theme-active"
-                        className="absolute inset-0 rounded-lg bg-white shadow-sm dark:bg-slate-700"
-                        transition={pillSpring}
-                      />
-                    )}
-                    <ThemeIcon className={`relative w-4 h-4 ${active ? (t === 'light' ? 'text-amber-500' : 'text-indigo-300') : ''}`} />
-                    {expanded && <span className="relative whitespace-nowrap">{label}</span>}
-                  </button>
-                );
-              })}
-            </div>
+                        key={theme}
+                        className="absolute inset-0 flex items-center justify-center"
+                        initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+                        animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                        exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                      >
+                        {theme === 'dark' ? (
+                          <Moon className="w-4 h-4 text-indigo-300" />
+                        ) : (
+                          <Sun className="w-4 h-4 text-amber-500" />
+                        )}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                  {expanded && <span className="whitespace-nowrap">Tema</span>}
+                </span>
+                {expanded && (
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    {theme === 'dark' ? 'Escuro' : 'Claro'}
+                  </span>
+                )}
+              </button>
+            </RailTooltip>
 
             {/* SQLite Manager */}
             <RailTooltip enabled={collapsed} label="Banco SQLite" detail={storageMode === 'system' ? 'Local' : 'Portátil'}>
