@@ -467,6 +467,7 @@ export default function App() {
               settings={apurationSettings}
               onSaveCurrentMonthToHistory={handleSaveMonthToHistory}
               onNavigateToHistory={() => setActiveTab('history')}
+              onOpenSettings={() => setIsSettingsOpen(true)}
             />
           )}
 
