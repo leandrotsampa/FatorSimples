@@ -23,6 +23,58 @@ import {
 } from '../utils/taxCalculations';
 import { card } from './ui/card';
 import { PageHeader } from './ui/PageHeader';
+import { SegmentedControl } from './ui/SegmentedControl';
+import { AnimatedNumber } from './ui/AnimatedNumber';
+import { AreaChart } from './charts/AreaChart';
+import { Sparkline } from './charts/Sparkline';
+import type { ChartTone } from './charts/tones';
+import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
+
+const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MONTH_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+// "2026-09" -> "set/26" e "setembro de 2026"
+const formatShortMonth = (ym: string) => `${MONTH_SHORT[Number(ym.slice(5, 7)) - 1]}/${ym.slice(2, 4)}`;
+const formatLongMonth = (ym: string) => `${MONTH_LONG[Number(ym.slice(5, 7)) - 1]} de ${ym.slice(0, 4)}`;
+
+// Eixo em reais compacto: "R$ 20 mil"
+const formatCompactCurrency = (v: number) =>
+  v >= 1000 ? `R$ ${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(v)}`;
+
+// Métrica do topo: valor que conta até o número e a tendência dos 12 meses
+const Metric: React.FC<{
+  label: string;
+  value: number;
+  format: (n: number) => string;
+  detail: string;
+  trend: number[];
+  tone: ChartTone;
+  valueClass?: string;
+}> = ({ label, value, format, detail, trend, tone, valueClass = 'text-slate-900 dark:text-white' }) => (
+  <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl">
+    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{label}</div>
+    <div className="flex items-end justify-between gap-2 mt-0.5">
+      <AnimatedNumber value={value} format={format} className={`text-lg font-bold font-num tabular-nums ${valueClass}`} />
+      <Sparkline values={trend} tone={tone} width={64} height={22} />
+    </div>
+    <div className="text-[10px] text-slate-500 mt-1 truncate" title={detail}>{detail}</div>
+  </div>
+);
+
+const TooltipRow: React.FC<{ label: string; value: string; dot: string; valueClass?: string }> = ({
+  label,
+  value,
+  dot,
+  valueClass = 'text-slate-900 dark:text-white',
+}) => (
+  <div className="flex items-center justify-between gap-4">
+    <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+      <span className={`w-2 h-2 rounded-full ${dot}`} />
+      {label}
+    </span>
+    <span className={`font-num font-semibold ${valueClass}`}>{value}</span>
+  </div>
+);
 
 interface HistoryTableProps {
   history: MonthRecord[];
@@ -69,8 +121,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
     history.map((m) => [m.yearMonth, calculateSimplesNacional(m.revenue, m.payroll, history, m.yearMonth)])
   );
 
-  // Encontra a maior receita para cálculo de escala de barras
-  const maxRevenue = Math.max(...sortedHistory.map((m) => m.revenue), 10000);
+  // Últimos 12 meses em ordem cronológica (tendências) e meses do gráfico conforme o intervalo
+  const last12Asc = [...last12].reverse();
+  const [range, setRange] = useState<HistoryRange>('12m');
+  const chartMonths = selectHistoryRange(history, range);
 
   return (
     <div className="page-stagger space-y-5">
@@ -101,129 +155,110 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         }
       />
 
-      {/* Métricas rápidas */}
+      {/* Métricas rápidas com a tendência de cada uma */}
       <section className={`${card} p-5`}>
-        {/* 4 Key Metrics Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* RBT12 Acumulado */}
-          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">RBT12 (Últimos 12 Meses):</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-white font-num mt-0.5 tabular-nums">
-              {formatCurrency(totalRevenue12)}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-1">Base da Alíquota do Simples</div>
-          </div>
-
-          {/* Folha 12 Acumulada */}
-          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Folha Total (12 Meses):</div>
-            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-num mt-0.5 tabular-nums">
-              {formatCurrency(totalPayroll12)}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-1">Pró-labore + Encargos pagos</div>
-          </div>
-
-          {/* Fator R Geral */}
-          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
-              Fator R {nextCompetence ? `para ${nextCompetence}` : 'Acumulado 12m'}:
-            </div>
-            <div className="text-lg font-bold font-num mt-0.5 tabular-nums flex items-center gap-1.5">
-              <span className={isOverallQualified ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                {formatPercent(overallFactorR, 2)}
-              </span>
-              {isOverallQualified ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              )}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-1">
-              {isOverallQualified ? 'Enquadrado no Anexo III (≥ 28%)' : 'Abaixo de 28% (Anexo V)'}
-            </div>
-          </div>
-
-          {/* Total Simples Pago */}
-          <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl transition-colors">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Total DAS Recolhido (12m):</div>
-            <div className="text-lg font-bold text-slate-800 dark:text-slate-200 font-num mt-0.5 tabular-nums">
-              {formatCurrency(totalDas12)}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-1">
-              INSS: {formatCurrency(totalInss12)} · IR: {formatCurrency(totalIrrf12)}
-            </div>
-          </div>
+          <Metric
+            label="RBT12 (últimos 12 meses)"
+            value={totalRevenue12}
+            format={formatCurrency}
+            detail="Base da alíquota do Simples"
+            trend={last12Asc.map((m) => m.revenue)}
+            tone="emerald"
+          />
+          <Metric
+            label="Folha total (12 meses)"
+            value={totalPayroll12}
+            format={formatCurrency}
+            detail="Pró-labore + encargos pagos"
+            trend={last12Asc.map((m) => m.payroll)}
+            tone="amber"
+          />
+          <Metric
+            label={`Fator R ${nextCompetence ? `para ${nextCompetence}` : 'acumulado 12m'}`}
+            value={overallFactorR}
+            format={formatPercent}
+            valueClass={isOverallQualified ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+            detail={isOverallQualified ? 'Enquadrado no Anexo III (≥ 28%)' : 'Abaixo de 28% (Anexo V)'}
+            trend={last12Asc.map((m) => (m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0))}
+            tone={isOverallQualified ? 'emerald' : 'rose'}
+          />
+          <Metric
+            label="Total DAS recolhido (12m)"
+            value={totalDas12}
+            format={formatCurrency}
+            detail={`INSS: ${formatCurrency(totalInss12)} · IR: ${formatCurrency(totalIrrf12)}`}
+            trend={last12Asc.map((m) => m.dasPaid)}
+            tone="sky"
+          />
         </div>
       </section>
 
-      {/* Visual Timeline Chart: Receita vs Folha vs Meta 28% */}
-      {sortedHistory.length > 0 && (
+      {/* Evolução: faturamento e folha (R$) com o Fator R (%) e a meta de 28% */}
+      {chartMonths.length > 0 && (
         <section className={`${card} p-5`}>
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800 text-xs">
-            <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Evolução Mensal (Faturamento vs Folha / Fator R)</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Evolução mensal
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Faturamento</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Folha / pró-labore</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500" /> Fator R</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 border-t-2 border-dashed border-sky-500/70" /> Meta 28%</span>
+              </div>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-slate-600 dark:text-slate-400 font-num">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-xs inline-block" /> Faturamento
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 bg-amber-400 rounded-xs inline-block" /> Folha / Pró-labore
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2 h-0.5 bg-sky-500 inline-block" /> Meta 28%
-              </span>
-            </div>
+            <SegmentedControl
+              className="w-64"
+              options={[
+                { value: '12m', label: '12 meses' },
+                { value: '6m', label: '6 meses' },
+                { value: 'year', label: 'Ano' },
+              ]}
+              value={range}
+              onChange={setRange}
+              ariaLabel="Intervalo do gráfico"
+              layoutId="history-range"
+            />
           </div>
-
-          {/* Bar Chart list */}
-          <div className="space-y-3">
-            {sortedHistory.slice(0, 12).map((item) => {
-              const revPercent = Math.min(100, (item.revenue / maxRevenue) * 100);
-              const payPercent = Math.min(100, (item.payroll / maxRevenue) * 100);
-              const target28Percent = revPercent * 0.28;
-              const monthFactorR = item.revenue > 0 ? (item.payroll / item.revenue) * 100 : 0;
-              const isMonthOk = monthFactorR >= 28;
-
+          <AreaChart
+            labels={chartMonths.map((m) => formatShortMonth(m.yearMonth))}
+            series={[
+              { key: 'rev', label: 'Faturamento', tone: 'emerald', values: chartMonths.map((m) => m.revenue), kind: 'area', axis: 'left' },
+              { key: 'pay', label: 'Folha', tone: 'amber', values: chartMonths.map((m) => m.payroll), kind: 'area', axis: 'left' },
+              {
+                key: 'fr',
+                label: 'Fator R',
+                tone: 'sky',
+                values: chartMonths.map((m) => (m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0)),
+                kind: 'line',
+                axis: 'right',
+              },
+            ]}
+            threshold={{ axis: 'right', value: 28, label: 'Meta 28%' }}
+            formatLeft={formatCompactCurrency}
+            formatRight={(v) => `${Math.round(v)}%`}
+            tooltip={(i) => {
+              const m = chartMonths[i];
+              const fr = m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0;
               return (
-                <div key={item.id} className="group text-xs">
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="font-num font-bold text-slate-800 dark:text-slate-300 w-20">
-                      {item.yearMonth}
-                    </span>
-                    <div className="flex items-center gap-3 font-num">
-                      <span className="text-slate-700 dark:text-slate-300">Rev: {formatCurrency(item.revenue)}</span>
-                      <span className="text-amber-700 dark:text-amber-400 font-semibold">Folha: {formatCurrency(item.payroll)}</span>
-                      <span className={`font-bold ${isMonthOk ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        Folha/receita: {formatPercent(monthFactorR, 1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dual Bar */}
-                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-950 rounded-sm overflow-hidden relative flex items-center border border-slate-200 dark:border-slate-800">
-                    {/* Revenue bar */}
-                    <div
-                      className="bg-emerald-500/80 h-full rounded-l-xs transition-all"
-                      style={{ width: `${revPercent}%` }}
-                    />
-                    {/* Payroll bar overlayed or beside */}
-                    <div
-                      className="absolute top-0 bottom-0 left-0 bg-amber-400/90 rounded-l-xs transition-all"
-                      style={{ width: `${payPercent}%` }}
-                    />
-                    {/* 28% Target marker tick */}
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-sky-500 dark:bg-sky-300 z-10"
-                      style={{ left: `${target28Percent}%` }}
-                      title="Linha de corte 28%"
-                    />
-                  </div>
-                </div>
+                <>
+                  <div className="font-semibold text-slate-900 dark:text-white mb-1">{formatLongMonth(m.yearMonth)}</div>
+                  <TooltipRow label="Faturamento" value={formatCurrency(m.revenue)} dot="bg-emerald-500" />
+                  <TooltipRow label="Folha" value={formatCurrency(m.payroll)} dot="bg-amber-500" />
+                  <TooltipRow
+                    label="Folha/receita"
+                    value={formatPercent(fr, 1)}
+                    dot="bg-sky-500"
+                    valueClass={fr >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                  />
+                  <TooltipRow label="DAS pago" value={formatCurrency(m.dasPaid)} dot="bg-slate-400" />
+                </>
               );
-            })}
-          </div>
+            }}
+          />
         </section>
       )}
 
