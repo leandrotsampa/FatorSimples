@@ -360,7 +360,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
     .slice(-12);
   const trendFactorR = priorMonths.map((h) => (h.payroll / h.revenue) * 100);
   const trendRevenue = priorMonths.map((h) => h.revenue);
-  const trendRate = priorMonths.map((h) => (h.dasPaid / h.revenue) * 100);
 
   // Aviso sonoro só quando uma mudança do usuário faz o Fator R da próxima competência sair da meta.
   // Trocar de competência zera a referência: carregar um mês que já estava abaixo não avisa.
@@ -749,16 +748,12 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="text-xs text-slate-600 dark:text-slate-400 px-1 pb-2">
               Indicadores de {formatCompetence(selectedMonth)}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
               <Indicator
-                label="Alíquota efetiva"
-                trend={trendRate}
-                trendTone="amber"
-                value={simples.effectiveRatePercentage}
-                format={formatPercent}
-                detail={`nominal ${formatPercent(simples.nominalRate * 100)}`}
+                label="Enquadramento"
+                value={`Anexo ${simples.anexoUsed}`}
+                detail={`faixa ${simples.faixa} · nominal ${formatPercent(simples.nominalRate * 100)}`}
               />
-              <Indicator label="Enquadramento" value={`Anexo ${simples.anexoUsed}`} detail={`faixa ${simples.faixa}`} />
               <Indicator
                 label="Fator R do mês"
                 trend={trendFactorR}
