@@ -313,6 +313,15 @@ export default function App() {
     }
   };
 
+  // Meses de exemplo (id "sample-…"): entram nos cálculos, então ficam sinalizados e removíveis
+  const hasSampleMonths = history.some((h) => h.id.startsWith('sample-'));
+  const handleRemoveSample = () => {
+    const samples = history.filter((h) => h.id.startsWith('sample-'));
+    setHistory((prev) => prev.filter((h) => !h.id.startsWith('sample-')));
+    samples.forEach((rec) => storageAdapter.deleteMonth(rec.id));
+    playSound('delete');
+  };
+
   const handleClearHistory = () => {
     if (window.confirm('Tem certeza que deseja limpar todo o histórico de competências?')) {
       setHistory([]);
@@ -431,6 +440,23 @@ export default function App() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
         <main className="relative p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {hasSampleMonths && (
+            <div
+              role="status"
+              className="no-print mb-5 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 ring-1 ring-inset ring-sky-200 dark:ring-sky-800/60 text-sm text-sky-900 dark:text-sky-200"
+            >
+              <span>
+                <b>Você está usando meses de exemplo.</b> Eles entram nos cálculos; remova antes de lançar os seus.
+              </span>
+              <button
+                type="button"
+                onClick={handleRemoveSample}
+                className="px-3 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold cursor-pointer"
+              >
+                Remover exemplo
+              </button>
+            </div>
+          )}
           {/* Troca de tela sem vazio: a anterior sai por cima (popLayout) enquanto a nova
               surge de um véu desfocado; os blocos da nova entram em sequência (page-stagger) */}
           <AnimatePresence mode="popLayout" initial={false}>

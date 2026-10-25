@@ -174,16 +174,20 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
       <section className={`${card} p-5`}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Metric
-            label="RBT12 (últimos 12 meses)"
-            value={totalRevenue12}
+            label={`RBT12 ${nextCompetence ? `para ${nextCompetence}` : '(12 meses)'}`}
+            value={nextRbt?.rbt12 ?? totalRevenue12}
             format={formatCurrency}
-            detail="Base da alíquota do Simples"
+            detail={
+              nextRbt?.isProportional
+                ? `Média de ${nextRbt.monthsCount} ${nextRbt.monthsCount === 1 ? 'mês' : 'meses'} × 12 (proporcional)`
+                : 'Faturamento dos 12 meses anteriores: define a alíquota'
+            }
             trend={last12Asc.map((m) => m.revenue)}
             tone="emerald"
           />
           <Metric
-            label="Folha total (12 meses)"
-            value={totalPayroll12}
+            label={`Folha ${nextCompetence ? `para ${nextCompetence}` : '(12 meses)'}`}
+            value={nextRbt?.folha12 ?? totalPayroll12}
             format={formatCurrency}
             detail="Pró-labore + encargos pagos"
             trend={last12Asc.map((m) => m.payroll)}

@@ -42,6 +42,8 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
   );
 
   const { prolabore, simples, consolidated } = summary;
+  // Mês ainda não salvo no histórico: o resumo sai marcado como rascunho (inclusive na impressão)
+  const isDraft = !history.some((h) => h.yearMonth === selectedMonth);
   const activeTable =
     OFFICIAL_TAX_TABLES[settings.taxVersionId] ||
     OFFICIAL_TAX_TABLES['2026_oficial'] ||
@@ -55,10 +57,10 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           eyebrow={
             <span className="flex items-center gap-1.5">
               <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Relatório oficial de apuração contábil
+              Resumo do mês para guardar ou enviar à contabilidade
             </span>
           }
-          title="Demonstrativo do mês"
+          title="Resumo do mês"
           description="Documento pronto para envio à contabilidade ou arquivamento fiscal do fechamento mensal."
           actions={
             <button
@@ -74,6 +76,11 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
 
       {/* Printable Sheet (styled with crisp white on print and dark slate preview on screen) */}
       <div className="report-sheet bg-white text-slate-900 p-8 sm:p-10 rounded-xl shadow-xl border border-slate-200 max-w-4xl mx-auto font-sans">
+        {isDraft && (
+          <div className="mb-5 px-3 py-2 rounded border-2 border-dashed border-amber-500 text-amber-800 text-xs font-bold uppercase tracking-wider text-center">
+            Rascunho: mês ainda não salvo no histórico. Os valores podem mudar.
+          </div>
+        )}
         
         {/* Document Header */}
         <div className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -244,6 +251,12 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
               <span>(-) Pró-labore Bruto pago:</span>
               <span className="font-num">- {formatCurrency(prolabore.gross)}</span>
             </div>
+            {consolidated.accountingFee > 0.005 && (
+              <div className="flex justify-between text-rose-700">
+                <span>(-) Honorários da contabilidade:</span>
+                <span className="font-num">- {formatCurrency(consolidated.accountingFee)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-slate-200 pt-1.5 font-bold text-slate-900">
               <span>(=) Lucro Líquido Distribuível:</span>
               <span className="font-num text-emerald-700">{formatCurrency(consolidated.distributableProfit)}</span>

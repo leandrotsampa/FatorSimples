@@ -180,7 +180,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       <PageHeader
         eyebrow="Comparador de anexos · baseado no seu histórico"
         title="O Fator R está valendo a pena para você?"
-        description="Comparamos o que você efetivamente pagou (DAS + INSS + IRRF registrados) com o que pagaria sem o Fator R: Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência."
+        description="Comparamos o que está registrado no seu histórico (DAS + INSS + IRRF) com o que pagaria sem o Fator R: Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência."
       />
 
       {/* Resultado real */}
@@ -514,7 +514,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           E se… simulador para {formatYearMonth(selectedMonth)}
         </div>
         <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-          Usa o RBT12 real da competência ({formatCurrency(simulation.rbt12)}) e compara as duas estratégias mantidas de
+          {realized.length === 0 ? 'Sem histórico, os valores são ilustrativos: usa' : 'Usa'} o RBT12 da competência (
+          {formatCurrency(simulation.rbt12)}) e compara as duas estratégias mantidas de
           forma contínua.
         </p>
 

@@ -28,11 +28,11 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
   existingHistory,
 }) => {
   const [yearMonth, setYearMonth] = useState<string>('');
-  const [revenue, setRevenue] = useState<number>(20000);
-  const [payroll, setPayroll] = useState<number>(5600);
-  const [inss, setInss] = useState<number>(616);
+  const [revenue, setRevenue] = useState<number>(0);
+  const [payroll, setPayroll] = useState<number>(0);
+  const [inss, setInss] = useState<number>(0);
   const [irrf, setIrrf] = useState<number>(0);
-  const [dasPaid, setDasPaid] = useState<number>(1200);
+  const [dasPaid, setDasPaid] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
 
   const recalculateTaxes = React.useCallback((revVal: number, payVal: number, ym: string) => {
@@ -61,9 +61,9 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
       const defaultYm =
         defaultYearMonth || `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
       setYearMonth(defaultYm);
-      setRevenue(20000);
-      setPayroll(5600); // 28% of 20000
-      recalculateTaxes(20000, 5600, defaultYm);
+      setRevenue(0);
+      setPayroll(0);
+      recalculateTaxes(0, 0, defaultYm);
       setNotes('');
     }
   }, [recordToEdit, recalculateTaxes, defaultYearMonth]);
@@ -131,6 +131,11 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               onChange={(e) => setYearMonth(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-semibold"
             />
+            {!recordToEdit && existingHistory.some((h) => h.yearMonth === yearMonth) && (
+              <p role="alert" className="mt-1.5 text-xs text-amber-800 dark:text-amber-300">
+                Já existe um registro para este mês. Salvar vai substituir os valores dele.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -208,7 +213,9 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full transition-colors shadow-2xs cursor-pointer"
+              disabled={!yearMonth || revenue <= 0}
+              title={revenue <= 0 ? 'Informe o faturamento do mês' : undefined}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors shadow-2xs cursor-pointer"
             >
               {recordToEdit ? 'Salvar Modificações' : 'Adicionar ao Histórico'}
             </button>
