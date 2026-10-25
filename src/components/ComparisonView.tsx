@@ -26,7 +26,7 @@ import { PageHeader } from './ui/PageHeader';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { FactorRGauge } from './charts/FactorRGauge';
 import { BarCompareChart } from './charts/BarCompareChart';
-import { motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 
 interface ComparisonViewProps {
@@ -79,6 +79,9 @@ const formatShortMonth = (ym: string) => `${MONTH_SHORT[Number(ym.slice(5, 7)) -
 const formatCompactCurrency = (v: number) =>
   v >= 1000 ? `R$ ${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(v)}`;
 
+// Contagem curta no simulador, para acompanhar o arraste do slider
+const SIM_COUNT_MS = 250;
+
 const StrategyRows: React.FC<{ cost: StrategyCost; revenue: number }> = ({ cost, revenue }) => (
   <div className="mt-3 space-y-1.5 text-xs">
     {[
@@ -89,13 +92,19 @@ const StrategyRows: React.FC<{ cost: StrategyCost; revenue: number }> = ({ cost,
     ].map(([label, value]) => (
       <div key={label as string} className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
         <span className="text-slate-600 dark:text-slate-400">{label}</span>
-        <span className="font-num tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(value as number)}</span>
+        <AnimatedNumber
+          value={value as number}
+          format={formatCurrency}
+          durationMs={SIM_COUNT_MS}
+          className="font-num tabular-nums text-slate-800 dark:text-slate-200"
+        />
       </div>
     ))}
     <div className="flex justify-between py-1.5 px-2 rounded bg-slate-50 dark:bg-slate-950/40">
       <span className="font-semibold text-slate-700 dark:text-slate-300">Tributos (DAS + INSS + IRRF)</span>
       <span className="font-num font-bold tabular-nums text-slate-900 dark:text-white">
-        {formatCurrency(cost.totalTaxes)} ({formatPercent(revenue > 0 ? (cost.totalTaxes / revenue) * 100 : 0, 1)})
+        <AnimatedNumber value={cost.totalTaxes} format={formatCurrency} durationMs={SIM_COUNT_MS} /> (
+        {formatPercent(revenue > 0 ? (cost.totalTaxes / revenue) * 100 : 0, 1)})
       </span>
     </div>
     {cost.dividendWithholding > 0 && (
@@ -542,40 +551,100 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             { key: 'com', title: 'Com Fator R', subtitle: 'Anexo III · pró-labore de 28%', cost: simulation.comFatorR, wins: simulation.savings >= 0 },
             { key: 'sem', title: 'Sem Fator R', subtitle: 'Anexo V · pró-labore de 1 salário mínimo', cost: simulation.semFatorR, wins: simulation.savings < 0 },
           ].map((s) => (
-            <div
-              key={s.key}
-              className={`rounded-lg p-4 border ${
-                s.wins ? 'border-2 border-emerald-500' : 'border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              <div className="flex items-center justify-between">
+            <div key={s.key} className="relative rounded-xl p-4 bg-slate-50 dark:bg-slate-950/50">
+              {/* Destaque do mais vantajoso: desliza até o card vencedor */}
+              {s.wins && (
+                <motion.span
+                  layoutId="sim-winner"
+                  className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-emerald-500 shadow-[0_8px_24px_-12px_rgba(5,150,105,0.45)]"
+                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                />
+              )}
+              <div className="relative flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold text-slate-900 dark:text-white">{s.title}</div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">{s.subtitle}</div>
                 </div>
-                {s.wins && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Mais vantajoso
-                  </span>
-                )}
+                <AnimatePresence initial={false}>
+                  {s.wins && (
+                    <motion.span
+                      key="winner-badge"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: DURATION.base, ease: EASE_OUT }}
+                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Mais vantajoso
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
-              <StrategyRows cost={s.cost} revenue={simulatedRevenue} />
+              <div className="relative">
+                <StrategyRows cost={s.cost} revenue={simulatedRevenue} />
+              </div>
             </div>
           ))}
         </div>
 
+        {/* Proporção dos custos: as duas barras se ajustam enquanto o slider anda */}
+        <div className="mt-4 space-y-2 text-[11px]">
+          {[
+            { key: 'com', label: 'Com Fator R', value: simulation.comFatorR.totalTaxes, bar: 'bg-emerald-500 dark:bg-emerald-400' },
+            { key: 'sem', label: 'Sem Fator R', value: simulation.semFatorR.totalTaxes, bar: 'bg-slate-400 dark:bg-slate-500' },
+          ].map((b) => {
+            const maxCost = Math.max(simulation.comFatorR.totalTaxes, simulation.semFatorR.totalTaxes, 1);
+            return (
+              <div key={b.key} className="flex items-center gap-3">
+                <span className="w-24 shrink-0 text-slate-600 dark:text-slate-400">{b.label}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${b.bar}`}
+                    initial={false}
+                    animate={{ width: `${(Math.max(0, b.value) / maxCost) * 100}%` }}
+                    transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
+                  />
+                </div>
+                <AnimatedNumber
+                  value={b.value}
+                  format={formatCurrency}
+                  durationMs={SIM_COUNT_MS}
+                  className="w-24 shrink-0 text-right font-num font-semibold text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            );
+          })}
+        </div>
+
         <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          {simulation.savings >= 0 ? (
-            <span>
-              Manter o Fator R economiza <SignedCurrency value={simulation.savings} className="font-num font-bold" /> por mês
-              (<SignedCurrency value={simulation.savings * 12} className="font-num" /> em 12 meses).
-            </span>
-          ) : (
-            <span>
-              Neste faturamento o Fator R <b>não compensa</b>: custa {formatCurrency(-simulation.savings)} a mais por mês.
-            </span>
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            {simulation.savings >= 0 ? (
+              <motion.span
+                key="compensa"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: DURATION.micro }}
+              >
+                Manter o Fator R economiza{' '}
+                <AnimatedSignedCurrency value={simulation.savings} className="font-num font-bold" /> por mês (
+                <AnimatedSignedCurrency value={simulation.savings * 12} className="font-num" /> em 12 meses).
+              </motion.span>
+            ) : (
+              <motion.span
+                key="nao-compensa"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: DURATION.micro }}
+              >
+                Neste faturamento o Fator R <b>não compensa</b>: custa{' '}
+                <AnimatedNumber value={-simulation.savings} format={formatCurrency} durationMs={SIM_COUNT_MS} className="font-num" /> a
+                mais por mês.
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
