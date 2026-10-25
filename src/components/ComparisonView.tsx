@@ -23,6 +23,11 @@ import {
 } from '../utils/taxCalculations';
 import { card } from './ui/card';
 import { PageHeader } from './ui/PageHeader';
+import { AnimatedNumber } from './ui/AnimatedNumber';
+import { FactorRGauge } from './charts/FactorRGauge';
+import { BarCompareChart } from './charts/BarCompareChart';
+import { motion, useReducedMotion } from 'motion/react';
+import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 
 interface ComparisonViewProps {
   currentRevenue: number;
@@ -53,6 +58,26 @@ const SignedCurrency: React.FC<{ value: number; className?: string }> = ({ value
     </span>
   );
 };
+
+// Mesmo valor com sinal, contando até o resultado
+const signedFormat = (v: number) => `${v >= 0.005 ? '+' : v <= -0.005 ? '−' : ''}${formatCurrency(Math.abs(v))}`;
+const AnimatedSignedCurrency: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => {
+  const color =
+    value >= 0.005
+      ? 'text-emerald-700 dark:text-emerald-400'
+      : value <= -0.005
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-slate-500 dark:text-slate-400';
+  return <AnimatedNumber value={value} format={signedFormat} className={`${color} ${className}`} />;
+};
+
+// Eixo em reais compacto: "R$ 4 mil"
+const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+// "2026-09" -> "set/26"
+const formatShortMonth = (ym: string) => `${MONTH_SHORT[Number(ym.slice(5, 7)) - 1]}/${ym.slice(2, 4)}`;
+
+const formatCompactCurrency = (v: number) =>
+  v >= 1000 ? `R$ ${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(v)}`;
 
 const StrategyRows: React.FC<{ cost: StrategyCost; revenue: number }> = ({ cost, revenue }) => (
   <div className="mt-3 space-y-1.5 text-xs">
@@ -97,6 +122,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
   history,
   settings,
 }) => {
+  const reduceMotion = Boolean(useReducedMotion());
   const monthSettings = settingsForCompetence(settings, selectedMonth);
 
   // ===== 1. Realizado x sem Fator R (últimos 12 meses registrados até a competência) =====
@@ -156,27 +182,27 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40">
+            <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 ring-2 ring-emerald-500/60 shadow-[0_8px_24px_-12px_rgba(5,150,105,0.45)]">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 Resultado real em {realized.length} {realized.length === 1 ? 'mês' : 'meses'}
               </div>
               <div className="text-lg font-extrabold font-num tabular-nums mt-0.5">
-                <SignedCurrency value={totalResult} />
+                <AnimatedSignedCurrency value={totalResult} />
               </div>
               <div className="text-[11px] text-slate-600 dark:text-slate-400">
                 {totalResult >= 0 ? 'economizados frente ao Anexo V' : 'pagos a mais que no Anexo V'}
               </div>
             </div>
-            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Tributos pagos × sem Fator R</div>
               <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
-                {formatCurrency(totalReal)}
+                <AnimatedNumber value={totalReal} format={formatCurrency} />
               </div>
               <div className="text-[11px] font-num tabular-nums text-slate-500 dark:text-slate-400">
                 vs {formatCurrency(totalSemFatorR)}
               </div>
             </div>
-            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Meses no Anexo III</div>
               <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
                 {monthsInIII} de {realized.length}
@@ -184,16 +210,14 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               <div className="text-[11px] text-slate-500 dark:text-slate-400">Fator R ≥ 28% na apuração</div>
             </div>
             <div
-              className={`p-3.5 rounded-xl border ${
-                totalMissed > 0
-                  ? 'border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/30'
-                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40'
+              className={`p-3.5 rounded-xl ${
+                totalMissed > 0 ? 'bg-rose-50 dark:bg-rose-950/30 ring-1 ring-rose-300/70 dark:ring-rose-500/30' : 'bg-slate-50 dark:bg-slate-950/50'
               }`}
             >
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Economia perdida</div>
               <div className="text-sm font-bold font-num tabular-nums mt-1">
                 {totalMissed > 0 ? (
-                  <span className="text-rose-600 dark:text-rose-400">{formatCurrency(totalMissed)}</span>
+                  <AnimatedNumber value={totalMissed} format={formatCurrency} className="text-rose-600 dark:text-rose-400" />
                 ) : (
                   <span className="text-slate-900 dark:text-white">{formatCurrency(0)}</span>
                 )}
@@ -222,8 +246,15 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           </div>
         ) : (
           <>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="mt-4 flex flex-col lg:flex-row gap-4 lg:items-center">
+            <div className="flex flex-col items-center shrink-0 px-2">
+              <FactorRGauge value={margin.nextFactorRPercentage} size="lg" />
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Fator R projetado para {formatYearMonth(margin.nextYearMonth)}
+              </div>
+            </div>
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Fator R</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   {formatYearMonth(selectedMonth)}: <b>{formatPercent(currentSimples.factorRPercentage)}</b> (Anexo{' '}
@@ -238,7 +269,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Pró-labore deste mês</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginProlabore)}</b>
@@ -260,7 +291,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Faturamento deste mês</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginRevenue)}</b>
@@ -281,9 +312,10 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
             </div>
+            </div>
 
             <div
-              className={`mt-3 flex items-start gap-2 p-3 rounded-lg text-xs border ${
+              className={`mt-3 flex items-start gap-2 p-3 rounded-xl text-xs border ${
                 margin.isNextQualified
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
                   : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200'
@@ -318,6 +350,21 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               "Sem Fator R" = DAS no Anexo V + INSS/IRRF de um pró-labore de 1 salário mínimo. Resultado positivo = você pagou
               menos que pagaria.
             </div>
+          </div>
+
+          {/* Tributos pagos × sem Fator R, por mês */}
+          <div className="px-4 pt-4">
+            <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Tributos pagos</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-400" /> Sem Fator R</span>
+            </div>
+            <BarCompareChart
+              labels={realized.map((r) => formatShortMonth(r.record.yearMonth))}
+              a={{ label: 'Tributos pagos', values: realized.map((r) => r.realTotal) }}
+              b={{ label: 'Sem Fator R', values: realized.map((r) => r.semFatorR.totalTaxes) }}
+              format={formatCurrency}
+              formatAxis={formatCompactCurrency}
+            />
           </div>
 
           <div className="overflow-x-auto">
@@ -355,9 +402,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                       <td className="py-2.5 px-4 min-w-[150px]">
                         <div className="flex items-center gap-2">
                           <div className="relative h-1.5 w-16 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                            <div
+                            <motion.div
                               className={`h-full ${qualified ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                              style={{ width: `${barWidth}%` }}
+                              initial={reduceMotion ? false : { width: 0 }}
+                              animate={{ width: `${barWidth}%` }}
+                              transition={instantIf(reduceMotion, { duration: DURATION.number, ease: EASE_OUT })}
                             />
                             <div className="absolute top-0 bottom-0 w-px bg-slate-900 dark:bg-white" style={{ left: '70%' }} />
                           </div>

@@ -11,7 +11,7 @@ export const ChartTooltip: React.FC<{ x: number; y: number; containerWidth: numb
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 min-w-40 px-3 py-2 rounded-xl bg-white/95 dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-lg text-xs backdrop-blur-sm"
+      className="pointer-events-none absolute z-10 min-w-40 whitespace-nowrap px-3 py-2 rounded-xl bg-white/95 dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-lg text-xs backdrop-blur-sm"
       style={{
         left: x,
         top: y,
