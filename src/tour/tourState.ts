@@ -15,6 +15,17 @@ export function planTour(stepIds: string[], state: TourState): TourPlan {
   return unseen.length > 0 ? { kind: 'news', ids: unseen } : { kind: 'none' };
 }
 
+// Ao entrar numa tela: primeira vez mostra os passos dela; depois, só passos novos.
+// Antes das boas-vindas nada aparece (a primeira abertura decide se a pessoa quer o tutorial)
+export type ScreenTourPlan = { kind: 'intro' | 'news'; ids: string[] } | { kind: 'none' };
+
+export function planScreenTour(screenIds: string[], state: TourState): ScreenTourPlan {
+  if (!state.welcomed) return { kind: 'none' };
+  const unseen = screenIds.filter((id) => !state.seen.includes(id));
+  if (unseen.length === 0) return { kind: 'none' };
+  return { kind: unseen.length < screenIds.length ? 'news' : 'intro', ids: unseen };
+}
+
 // Terminou (ou fechou) o tour: estes passos não voltam sozinhos
 export function completeTour(state: TourState, ids: string[]): TourState {
   return { welcomed: true, seen: [...new Set([...state.seen, ...ids])] };

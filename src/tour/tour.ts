@@ -1,8 +1,9 @@
 import { driver, type DriveStep } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-// Passos do tutorial, na ordem do uso real: mês → faturamento → nota → transferências → Fator R → fechar.
-// O id é o que fica marcado como visto; passo com id novo numa versão futura aparece sozinho como novidade.
+// Passos do tutorial por tela. Na do mês, a ordem do uso real: mês → faturamento → nota → transferências →
+// Fator R → fechar. O id é o que fica marcado como visto; passo com id novo numa versão futura aparece
+// sozinho como novidade (ids já publicados nunca mudam).
 interface TourStep {
   id: string;
   title: string;
@@ -11,7 +12,7 @@ interface TourStep {
   align?: 'start' | 'center' | 'end';
 }
 
-export const TOUR_STEPS: TourStep[] = [
+const APURATION_STEPS: TourStep[] = [
   {
     id: 'competencia',
     title: 'Escolha o mês',
@@ -64,26 +65,137 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'como-usar',
     title: 'Quando quiser rever',
-    description: () => 'Este passo a passo fica aqui. Novidades de versões futuras aparecem sozinhas, uma vez só.',
+    description: () =>
+      'Em qualquer tela, este botão mostra o passo a passo dela. Cada tela também se apresenta na primeira vez que você entra.',
     side: 'right',
     align: 'end',
   },
 ];
 
-export const TOUR_STEP_IDS = TOUR_STEPS.map((s) => s.id);
+
+const HISTORY_STEPS: TourStep[] = [
+  {
+    id: 'hist-adicionar',
+    title: 'Cadastre os meses anteriores',
+    description: () =>
+      'Lance o faturamento e o pró-labore dos meses passados (até 12). Sem eles, a alíquota e o Fator R usam só o mês atual e podem sair diferentes do PGDAS.',
+    side: 'bottom',
+    align: 'end',
+  },
+  {
+    id: 'hist-metricas',
+    title: 'Resumo e tendência',
+    description: () => 'Os totais dos últimos 12 meses e como o faturamento, a folha e o Fator R vêm evoluindo.',
+    side: 'bottom',
+    align: 'start',
+  },
+  {
+    id: 'hist-tabela',
+    title: 'Seus meses salvos',
+    description: () =>
+      'Cada linha é um mês fechado. Use o <b>lápis</b> para corrigir e a <b>lixeira</b> para excluir. Mês com Fator R abaixo de 28% ganha um aviso.',
+    side: 'top',
+    align: 'start',
+  },
+];
+
+const COMPARISON_STEPS: TourStep[] = [
+  {
+    id: 'cmp-resultado',
+    title: 'Quanto o Fator R já economizou',
+    description: () =>
+      'Os impostos que você pagou nos meses do histórico comparados com o que pagaria sem o Fator R (Anexo V). O quadro se preenche conforme você salva os meses.',
+    side: 'bottom',
+    align: 'start',
+  },
+  {
+    id: 'cmp-folga',
+    title: 'A folga deste mês',
+    description: () => 'Quanto o pró-labore pode baixar, ou o faturamento subir, sem perder os 28%.',
+    side: 'top',
+    align: 'start',
+  },
+  {
+    id: 'cmp-simulador',
+    title: 'Simule outros valores',
+    description: () => 'Arraste para ver, com outro faturamento, qual caminho sai mais barato e quanto sobra para você.',
+    side: 'top',
+    align: 'start',
+  },
+];
+
+const REPORT_STEPS: TourStep[] = [
+  {
+    id: 'rel-folha',
+    title: 'O mês numa folha só',
+    description: () =>
+      'Alíquota, DAS, pró-labore, transferências e a memória de cálculo. Serve para conferir ou mandar para a contabilidade.',
+    side: 'bottom',
+    align: 'start',
+  },
+  {
+    id: 'rel-imprimir',
+    title: 'Imprimir ou salvar em PDF',
+    description: () => 'Abre a impressão do sistema. Para guardar o arquivo, escolha <b>Salvar como PDF</b>.',
+    side: 'bottom',
+    align: 'end',
+  },
+];
+
+const SETTINGS_STEPS: TourStep[] = [
+  {
+    id: 'cfg-empresa',
+    title: 'Empresa e contabilidade',
+    description: () =>
+      'Razão social, CNPJ e cidade aparecem no topo e no Resumo. Aqui também ficam os <b>honorários da contabilidade</b>, que entram no que fica na conta da empresa.',
+    side: 'bottom',
+    align: 'center',
+  },
+  {
+    id: 'cfg-tabelas',
+    title: 'Tabelas fiscais',
+    description: () =>
+      'INSS, IR e salário mínimo de cada ano. O app procura tabelas novas sozinho; o botão de verificar faz isso na hora.',
+    side: 'bottom',
+    align: 'start',
+  },
+  {
+    id: 'cfg-interface',
+    title: 'Do seu jeito',
+    description: () => 'Sons, animações e o comportamento do menu lateral.',
+    side: 'bottom',
+    align: 'end',
+  },
+];
+
+export type TourScreen = 'apuration' | 'history' | 'comparison' | 'report' | 'settings';
+
+export const TOUR_SCREENS: Record<TourScreen, TourStep[]> = {
+  apuration: APURATION_STEPS,
+  history: HISTORY_STEPS,
+  comparison: COMPARISON_STEPS,
+  report: REPORT_STEPS,
+  settings: SETTINGS_STEPS,
+};
+
+export const screenStepIds = (screen: TourScreen) => TOUR_SCREENS[screen].map((s) => s.id);
+export const ALL_TOUR_STEP_IDS = Object.values(TOUR_SCREENS).flat().map((s) => s.id);
+
+
 
 /**
  * Roda o tutorial com os passos pedidos (todos, ou só as novidades). Passo cujo elemento não está
  * na tela é pulado. onDone recebe os ids mostrados, para marcar como vistos.
  */
 export function runTour(opts: {
+  screen: TourScreen;
   ids?: string[];
   news?: boolean;
   demoRevenue: boolean;
   reduceMotion: boolean;
   onDone: (ids: string[]) => void;
 }) {
-  const chosen = TOUR_STEPS.filter((s) => !opts.ids || opts.ids.includes(s.id));
+  const chosen = TOUR_SCREENS[opts.screen].filter((s) => !opts.ids || opts.ids.includes(s.id));
   if (chosen.length === 0) return;
 
   const steps: DriveStep[] = chosen.map((s) => ({
@@ -118,6 +230,11 @@ export function runTour(opts: {
     overlayClickBehavior: 'none',
     onDestroyed: () => opts.onDone(chosen.map((s) => s.id)),
   });
+  current = tour;
   tour.drive();
   return tour;
 }
+
+// Um tutorial por vez: a entrada numa tela não abre outro por cima do que está rodando
+let current: ReturnType<typeof driver> | null = null;
+export const isTourRunning = () => current?.isActive() ?? false;

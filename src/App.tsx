@@ -36,8 +36,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { playSound } from './hooks/useSound';
-import { runTour, TOUR_STEP_IDS } from './tour/tour';
-import { completeTour, loadTourState, planTour, saveTourState, skipTour } from './tour/tourState';
+import { ALL_TOUR_STEP_IDS, isTourRunning, runTour, screenStepIds, type TourScreen } from './tour/tour';
+import { completeTour, loadTourState, planScreenTour, planTour, saveTourState, skipTour } from './tour/tourState';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -305,15 +305,16 @@ export default function App() {
   // Confirmações e avisos no tema do app
   const { dialog, confirm, notify } = useAppDialog();
 
-  // Tutorial: na tela do mês; mês vazio ganha um faturamento de exemplo que volta a zero no fim
+  // Tutorial por tela. Na do mês, mês vazio ganha um faturamento de exemplo que volta a zero no fim
   const TOUR_DEMO_REVENUE = 20000;
-  const startTour = (ids?: string[], news = false) => {
-    setActiveTab('apuration');
-    const demo = !selectedRecord && currentRevenue <= 0;
+  const startTour = (screen: TourScreen, ids?: string[], news = false) => {
+    if (screen !== 'settings') setActiveTab(screen);
+    const demo = screen === 'apuration' && !selectedRecord && currentRevenue <= 0;
     if (demo) setCurrentRevenue(TOUR_DEMO_REVENUE);
-    // Espera a tela do mês montar com os cartões antes de destacar
+    // Espera a tela (ou o modal) montar antes de destacar
     window.setTimeout(() => {
       runTour({
+        screen,
         ids,
         news,
         demoRevenue: demo,
@@ -326,15 +327,15 @@ export default function App() {
     }, 450);
   };
 
-  // Primeira abertura: boas-vindas; depois de atualizar o app: só os passos novos
+  // Primeira abertura: boas-vindas; depois de atualizar o app: só os passos novos da tela do mês
   const tourChecked = useRef(false);
   const appReady = isHistoryLoaded && remoteTablesLoaded;
   useEffect(() => {
     if (!appReady || tourChecked.current) return;
     tourChecked.current = true;
-    const plan = planTour(TOUR_STEP_IDS, loadTourState());
+    const plan = planTour(screenStepIds('apuration'), loadTourState());
     if (plan.kind === 'news') {
-      startTour(plan.ids, true);
+      startTour('apuration', plan.ids, true);
     } else if (plan.kind === 'welcome') {
       void confirm({
         title: 'Bem-vindo ao FatorSimples',
@@ -343,12 +344,22 @@ export default function App() {
         confirmLabel: 'Mostrar como funciona',
         cancelLabel: 'Explorar sozinho',
       }).then((ok) => {
-        if (ok) startTour();
-        else saveTourState(skipTour(loadTourState(), TOUR_STEP_IDS));
+        if (ok) startTour('apuration');
+        // Explorar sozinho: nenhuma tela se apresenta; só novidades futuras e o "Como usar"
+        else saveTourState(skipTour(loadTourState(), ALL_TOUR_STEP_IDS));
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appReady]);
+
+  // As outras telas se apresentam na primeira vez que a pessoa entra nelas
+  const currentScreen: TourScreen = isSettingsOpen ? 'settings' : activeTab;
+  useEffect(() => {
+    if (!appReady || !tourChecked.current || currentScreen === 'apuration' || isTourRunning()) return;
+    const plan = planScreenTour(screenStepIds(currentScreen), loadTourState());
+    if (plan.kind !== 'none') startTour(currentScreen, plan.ids, plan.kind === 'news');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appReady, currentScreen]);
 
   const handleDeleteMonth = async (id: string) => {
     const rec = history.find((h) => h.id === id);
@@ -481,7 +492,7 @@ export default function App() {
         setSelectedMonth={setSelectedMonth}
         onOpenSettings={() => openSettings()}
         onOpenSqliteManager={() => setIsSqliteManagerOpen(true)}
-        onOpenTutorial={() => startTour()}
+        onOpenTutorial={() => startTour(activeTab)}
         settings={settings}
         history={history}
         theme={theme}

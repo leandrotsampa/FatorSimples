@@ -65,6 +65,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           actions={
             <button
               onClick={onPrint}
+              data-tour="rel-imprimir"
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-full transition-colors shadow-sm cursor-pointer"
             >
               <Printer className="w-4 h-4" />
@@ -83,7 +84,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
         )}
         
         {/* Document Header */}
-        <div className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div data-tour="rel-folha" className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="text-xl font-extrabold tracking-tight text-slate-900 uppercase">
               {settings.companyName || 'EMPRESA CONTRIBUINTE DO SIMPLES NACIONAL'}

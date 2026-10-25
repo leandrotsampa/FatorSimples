@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { completeTour, emptyTourState, parseTourState, planTour, skipTour } from './tourState';
+import { completeTour, emptyTourState, parseTourState, planScreenTour, planTour, skipTour } from './tourState';
 
 const BASE = ['competencia', 'faturamento', 'aliquota'];
 
@@ -29,5 +29,29 @@ describe('o que o tutorial mostra ao abrir o app', () => {
     expect(parseTourState(JSON.stringify({ welcomed: 'sim', seen: 3 }))).toEqual(emptyTourState);
     expect(parseTourState(null)).toEqual(emptyTourState);
     expect(parseTourState(JSON.stringify({ welcomed: true, seen: ['a', 1, 'b'] }))).toEqual({ welcomed: true, seen: ['a', 'b'] });
+  });
+});
+
+describe('mini-tutorial ao entrar numa tela', () => {
+  const HIST = ['hist-adicionar', 'hist-tabela'];
+  const welcomed = completeTour(emptyTourState, BASE);
+
+  it('antes das boas-vindas não mostra nada (a primeira abertura cuida disso)', () => {
+    expect(planScreenTour(HIST, emptyTourState)).toEqual({ kind: 'none' });
+  });
+
+  it('primeira vez na tela: apresentação com todos os passos dela', () => {
+    expect(planScreenTour(HIST, welcomed)).toEqual({ kind: 'intro', ids: HIST });
+  });
+
+  it('tela já vista com um passo novo: só a novidade', () => {
+    const viu = completeTour(welcomed, HIST);
+    expect(planScreenTour([...HIST, 'hist-importar'], viu)).toEqual({ kind: 'news', ids: ['hist-importar'] });
+    expect(planScreenTour(HIST, viu)).toEqual({ kind: 'none' });
+  });
+
+  it('quem escolheu explorar sozinho não recebe as apresentações das telas', () => {
+    const pulou = skipTour(emptyTourState, [...BASE, ...HIST]);
+    expect(planScreenTour(HIST, pulou)).toEqual({ kind: 'none' });
   });
 });

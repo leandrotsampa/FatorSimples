@@ -161,6 +161,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
             )}
             <button
               onClick={onAddMonth}
+              data-tour="hist-adicionar"
               className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-full transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -171,7 +172,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
       />
 
       {/* Métricas rápidas com a tendência de cada uma */}
-      <section className={`${card} p-5`}>
+      <section className={`${card} p-5`} data-tour="hist-metricas">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Metric
             label={`RBT12 ${nextCompetence ? `para ${nextCompetence}` : '(12 meses)'}`}
@@ -284,7 +285,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
       )}
 
       {/* Main Table View */}
-      <section className={`${card} overflow-hidden`}>
+      <section className={`${card} overflow-hidden`} data-tour="hist-tabela">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <input

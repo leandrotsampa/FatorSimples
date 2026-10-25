@@ -169,6 +169,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('tables')}
+            data-tour="cfg-tabelas"
             className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'tables'
                 ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
@@ -206,6 +207,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('company')}
+            data-tour="cfg-empresa"
             className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'company'
                 ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
@@ -218,6 +220,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('interface')}
+            data-tour="cfg-interface"
             className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'interface'
                 ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'

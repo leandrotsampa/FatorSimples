@@ -184,7 +184,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       />
 
       {/* Resultado real */}
-      <section className={`${card} p-5`}>
+      <section className={`${card} p-5`} data-tour="cmp-resultado">
         {realized.length === 0 ? (
           <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
             <History className="w-4 h-4 shrink-0 mt-0.5" />
@@ -242,7 +242,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       </section>
 
       {/* Folga do Fator R */}
-      <section className={`${card} p-5`}>
+      <section className={`${card} p-5`} data-tour="cmp-folga">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
           <Gauge className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           Folga do Fator R · {formatYearMonth(selectedMonth)} → {formatYearMonth(margin.nextYearMonth)}
@@ -508,7 +508,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       )}
 
       {/* Simulador */}
-      <section className={`${card} p-5`}>
+      <section className={`${card} p-5`} data-tour="cmp-simulador">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
           <SlidersHorizontal className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           E se… simulador para {formatYearMonth(selectedMonth)}
