@@ -29,7 +29,7 @@ interface SidebarProps {
   settings: TaxSettings;
   history: MonthRecord[];
   theme: 'dark' | 'light';
-  toggleTheme: () => void;
+  toggleTheme: (origin?: HTMLElement | null) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -276,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Toggle Theme */}
         <button
-          onClick={toggleTheme}
+          onClick={(e) => toggleTheme(e.currentTarget)}
           className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <span className="flex items-center gap-2">

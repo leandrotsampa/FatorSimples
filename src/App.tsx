@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { Sidebar } from './components/Sidebar';
 import { MonthApurationView } from './components/MonthApurationView';
 import { HistoryTable } from './components/HistoryTable';
@@ -18,6 +19,7 @@ import { getTaxTableForCompetence, OFFICIAL_TAX_TABLES } from './utils/taxTables
 import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransfer';
 
 import { storageAdapter } from './utils/storageAdapter';
+import { runThemeWipe } from './utils/themeTransition';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -35,15 +37,18 @@ export default function App() {
     return 'dark';
   });
 
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, next);
-      } catch {
-        // Fallback
-      }
-      return next;
+  // Troca o tema com o círculo saindo do botão clicado; o DOM é a fonte da verdade
+  // para o tema atual, assim cliques seguidos nunca usam um estado defasado
+  const toggleTheme = (origin?: HTMLElement | null) => {
+    const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Fallback
+    }
+    runThemeWipe(origin ?? null, () => {
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      flushSync(() => setTheme(next));
     });
   };
 
@@ -287,7 +292,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-row font-sans transition-colors duration-200 overflow-hidden ${
+    <div className={`min-h-screen flex flex-row font-sans overflow-hidden ${
       theme === 'dark'
         ? 'bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200'
         : 'bg-slate-100 text-slate-800 selection:bg-emerald-500/20 selection:text-emerald-800'

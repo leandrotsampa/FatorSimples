@@ -46,6 +46,13 @@
   }
 }
 
+/* Troca de tema: o círculo (themeTransition.ts) substitui o crossfade padrão */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 /* Custom scrollbars for native desktop feel */
 ::-webkit-scrollbar {
   width: 8px;
