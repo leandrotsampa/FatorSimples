@@ -10,6 +10,7 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   HardDrive,
   CalendarDays,
   PanelLeftClose,
@@ -19,16 +20,17 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { RailTooltip } from './ui/RailTooltip';
 import { LiquidIndicator } from './ui/LiquidIndicator';
+import { MonthPickerPanel } from './ui/MonthPickerPanel';
+import { MONTH_SHORT_NAMES, monthLongName } from '../utils/monthPicker';
 import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
-import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
+import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR, shiftYearMonth } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import type { StorageMode } from '../types/electron';
 
 const formatPercent1 = (n: number) => formatPercent(n, 1);
 
-const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 // Larguras do menu: expandido (o de sempre) e recolhido em trilho de ícones
 const WIDTH_EXPANDED = 288;
@@ -91,24 +93,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Stepper para avançar ou retroceder o mês rapidamente
   // Troca pelas setas: o mês desliza na direção usada (digitar no campo não anima)
   const [step, setStep] = useState<{ n: number; dir: number }>({ n: 0, dir: 0 });
-  const handleStepMonth = (delta: number) => {
+  const goToMonth = (next: string) => {
+    if (next === selectedMonth) return;
     playSound('tick');
-    setStep((s) => ({ n: s.n + 1, dir: delta }));
-    const [yearStr, monthStr] = selectedMonth.split('-');
-    let year = parseInt(yearStr, 10);
-    let month = parseInt(monthStr, 10) + delta;
-
-    if (month > 12) {
-      month = 1;
-      year += 1;
-    } else if (month < 1) {
-      month = 12;
-      year -= 1;
-    }
-
-    const nextMonth = `${year}-${String(month).padStart(2, '0')}`;
-    setSelectedMonth(nextMonth);
+    setStep((s) => ({ n: s.n + 1, dir: next > selectedMonth ? 1 : -1 }));
+    setSelectedMonth(next);
   };
+  const handleStepMonth = (delta: number) => goToMonth(shiftYearMonth(selectedMonth, delta));
 
   // Onde o banco está: ao lado do app (Windows/Linux) ou na pasta de dados do sistema (macOS)
   const [storageMode, setStorageMode] = useState<StorageMode>('portable');
@@ -116,9 +107,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     storageAdapter.getStorageMode().then(setStorageMode);
   }, []);
 
-  // Seletor de competência no menu recolhido: painel flutuante à direita do botão
+  // Grade de meses da competência: painel flutuante abaixo do bloco (expandido) ou à direita do ícone (recolhido)
   const navRef = useRef<HTMLElement>(null);
   const monthButtonRef = useRef<HTMLButtonElement>(null);
+  const monthAnchorRef = useRef<HTMLButtonElement>(null);
   const monthPanelRef = useRef<HTMLDivElement>(null);
   const [monthPanelPos, setMonthPanelPos] = useState<{ x: number; y: number } | null>(null);
   const toggleMonthPanel = () => {
@@ -126,35 +118,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setMonthPanelPos(null);
       return;
     }
-    const r = monthButtonRef.current?.getBoundingClientRect();
-    if (r) setMonthPanelPos({ x: r.right + 10, y: r.top });
+    if (collapsed) {
+      const r = monthButtonRef.current?.getBoundingClientRect();
+      if (r) setMonthPanelPos({ x: r.right + 10, y: r.top });
+    } else {
+      const r = monthAnchorRef.current?.closest('[data-month-block]')?.getBoundingClientRect();
+      if (r) setMonthPanelPos({ x: r.left, y: r.bottom + 8 });
+    }
+  };
+  const anchorOf = () => (collapsed ? monthButtonRef.current : monthAnchorRef.current);
+  const pickMonth = (ym: string) => {
+    goToMonth(ym);
+    setMonthPanelPos(null);
+    anchorOf()?.focus();
   };
   useEffect(() => {
     if (!monthPanelPos) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       setMonthPanelPos(null);
-      monthButtonRef.current?.focus();
+      anchorOf()?.focus();
     };
-    // Leva o foco para dentro do painel recém-aberto
-    const focusFrame = requestAnimationFrame(() =>
-      monthPanelRef.current?.querySelector<HTMLElement>('button, input')?.focus()
-    );
+    // O próprio painel leva o foco para o mês escolhido ao abrir
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (!monthPanelRef.current?.contains(t) && !monthButtonRef.current?.contains(t)) setMonthPanelPos(null);
+      if (!monthPanelRef.current?.contains(t) && !anchorOf()?.contains(t)) setMonthPanelPos(null);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
     return () => {
-      cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onDown);
     };
   }, [monthPanelPos]);
-  // Ao expandir o menu o painel não faz mais sentido
+  // Expandir ou recolher o menu muda o lugar do painel: fecha
   useEffect(() => {
-    if (expanded) setMonthPanelPos(null);
+    setMonthPanelPos(null);
   }, [expanded]);
 
   // Verifica se a competência selecionada já está salva no histórico
@@ -182,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'history',
-      label: 'Histórico 12 Meses',
+      label: 'Histórico',
       description: 'RBT12, Folha e Alíquotas',
       icon: History,
       badge: `${history.length}m`,
@@ -201,51 +200,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  const [, monthNum] = selectedMonth.split('-');
-  const monthShort = MONTH_SHORT[parseInt(monthNum, 10) - 1] ?? '';
+  const [yearStr, monthNum] = selectedMonth.split('-');
+  const monthShort = MONTH_SHORT_NAMES[parseInt(monthNum, 10) - 1] ?? '';
+  const savedMonths = new Set(history.map((h) => h.yearMonth));
 
-  const competenceStatus = isMonthSaved ? (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-num font-bold">
-      Salvo no SQLite
-    </span>
-  ) : (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-num">
-      Em Apuração
+  const competenceStatus = (
+    <span className="inline-flex items-center gap-1">
+      <span className={`w-1.5 h-1.5 rounded-full ${isMonthSaved ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+      <span className={isMonthSaved ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}>
+        {isMonthSaved ? 'Salvo' : 'Em apuração'}
+      </span>
     </span>
   );
 
-  const monthStepper = (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => handleStepMonth(-1)}
-        className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        title="Mês anterior"
-      >
+  const stepButtonClass =
+    'w-8 shrink-0 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer';
+
+  const monthBlock = (
+    <div
+      data-month-block
+      className="flex items-stretch gap-1 p-1 rounded-xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-white/10 shadow-2xs"
+    >
+      <button type="button" onClick={() => handleStepMonth(-1)} className={stepButtonClass} title="Mês anterior" aria-label="Mês anterior">
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="flex-1 relative overflow-hidden rounded-md">
+      <button
+        ref={monthAnchorRef}
+        type="button"
+        onClick={toggleMonthPanel}
+        aria-haspopup="dialog"
+        aria-expanded={Boolean(monthPanelPos)}
+        aria-label={`Competência ${monthLongName(selectedMonth)} de ${yearStr}, ${isMonthSaved ? 'salva no histórico' : 'em apuração'}. Escolher outro mês`}
+        className="flex-1 min-w-0 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer overflow-hidden active:transform-none"
+      >
         <motion.div
           key={step.n}
           initial={step.n === 0 || reduceMotion ? false : { x: step.dir * 18, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          className="flex flex-col items-center leading-tight"
         >
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            aria-label="Competência ativa"
-            className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-num font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
-          />
+          <span className="flex items-center gap-1 text-sm font-bold text-slate-900 dark:text-white">
+            {monthLongName(selectedMonth)}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-[var(--duration-base)] ${monthPanelPos ? 'rotate-180' : ''}`}
+            />
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <span className="font-num">{yearStr}</span>
+            <span aria-hidden="true">·</span>
+            {competenceStatus}
+          </span>
         </motion.div>
-      </div>
+      </button>
 
-      <button
-        onClick={() => handleStepMonth(1)}
-        className="p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        title="Próximo mês"
-      >
+      <button type="button" onClick={() => handleStepMonth(1)} className={stepButtonClass} title="Próximo mês" aria-label="Próximo mês">
         <ChevronRight className="w-4 h-4" />
       </button>
     </div>
@@ -317,18 +327,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               {expanded ? (
                 <Reveal show>
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                    <span className="uppercase tracking-wider">Competência Ativa:</span>
-                    {competenceStatus}
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 mb-1.5">
+                    Competência
                   </div>
-                  {monthStepper}
+                  {monthBlock}
                 </Reveal>
               ) : (
-                <RailTooltip enabled={!monthPanelPos} label="Competência ativa" detail={selectedMonth}>
+                <RailTooltip
+                  enabled={!monthPanelPos}
+                  label={`${monthLongName(selectedMonth)} de ${yearStr}`}
+                  detail={isMonthSaved ? 'Salva no histórico' : 'Em apuração'}
+                >
                   <button
                     ref={monthButtonRef}
                     onClick={toggleMonthPanel}
-                    aria-label={`Competência ${selectedMonth}`}
+                    aria-label={`Competência ${monthLongName(selectedMonth)} de ${yearStr}. Escolher outro mês`}
+                    aria-haspopup="dialog"
                     aria-expanded={Boolean(monthPanelPos)}
                     className="relative w-full flex flex-col items-center gap-0.5 py-1.5 rounded-md text-emerald-700 dark:text-emerald-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
@@ -601,26 +615,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </motion.aside>
       </motion.div>
 
-      {/* Painel da competência aberto a partir do menu recolhido */}
+      {/* Grade de meses da competência */}
       <AnimatePresence>
-        {collapsed && monthPanelPos && (
+        {monthPanelPos && (
           <motion.div
             ref={monthPanelRef}
             key="month-panel"
             role="dialog"
-            aria-label="Competência ativa"
-            className="no-print fixed z-[60] w-64 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl"
+            aria-label="Escolher a competência"
+            className="no-print app-no-drag fixed z-[60] p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl"
             style={{ left: monthPanelPos.x, top: monthPanelPos.y }}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
+            initial={collapsed ? { opacity: 0, x: -6 } : { opacity: 0, y: -6 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={collapsed ? { opacity: 0, x: -6 } : { opacity: 0, y: -6 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT }}
           >
-            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-              <span className="uppercase tracking-wider">Competência Ativa:</span>
-              {competenceStatus}
-            </div>
-            {monthStepper}
+            <MonthPickerPanel value={selectedMonth} savedMonths={savedMonths} onSelect={pickMonth} />
           </motion.div>
         )}
       </AnimatePresence>
