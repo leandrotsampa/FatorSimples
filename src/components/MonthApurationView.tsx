@@ -29,6 +29,9 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
+import { Sparkline } from './charts/Sparkline';
+import { FactorRGauge } from './charts/FactorRGauge';
+import type { ChartTone } from './charts/tones';
 import { playSound } from '../hooks/useSound';
 import { crossedBelowTarget } from '../utils/sound';
 import { card, tile } from './ui/card';
@@ -104,7 +107,8 @@ const AnswerCard: React.FC<{
   format?: (n: number) => string;
   detail: React.ReactNode;
   tone?: 'neutral' | 'good' | 'bad';
-}> = ({ icon, label, value, format, detail, tone = 'neutral' }) => (
+  aside?: React.ReactNode;
+}> = ({ icon, label, value, format, detail, tone = 'neutral', aside }) => (
   <motion.div
     variants={cascadeItem}
     className={`${card} p-5 ${
@@ -119,16 +123,19 @@ const AnswerCard: React.FC<{
       {icon}
       {label}
     </div>
-    <div
-      className={`text-3xl font-bold font-num tabular-nums tracking-tight mt-1.5 transition-colors duration-[var(--duration-base)] ${
-        tone === 'good'
-          ? 'text-emerald-700 dark:text-emerald-400'
-          : tone === 'bad'
-            ? 'text-rose-600 dark:text-rose-400'
-            : 'text-slate-900 dark:text-white'
-      }`}
-    >
-      <ValueText value={value} format={format} />
+    <div className="flex items-end justify-between gap-3 mt-1.5">
+      <div
+        className={`text-3xl font-bold font-num tabular-nums tracking-tight transition-colors duration-[var(--duration-base)] ${
+          tone === 'good'
+            ? 'text-emerald-700 dark:text-emerald-400'
+            : tone === 'bad'
+              ? 'text-rose-600 dark:text-rose-400'
+              : 'text-slate-900 dark:text-white'
+        }`}
+      >
+        <ValueText value={value} format={format} />
+      </div>
+      {aside && <div className="shrink-0 -mb-1">{aside}</div>}
     </div>
     <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{detail}</div>
   </motion.div>
@@ -141,19 +148,33 @@ const Indicator: React.FC<{
   format?: (n: number) => string;
   detail: string;
   valueClass?: string;
+  // Tendência dos meses anteriores (mini gráfico no canto, sem mudar a altura do bloco)
+  trend?: number[];
+  trendTone?: ChartTone;
 }> = ({
   label,
   value,
   format,
   detail,
   valueClass = 'text-slate-900 dark:text-white',
+  trend,
+  trendTone = 'emerald',
 }) => (
-  <div className={`${tile} px-3 py-2.5 min-w-0`}>
+  <div
+    className={`${tile} relative px-3 py-2.5 min-w-0 ring-1 ring-transparent hover:ring-emerald-500/30 hover:-translate-y-px transition-[box-shadow,translate,color] duration-[var(--duration-micro)]`}
+  >
+    {trend && (
+      <div className="absolute right-2.5 bottom-2.5 opacity-80">
+        <Sparkline values={trend} tone={trendTone} width={44} height={18} />
+      </div>
+    )}
     <div className="text-xs text-slate-600 dark:text-slate-400">{label}</div>
     <div className={`text-base font-bold font-num tabular-nums mt-0.5 truncate transition-colors ${valueClass}`}>
       <ValueText value={value} format={format} />
     </div>
-    <div className="text-xs text-slate-500 dark:text-slate-500 truncate">{detail}</div>
+    <div className={`text-xs text-slate-500 dark:text-slate-500 truncate ${trend && trend.length > 1 ? 'pr-12' : ''}`} title={detail}>
+      {detail}
+    </div>
   </div>
 );
 
@@ -238,6 +259,15 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const margin = calculateFactorRMargin(currentRevenue, prolabore.gross, history, settings, selectedMonth);
   const dasDueMonth = shiftYearMonth(selectedMonth, 1).split('-');
   const savingsThisMonth = simples.anexoUsed === 'III' ? simples.anexoVDasAmount - simples.dasAmount : 0;
+
+  // Tendências dos indicadores: até 12 meses salvos antes da competência, do mais antigo ao mais recente
+  const priorMonths = history
+    .filter((h) => h.yearMonth < selectedMonth && h.revenue > 0)
+    .sort((a, b) => a.yearMonth.localeCompare(b.yearMonth))
+    .slice(-12);
+  const trendFactorR = priorMonths.map((h) => (h.payroll / h.revenue) * 100);
+  const trendRevenue = priorMonths.map((h) => h.revenue);
+  const trendRate = priorMonths.map((h) => (h.dasPaid / h.revenue) * 100);
 
   // Aviso sonoro só quando uma mudança do usuário faz o Fator R da próxima competência sair da meta.
   // Trocar de competência zera a referência: carregar um mês que já estava abaixo não avisa.
@@ -504,6 +534,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Indicator
                 label="Fator R deste mês"
+                trend={trendFactorR}
+                trendTone={simples.isQualifiedForAnexo3 ? 'emerald' : 'rose'}
                 value={simples.factorRPercentage}
                 format={formatPercent}
                 detail={`Anexo ${simples.anexoUsed} · definido pelos meses anteriores`}
@@ -511,6 +543,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label={`RBT12${simples.isProportional ? ' (proporcional)' : ''}`}
+                trend={trendRevenue}
+                trendTone="sky"
                 value={simples.rbt12}
                 format={formatCurrency}
                 detail={
@@ -521,6 +555,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label="Alíquota efetiva do DAS"
+                trend={trendRate}
+                trendTone="amber"
                 value={simples.effectiveRatePercentage}
                 format={formatPercent}
                 detail={`Anexo ${simples.anexoUsed}, faixa ${simples.faixa} · DAS = faturamento × alíquota`}
@@ -553,6 +589,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <AnswerCard
               icon={next.isQualifiedForAnexo3 ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               label={`Fator R em ${formatCompetence(next.yearMonth)}`}
+              aside={<FactorRGauge value={next.factorRPercentage} size="sm" />}
               value={next.factorRPercentage}
               format={formatPercent}
               tone={next.isQualifiedForAnexo3 ? 'good' : 'bad'}
@@ -572,6 +609,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
               <Indicator
                 label="Alíquota efetiva"
+                trend={trendRate}
+                trendTone="amber"
                 value={simples.effectiveRatePercentage}
                 format={formatPercent}
                 detail={`nominal ${formatPercent(simples.nominalRate * 100)}`}
@@ -579,6 +618,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               <Indicator label="Enquadramento" value={`Anexo ${simples.anexoUsed}`} detail={`faixa ${simples.faixa}`} />
               <Indicator
                 label="Fator R do mês"
+                trend={trendFactorR}
+                trendTone={simples.isQualifiedForAnexo3 ? 'emerald' : 'rose'}
                 value={simples.factorRPercentage}
                 format={formatPercent}
                 detail={simples.monthsCount === 0 ? 'primeiro mês' : '12 meses anteriores'}
@@ -586,6 +627,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label="RBT12"
+                trend={trendRevenue}
+                trendTone="sky"
                 value={simples.rbt12}
                 format={formatCurrency}
                 detail={simples.isProportional ? 'proporcional' : '12 meses completos'}
