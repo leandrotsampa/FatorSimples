@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { windowChromeOptions, windowControlFor, shortcutFor } = require('./windowChrome.cjs');
 const { ensureSettingsColumns } = require('./settingsSchema.cjs');
+const { portableDirectoryFor } = require('./dataDirectory.cjs');
 
 let mainWindow = null;
 let db = null;
@@ -16,25 +17,15 @@ let dbPath = '';
 // 'portable' = banco ao lado do app; 'system' = pasta de dados do sistema (userData)
 let storageMode = 'portable';
 
-// Pasta onde o banco fica ao lado do app (modo portátil), ou null quando o sistema não permite
+// Pasta onde o banco fica ao lado do app (modo portátil), ou null para a pasta de dados do usuário
 function getPortableDirectory() {
-  // Windows portátil (electron-builder portable): pasta real do .exe, não a extraída em temp
-  if (process.env.PORTABLE_EXECUTABLE_DIR) {
-    return process.env.PORTABLE_EXECUTABLE_DIR;
-  }
-  // Linux AppImage: pasta do arquivo .AppImage (o app em si roda de uma montagem somente leitura)
-  if (process.env.APPIMAGE) {
-    return path.dirname(process.env.APPIMAGE);
-  }
-  // macOS: o app fica dentro do pacote .app em Aplicativos; gravar ali se perde ao atualizar
-  if (process.platform === 'darwin' && app.isPackaged) {
-    return null;
-  }
-  if (app.isPackaged) {
-    return path.dirname(app.getPath('exe'));
-  }
-  // Em desenvolvimento local
-  return process.cwd();
+  return portableDirectoryFor({
+    env: process.env,
+    platform: process.platform,
+    isPackaged: app.isPackaged,
+    exePath: app.getPath('exe'),
+    cwd: process.cwd(),
+  });
 }
 
 // Pasta dos dados: ao lado do app quando possível e gravável; senão, a pasta de dados do sistema

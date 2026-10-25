@@ -14,7 +14,7 @@ A alíquota para a nota, quanto transferir para você e quanto deixar na conta d
 [![Visualizações](https://komarev.com/ghpvc/?username=leandrotsampa-fatorsimples&label=visualiza%C3%A7%C3%B5es&color=059669&style=flat-square)](https://github.com/leandrotsampa/FatorSimples)
 [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-334155?style=flat-square)](LICENSE)
 <br />
-![Windows](https://img.shields.io/badge/Windows-port%C3%A1til-0078D4?style=flat-square&logo=windows&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-instalador%20e%20port%C3%A1til-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-Apple%20e%20Intel-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-AppImage-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![Electron](https://img.shields.io/badge/Electron-45-47848F?style=flat-square&logo=electron&logoColor=white)
@@ -211,7 +211,8 @@ Baixe o arquivo do seu sistema em [**Releases**](https://github.com/leandrotsamp
 
 | Sistema | Arquivo | Onde fica o banco `fatorsimples.sqlite` |
 |---|---|---|
-| 🪟 **Windows** | `FatorSimples-x.y.z-portable.exe` | Na mesma pasta do `.exe` |
+| 🪟 **Windows** (instalador, recomendado) | `FatorSimples-x.y.z-setup.exe` | `%APPDATA%\FatorSimples` |
+| 🪟 **Windows** (portátil) | `FatorSimples-x.y.z-portable.exe` | Na mesma pasta do `.exe` |
 | 🍎 **macOS** (chip Apple) | `FatorSimples-x.y.z-mac-arm64.dmg` | `~/Library/Application Support/FatorSimples` |
 | 🍎 **macOS** (Intel) | `FatorSimples-x.y.z-mac-x64.dmg` | `~/Library/Application Support/FatorSimples` |
 | 🐧 **Linux** | `FatorSimples-x.y.z-linux-x64.AppImage` | Na mesma pasta do `.AppImage` |
@@ -220,8 +221,18 @@ Baixe o arquivo do seu sistema em [**Releases**](https://github.com/leandrotsamp
 <summary><b>🪟 Windows</b></summary>
 <br />
 
-1. Coloque o `.exe` numa pasta sua, por exemplo `Documentos\FatorSimples`, e abra. Não precisa instalar
+**Instalador (recomendado).** Abre em cerca de 1 segundo, porque não precisa descompactar o app a cada abertura.
+
+1. Abra o `FatorSimples-x.y.z-setup.exe`. Ele instala só para o seu usuário, sem pedir permissão de administrador, e cria atalhos na área de trabalho e no menu Iniciar
+2. Para atualizar, rode o instalador da versão nova. Ele instala por cima, fecha o app se estiver aberto e mantém os seus dados
+3. Os dados ficam em `%APPDATA%\FatorSimples` e continuam lá mesmo se você desinstalar o app
+
+**Portátil.** Não instala nada, mas demora mais para abrir, porque descompacta o app a cada abertura.
+
+1. Coloque o `.exe` numa pasta sua, por exemplo `Documentos\FatorSimples`, e abra
 2. Para atualizar, troque só o `.exe` e mantenha o `fatorsimples.sqlite` ao lado
+
+**Do portátil para o instalador.** Com o app fechado, copie o `fatorsimples.sqlite` da pasta do portátil para `%APPDATA%\FatorSimples` (cole o endereço na barra do Explorador de Arquivos). Outra forma é usar **Dados e backup → Exportar Dados** no portátil e **Importar Dados** no instalado.
 
 O SmartScreen pode avisar na primeira execução, porque o executável não tem assinatura de código comercial. Clique em **Mais informações → Executar assim mesmo**.
 
@@ -304,7 +315,8 @@ npm run dev
 | `npm run lint` | Checagem de tipos com TypeScript |
 | `npm test` | Testes automatizados (Vitest) dos cálculos, das tabelas e da interface |
 | `npm run build` | Build de produção da interface em `dist/` |
-| `npm run dist:portable` | Gera `release/FatorSimples-<versão>-portable.exe` (Windows) |
+| `npm run dist:win` | Gera o instalador `release/FatorSimples-<versão>-setup.exe` e o portátil (Windows) |
+| `npm run dist:portable` | Gera só o portátil `release/FatorSimples-<versão>-portable.exe` (Windows) |
 | `npm run dist:mac` | Gera os `.dmg` para Mac com chip Apple e Intel (macOS) |
 | `npm run dist:linux` | Gera o `.AppImage` (Linux) |
 
@@ -314,7 +326,7 @@ As releases são geradas pela action **[Gerar release](.github/workflows/release
 
 1. Ajuste o campo `version` do `package.json` (por exemplo, `1.1.1` → `1.2.0`) e faça o commit na `main`
 2. No GitHub, abra **Actions → Gerar release → Run workflow**. Dá para marcar como pré-lançamento ou rascunho
-3. A action compila em paralelo no **Windows**, no **macOS** e no **Linux**, gera o changelog a partir dos commits desde a última versão, atualiza o [`CHANGELOG.md`](CHANGELOG.md) e publica a release com o `.exe`, os `.dmg`, o `.AppImage` e os checksums SHA-256
+3. A action compila em paralelo no **Windows**, no **macOS** e no **Linux**, gera o changelog a partir dos commits desde a última versão, atualiza o [`CHANGELOG.md`](CHANGELOG.md) e publica a release com o instalador e o portátil do Windows, os `.dmg`, o `.AppImage` e os checksums SHA-256
 
 O changelog agrupa os commits pelo prefixo: `feat:` (novidades), `fix:` (correções), `docs:`, `refactor:`, `perf:`, `build:` e `chore:`. A versão exibida no app também vem do `package.json`.
 

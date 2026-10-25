@@ -56,7 +56,7 @@ jobs:
         include:
           - name: Windows
             os: windows-latest
-            command: npm run dist:portable -- --publish never
+            command: npm run dist:win -- --publish never
             files: release/*.exe
           - name: macOS
             os: macos-latest
@@ -130,12 +130,13 @@ jobs:
             echo ""
             echo "| Sistema | Arquivo |"
             echo "|---|---|"
-            echo "| Windows | \`FatorSimples-$VERSION-portable.exe\` (não precisa instalar) |"
+            echo "| Windows (instalador, recomendado) | \`FatorSimples-$VERSION-setup.exe\` (abre mais rápido e atualiza por cima da versão instalada) |"
+            echo "| Windows (portátil) | \`FatorSimples-$VERSION-portable.exe\` (não precisa instalar) |"
             echo "| macOS com chip Apple (M1 a M4) | \`FatorSimples-$VERSION-mac-arm64.dmg\` |"
             echo "| macOS com processador Intel | \`FatorSimples-$VERSION-mac-x64.dmg\` |"
             echo "| Linux | \`FatorSimples-$VERSION-linux-x64.AppImage\` |"
             echo ""
-            echo "**Windows:** coloque o \`.exe\` na mesma pasta do seu \`fatorsimples.sqlite\`, se já usa o app. Se o SmartScreen avisar, clique em *Mais informações → Executar assim mesmo*."
+            echo "**Windows:** o instalador guarda os dados na pasta do usuário e, numa versão nova, é só rodar o instalador de novo. No portátil, coloque o \`.exe\` na mesma pasta do seu \`fatorsimples.sqlite\`. Se o SmartScreen avisar, clique em *Mais informações → Executar assim mesmo*."
             echo ""
             echo "**macOS:** o app não é assinado pela Apple. Na primeira abertura, vá em *Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim*. Se aparecer \"está danificado\", rode no Terminal: \`xattr -cr /Applications/FatorSimples.app\`."
             echo ""

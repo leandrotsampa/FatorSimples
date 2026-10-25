@@ -1,7 +1,7 @@
 {
   "name": "fatorsimples",
   "productName": "FatorSimples",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Calculadora desktop do Simples Nacional com Fator R: pró-labore ideal, DAS, INSS e IRRF com as tabelas de cada ano e comparativo Anexo III × V.",
   "author": "Leandro Tavares de Melo",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "lint": "tsc --noEmit",
     "postinstall": "electron-builder install-app-deps",
     "dist:portable": "vite build && node scripts/prepare-electron-dist.mjs && electron-builder --win portable -c.electronDist=.electron-dist",
+    "dist:win": "vite build && node scripts/prepare-electron-dist.mjs && electron-builder --win -c.electronDist=.electron-dist",
     "dist:mac": "vite build && electron-builder --mac",
     "dist:linux": "vite build && electron-builder --linux",
     "test": "vitest run"
@@ -79,12 +80,31 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
     },
     "portable": {
       "artifactName": "FatorSimples-${version}-portable.exe"
+    },
+    "nsis": {
+      "artifactName": "FatorSimples-${version}-setup.exe",
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FatorSimples",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "uninstallDisplayName": "FatorSimples"
     },
     "mac": {
       "category": "public.app-category.finance",
