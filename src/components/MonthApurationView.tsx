@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -29,6 +29,8 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
+import { playSound } from '../hooks/useSound';
+import { crossedBelowTarget } from '../utils/sound';
 
 interface MonthApurationViewProps {
   currentRevenue: number;
@@ -224,6 +226,20 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const margin = calculateFactorRMargin(currentRevenue, prolabore.gross, history, settings, selectedMonth);
   const dasDueMonth = shiftYearMonth(selectedMonth, 1).split('-');
   const savingsThisMonth = simples.anexoUsed === 'III' ? simples.anexoVDasAmount - simples.dasAmount : 0;
+
+  // Aviso sonoro só quando uma mudança do usuário faz o Fator R da próxima competência sair da meta.
+  // Trocar de competência zera a referência: carregar um mês que já estava abaixo não avisa.
+  const qualified = hasRevenue ? next.isQualifiedForAnexo3 : null;
+  const qualifiedRef = useRef<{ month: string; value: boolean | null }>({ month: selectedMonth, value: null });
+  useEffect(() => {
+    const ref = qualifiedRef.current;
+    if (ref.month !== selectedMonth) {
+      qualifiedRef.current = { month: selectedMonth, value: qualified };
+      return;
+    }
+    if (qualified !== null && crossedBelowTarget(ref.value, qualified)) playSound('warning');
+    ref.value = qualified;
+  }, [selectedMonth, qualified]);
 
   // Para onde vai a receita do mês
   const breakdown = [

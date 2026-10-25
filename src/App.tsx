@@ -23,6 +23,7 @@ import { runThemeWipe } from './utils/themeTransition';
 import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
+import { playSound } from './hooks/useSound';
 import { resolveSidebarMode, SIDEBAR_COLLAPSE_BELOW } from './utils/sidebarMode';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
@@ -50,6 +51,7 @@ export default function App() {
     } catch {
       // Fallback
     }
+    playSound('whoosh');
     runThemeWipe(origin ?? null, () => {
       document.documentElement.classList.toggle('dark', next === 'dark');
       flushSync(() => setTheme(next));
@@ -91,6 +93,7 @@ export default function App() {
   }, [windowWidth]);
   const sidebarMode = resolveSidebarMode(uiPrefs.sidebar, windowWidth, sidebarOverlayOpen);
   const toggleSidebar = () => {
+    playSound('tick');
     if (window.innerWidth < SIDEBAR_COLLAPSE_BELOW) {
       setSidebarOverlayOpen((open) => !open);
     } else {
@@ -233,6 +236,7 @@ export default function App() {
     });
     // Grava no SQLite nativo se estiver no Electron
     storageAdapter.saveMonth(newRecord);
+    playSound('success');
   };
 
   const handleEditMonth = (record: MonthRecord) => {
@@ -244,6 +248,7 @@ export default function App() {
     if (window.confirm('Tem certeza que deseja remover esta competência do histórico?')) {
       setHistory((prev) => prev.filter((item) => item.id !== id));
       storageAdapter.deleteMonth(id);
+      playSound('delete');
     }
   };
 
@@ -264,6 +269,7 @@ export default function App() {
     if (window.confirm('Tem certeza que deseja limpar todo o histórico de competências?')) {
       setHistory([]);
       storageAdapter.clearHistory();
+      playSound('delete');
     }
   };
 

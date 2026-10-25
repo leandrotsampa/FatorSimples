@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { playSound } from '../../hooks/useSound';
 
 interface SegmentedOption<T extends string> {
   value: T;
@@ -41,7 +42,10 @@ export function SegmentedControl<T extends string>({
           <button
             key={o.value}
             type="button"
-            onClick={() => onChange(o.value)}
+            onClick={() => {
+              if (!active) playSound('tick');
+              onChange(o.value);
+            }}
             disabled={disabled}
             aria-pressed={active}
             title={o.title}

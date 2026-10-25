@@ -18,6 +18,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { RailTooltip } from './ui/RailTooltip';
+import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
@@ -87,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Stepper para avançar ou retroceder o mês rapidamente
   const handleStepMonth = (delta: number) => {
+    playSound('tick');
     const [yearStr, monthStr] = selectedMonth.split('-');
     let year = parseInt(yearStr, 10);
     let month = parseInt(monthStr, 10) + delta;
@@ -350,6 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <RailTooltip key={item.id} enabled={collapsed} label={item.label} detail={item.description}>
                     <button
                       onClick={() => {
+                        if (!isActive) playSound('tick');
                         setActiveTab(item.id);
                         if (mode === 'overlay') onCloseOverlay();
                       }}

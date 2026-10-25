@@ -16,6 +16,8 @@ import { TaxSettings } from '../types/tax';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
 import { formatCurrency, formatPercent, ANEXO_III_TABLE, ANEXO_V_TABLE } from '../utils/taxCalculations';
 import { ModalShell } from './ui/ModalShell';
+import { useUiPrefs } from '../hooks/useUiPrefs';
+import { playSound } from '../hooks/useSound';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -31,7 +33,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSave,
 }) => {
   const [formData, setFormData] = useState<TaxSettings>({ ...settings });
-  const [activeTab, setActiveTab] = useState<'tables' | 'parameters' | 'company' | 'auto_explain'>('tables');
+  const [activeTab, setActiveTab] = useState<'tables' | 'parameters' | 'company' | 'auto_explain' | 'interface'>('tables');
+  const [uiPrefs, setUiPrefs] = useUiPrefs();
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
@@ -152,6 +155,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             03. Empresa (Brusque - SC)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('interface')}
+            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+              activeTab === 'interface'
+                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            04. Interface
           </button>
         </div>
 
@@ -495,6 +510,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: Interface (preferências locais, salvas na hora e fora das configurações fiscais) */}
+          {activeTab === 'interface' && (
+            <div className="space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div id="ui-sound-label" className="text-slate-900 dark:text-slate-100 font-semibold text-sm">
+                      Sons da interface
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                      Cliques, confirmação ao salvar e aviso quando o Fator R cai abaixo de 28%.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={uiPrefs.soundEnabled}
+                    aria-labelledby="ui-sound-label"
+                    onClick={() => setUiPrefs({ soundEnabled: !uiPrefs.soundEnabled })}
+                    className={`relative shrink-0 w-10 h-6 rounded-full transition-colors cursor-pointer ${
+                      uiPrefs.soundEnabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-[var(--duration-base)] ${
+                        uiPrefs.soundEnabled ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className={uiPrefs.soundEnabled ? '' : 'opacity-50'}>
+                  <label htmlFor="ui-sound-volume" className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    <span>Volume</span>
+                    <span className="font-mono tabular-nums">{Math.round(uiPrefs.soundVolume * 100)}%</span>
+                  </label>
+                  <input
+                    id="ui-sound-volume"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={Math.round(uiPrefs.soundVolume * 100)}
+                    disabled={!uiPrefs.soundEnabled}
+                    onChange={(e) => setUiPrefs({ soundVolume: Number(e.target.value) / 100 })}
+                    className="w-full accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!uiPrefs.soundEnabled}
+                  onClick={() => playSound('success')}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md font-semibold text-slate-700 dark:text-slate-200 hover:border-emerald-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Testar som
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Estas preferências ficam neste computador e são salvas na hora, sem precisar de "Salvar Alterações".
+              </p>
             </div>
           )}
 
