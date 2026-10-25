@@ -66,8 +66,15 @@ export const LiquidIndicator: React.FC<{
     if (!container) return;
     const ro = new ResizeObserver(() => measureRef.current(false));
     ro.observe(container);
-    return () => ro.disconnect();
-  }, [containerRef]);
+    let alive = true;
+    document.fonts?.ready.then(() => alive && measureRef.current(false));
+    return () => {
+      alive = false;
+      ro.disconnect();
+      start.stop();
+      end.stop();
+    };
+  }, [containerRef, start, end]);
 
   const style =
     axis === 'y'

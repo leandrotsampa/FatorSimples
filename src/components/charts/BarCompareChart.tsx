@@ -25,15 +25,16 @@ export const BarCompareChart: React.FC<{
   const [width, setWidth] = useState(0);
   const [rawHover, setHover] = useState<number | null>(null);
 
+  const n = labels.length;
+  const hasData = n > 0;
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [hasData]);
 
-  const n = labels.length;
   const hover = validIndex(rawHover, n);
   if (n === 0) return null;
   const innerW = Math.max(0, width - PAD.left - PAD.right);
@@ -75,7 +76,7 @@ export const BarCompareChart: React.FC<{
                 className="stroke-slate-200/80 dark:stroke-white/5"
                 strokeDasharray={t === 0 ? undefined : '3 4'}
               />
-              <text x={PAD.left - 10} y={y(t)} dy="0.32em" textAnchor="end" className="fill-slate-400 dark:fill-slate-500 text-[10px] font-num">
+              <text x={PAD.left - 10} y={y(t)} dy="0.32em" textAnchor="end" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-num">
                 {formatAxis(t)}
               </text>
             </g>
@@ -91,7 +92,7 @@ export const BarCompareChart: React.FC<{
                   {bar(a.values[i], cx - barW - gap / 2, i, 'fill-emerald-500 dark:fill-emerald-400')}
                   {bar(b.values[i], cx + gap / 2, i, 'fill-slate-300 dark:fill-slate-600')}
                 </g>
-                <text x={cx} y={height - 8} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500 text-[10px] font-num">
+                <text x={cx} y={height - 8} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-num">
                   {l}
                 </text>
                 <rect

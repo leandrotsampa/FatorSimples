@@ -30,6 +30,7 @@ import { AreaChart } from './charts/AreaChart';
 import { Sparkline } from './charts/Sparkline';
 import type { ChartTone } from './charts/tones';
 import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
+import { clamp } from '../utils/chartGeometry';
 import { DURATION, EASE_OUT } from '../utils/motion';
 
 const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -57,7 +58,9 @@ const Metric: React.FC<{
     <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{label}</div>
     <div className="flex items-end justify-between gap-2 mt-0.5">
       <AnimatedNumber value={value} format={format} className={`text-lg font-bold font-num tabular-nums ${valueClass}`} />
-      <Sparkline values={trend} tone={tone} width={64} height={22} />
+      <span title="Tendência mês a mês">
+        <Sparkline values={trend} tone={tone} width={64} height={22} />
+      </span>
     </div>
     <div className="text-[10px] text-slate-500 mt-1 truncate" title={detail}>{detail}</div>
   </div>
@@ -244,7 +247,8 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                 key: 'fr',
                 label: 'Fator R',
                 tone: 'sky',
-                values: chartMonths.map((m) => (m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0)),
+                // Limitado a 100% no desenho (o tooltip mostra o valor real)
+                values: chartMonths.map((m) => clamp(m.revenue > 0 ? (m.payroll / m.revenue) * 100 : 0, 0, 100)),
                 kind: 'line',
                 axis: 'right',
               },

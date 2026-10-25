@@ -394,7 +394,13 @@ export default function App() {
             key={activeTab}
             className="page-transition"
             initial={reduceMotion ? false : { opacity: 0, filter: 'blur(6px)', scale: 0.995 }}
-            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1, transition: instantIf(reduceMotion, { duration: 0.42, ease: EASE_OUT }) }}
+            animate={{
+              opacity: 1,
+              filter: 'blur(0px)',
+              scale: 1,
+              transition: instantIf(reduceMotion, { duration: 0.42, ease: EASE_OUT }),
+              transitionEnd: { filter: 'none', transform: 'none' },
+            }}
             exit={{ opacity: 0, filter: 'blur(4px)', transition: instantIf(reduceMotion, { duration: 0.18, ease: EASE_OUT }) }}
           >
           {!isHistoryLoaded ? (

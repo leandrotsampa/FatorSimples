@@ -137,7 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       monthButtonRef.current?.focus();
     };
     // Leva o foco para dentro do painel recém-aberto
-    requestAnimationFrame(() => monthPanelRef.current?.querySelector<HTMLElement>('button, input')?.focus());
+    const focusFrame = requestAnimationFrame(() =>
+      monthPanelRef.current?.querySelector<HTMLElement>('button, input')?.focus()
+    );
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (!monthPanelRef.current?.contains(t) && !monthButtonRef.current?.contains(t)) setMonthPanelPos(null);
@@ -145,6 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
     return () => {
+      cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onDown);
     };

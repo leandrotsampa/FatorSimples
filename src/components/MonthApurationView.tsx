@@ -164,7 +164,7 @@ const Indicator: React.FC<{
     className={`${tile} relative px-3 py-2.5 min-w-0 ring-1 ring-transparent hover:ring-emerald-500/30 hover:-translate-y-px transition-[box-shadow,translate,color] duration-[var(--duration-micro)]`}
   >
     {trend && (
-      <div className="absolute right-2.5 bottom-2.5 opacity-80">
+      <div className="absolute right-2.5 bottom-2.5 opacity-80" title="Tendência mês a mês">
         <Sparkline values={trend} tone={trendTone} width={44} height={18} />
       </div>
     )}
@@ -406,6 +406,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
       />
 
       {/* Aviso de sucesso ao salvar */}
+      <div>
       <AnimatePresence>
       {savedSuccessMessage && (
         <motion.div
@@ -431,6 +432,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
         </motion.div>
       )}
       </AnimatePresence>
+      </div>
 
       {/* Entrada: faturamento, estratégia do pró-labore e salvar */}
       <section className={`${card} p-5`}>
