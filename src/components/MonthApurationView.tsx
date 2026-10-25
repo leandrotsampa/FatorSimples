@@ -20,6 +20,7 @@ import {
   formatPercent,
   calculateMonthSummary,
   calculateFactorRMargin,
+  calculateSlackRelease,
   getActiveTaxTable,
   shiftYearMonth,
   FACTOR_R_NEAR_MISS,
@@ -82,8 +83,8 @@ const STRATEGIES: { rule: TaxSettings['prolaboreRule']; label: string; title: st
   { rule: 'auto_28_month', label: '28% do mês', title: 'Aplica 28% do faturamento do mês' },
   {
     rule: 'exact_rbt12',
-    label: 'Ajuste RBT12',
-    title: 'Compensa os 11 meses anteriores para o Fator R da próxima competência fechar em 28%',
+    label: 'Sem folga',
+    title: 'Menor pró-labore que mantém o Fator R em 28% na próxima competência (compensa os 11 meses anteriores)',
   },
   { rule: 'manual', label: 'Manual', title: 'Definir manualmente o valor bruto do pró-labore' },
 ];
@@ -329,6 +330,12 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const hasRevenue = currentRevenue > 0;
   const dividendRule = getActiveTaxTable(settings)?.dividendWithholding;
   const margin = calculateFactorRMargin(currentRevenue, prolabore.gross, history, settings, selectedMonth);
+  // Folga de menos de R$ 1 é "no limite" (evita "folga de R$ 0,00" e "passou R$ 0,00")
+  const atLimit = Math.abs(margin.prolaboreMargin) < 1;
+  // Quanto a mais chega para você ao trocar para o pró-labore mínimo (sem folga)
+  const slack = calculateSlackRelease(currentRevenue, history, { ...settings, prolaboreRule }, selectedMonth, summary);
+  const canReleaseSlack =
+    !isReadOnly && prolaboreRule !== 'exact_rbt12' && next.isQualifiedForAnexo3 && slack.extraForYou >= 1;
   const dasDueMonth = shiftYearMonth(selectedMonth, 1).split('-');
   const savingsThisMonth = simples.anexoUsed === 'III' ? simples.anexoVDasAmount - simples.dasAmount : 0;
 
@@ -422,12 +429,16 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               DAS de <b className="font-num font-semibold text-slate-900 dark:text-white">{formatCurrency(simples.dasAmount)}</b>{' '}
               vence em 20/{dasDueMonth[1]}/{dasDueMonth[0]} ·{' '}
               {next.isQualifiedForAnexo3 ? (
-                <>
-                  Fator R garantido em {formatCompetence(next.yearMonth)} com folga de{' '}
-                  <b className="font-num font-semibold text-emerald-700 dark:text-emerald-400">
-                    {formatCurrency(Math.max(0, margin.prolaboreMargin))}
-                  </b>
-                </>
+                atLimit ? (
+                  <>Fator R garantido em {formatCompetence(next.yearMonth)}, no limite</>
+                ) : (
+                  <>
+                    Fator R garantido em {formatCompetence(next.yearMonth)} com folga de{' '}
+                    <b className="font-num font-semibold text-emerald-700 dark:text-emerald-400">
+                      {formatCurrency(Math.max(0, margin.prolaboreMargin))}
+                    </b>
+                  </>
+                )
               ) : (
                 <>
                   Fator R abaixo de 28% em {formatCompetence(next.yearMonth)}: faltam{' '}
@@ -715,9 +726,41 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               format={formatPercent}
               tone={next.isQualifiedForAnexo3 ? 'good' : 'bad'}
               detail={
-                next.isQualifiedForAnexo3
-                  ? `Garantido · folga de ${formatCurrency(Math.max(0, margin.prolaboreMargin))}`
-                  : `Cai no Anexo V · faltam ${formatCurrency(-margin.prolaboreMargin)} de pró-labore`
+                <>
+                  {!next.isQualifiedForAnexo3
+                    ? `Cai no Anexo V · faltam ${formatCurrency(-margin.prolaboreMargin)} de pró-labore`
+                    : atLimit
+                      ? prolaboreRule === 'exact_rbt12'
+                        ? 'Garantido · sem folga, pró-labore no mínimo'
+                        : 'Garantido · no limite, sem folga'
+                      : `Garantido · folga de ${formatCurrency(Math.max(0, margin.prolaboreMargin))}`}
+                  {(canReleaseSlack || (!isReadOnly && !next.isQualifiedForAnexo3)) && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectRule('exact_rbt12')}
+                      title={
+                        canReleaseSlack
+                          ? `Pró-labore de ${formatCurrency(prolabore.gross)} para ${formatCurrency(slack.minProlabore)}: menos INSS e IRRF, mais antecipação de lucros`
+                          : `Pró-labore de ${formatCurrency(prolabore.gross)} para ${formatCurrency(slack.minProlabore)}`
+                      }
+                      className={`mt-2.5 flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                        canReleaseSlack
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400'
+                          : 'bg-rose-600 text-white hover:bg-rose-500'
+                      }`}
+                    >
+                      {canReleaseSlack ? (
+                        <>
+                          Tirar a folga <span className="font-num opacity-90">· +{formatCurrency(slack.extraForYou)} para você</span>
+                        </>
+                      ) : (
+                        <>
+                          Ajustar pró-labore para <span className="font-num">{formatCurrency(slack.minProlabore)}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
               }
             />
           </motion.div>
@@ -957,7 +1000,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             <DetailSection
               title="Fator R e folga"
               summary={
-                margin.revenueMargin >= 0
+                atLimit
+                  ? 'no limite'
+                  : margin.revenueMargin >= 0
                   ? `pode faturar mais ${formatCurrency(margin.revenueMargin)}`
                   : `passou ${formatCurrency(-margin.revenueMargin)} do limite`
               }

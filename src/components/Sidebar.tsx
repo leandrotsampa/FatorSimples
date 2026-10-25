@@ -34,6 +34,8 @@ const formatPercent1 = (n: number) => formatPercent(n, 1);
 // Larguras do menu: expandido (o de sempre) e recolhido em trilho de ícones
 const WIDTH_EXPANDED = 288;
 const WIDTH_COLLAPSED = 68;
+// Espaço entre a cápsula do menu e a borda da janela
+const GUTTER = 12;
 const widthSpring = { type: 'spring', stiffness: 400, damping: 40 } as const;
 
 interface SidebarProps {
@@ -221,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const monthBlock = (
     <div
       data-month-block
-      className="flex items-stretch gap-1 p-1 rounded-xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-white/10 shadow-2xs"
+      className="flex items-stretch gap-1 p-1 rounded-xl bg-slate-50 dark:bg-slate-950/60 ring-1 ring-slate-900/[0.06] dark:ring-white/[0.07]"
     >
       <button type="button" onClick={() => handleStepMonth(-1)} className={stepButtonClass} title="Mês anterior" aria-label="Mês anterior">
         <ChevronLeft className="w-4 h-4" />
@@ -277,11 +279,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <motion.div
         className="no-print shrink-0 h-screen sticky top-0 z-50"
         initial={false}
-        animate={{ width: mode === 'expanded' ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
+        animate={{ width: (mode === 'expanded' ? WIDTH_EXPANDED : WIDTH_COLLAPSED) + GUTTER }}
         transition={widthTransition}
       >
         <motion.aside
-          className="absolute inset-y-0 left-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/90 flex flex-col justify-between select-none shadow-xs overflow-x-hidden"
+          className="absolute top-3 bottom-3 left-3 rounded-[22px] bg-white dark:bg-slate-900 ring-1 ring-slate-900/[0.06] dark:ring-white/[0.07] shadow-[0_1px_2px_rgba(16,24,20,0.06),0_18px_40px_-20px_rgba(16,40,28,0.28)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_24px_48px_-24px_rgba(0,0,0,0.9)] flex flex-col justify-between select-none overflow-hidden"
           initial={false}
           animate={{ width: expanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
           transition={widthTransition}
@@ -290,7 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex flex-col flex-1 min-h-0">
             {/* Topo: também arrasta a janela; no macOS deixa espaço para os botões nativos */}
             <div
-              className={`app-drag border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950 ${
+              className={`app-drag border-b border-slate-900/[0.06] dark:border-white/[0.06] ${
                 collapsed ? 'px-2 py-3' : 'p-4'
               } ${window.electronAPI?.platform === 'darwin' ? 'pt-9' : ''}`}
             >
@@ -323,7 +325,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Competência */}
             <div
-              className={`border-b border-slate-200 dark:border-slate-800/70 bg-slate-100/60 dark:bg-slate-900/40 ${
+              className={`border-b border-slate-900/[0.06] dark:border-white/[0.06] ${
                 collapsed ? 'p-2' : 'p-3'
               }`}
             >
@@ -454,7 +456,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {expanded ? (
               <Reveal
                 show
-                className="m-3 p-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-1.5 shadow-2xs whitespace-nowrap"
+                className="m-3 p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-900/[0.06] dark:border-white/[0.06] rounded-lg text-xs space-y-1.5 shadow-2xs whitespace-nowrap"
               >
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                   <span>Fator R {selectedMonth}:</span>
@@ -521,7 +523,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Sidebar Footer Controls */}
           <div
-            className={`border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 space-y-1 text-xs ${
+            className={`border-t border-slate-900/[0.06] dark:border-white/[0.06] space-y-1 text-xs ${
               collapsed ? 'p-2' : 'p-3'
             }`}
           >

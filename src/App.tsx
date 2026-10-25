@@ -417,9 +417,9 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-row font-sans overflow-hidden ${
       theme === 'dark'
-        ? 'bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200'
-        : 'bg-slate-100 text-slate-800 selection:bg-emerald-500/20 selection:text-emerald-800'
-    }`}>
+        ? 'text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200'
+        : 'text-slate-800 selection:bg-emerald-500/20 selection:text-emerald-800'
+    } app-canvas`}>
       {/* Menu Lateral Desktop (Sidebar) */}
       <Sidebar
         activeTab={activeTab}
@@ -442,7 +442,7 @@ export default function App() {
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos */}
-        <header className={`no-print app-drag titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between z-30`}>
+        <header className={`no-print app-drag titlebar-safe h-10 shrink-0 bg-[var(--canvas)] pl-6 flex items-center justify-between z-30`}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
               {settings.companyName || 'Empresa Simples Nacional'}

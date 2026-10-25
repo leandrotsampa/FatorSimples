@@ -25,8 +25,8 @@ describe('windowChromeOptions', () => {
 
 describe('titleBarOverlayFor', () => {
   it('usa as cores do cabeçalho em cada tema', () => {
-    expect(titleBarOverlayFor('light')).toEqual({ color: '#ffffff', symbolColor: '#334155', height: 40 });
-    expect(titleBarOverlayFor('dark')).toEqual({ color: '#0f172a', symbolColor: '#cbd5e1', height: 40 });
+    expect(titleBarOverlayFor('light')).toEqual({ color: '#e7eee9', symbolColor: '#334155', height: 40 });
+    expect(titleBarOverlayFor('dark')).toEqual({ color: '#080b0a', symbolColor: '#aeb9b2', height: 40 });
   });
 });
 

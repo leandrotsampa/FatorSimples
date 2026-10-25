@@ -838,3 +838,19 @@ export function calculateFactorRMargin(
     dasAtStake: revenue * (rateV - rateIII),
   };
 }
+
+/**
+ * Tirar a folga: o mesmo mês com o menor pró-labore que mantém o Fator R em 28% na próxima
+ * competência. Diz quanto a mais chega ao sócio (pró-labore líquido + antecipação de lucros).
+ */
+export function calculateSlackRelease(
+  revenue: number,
+  history: MonthRecord[],
+  settings: TaxSettings,
+  competence: string,
+  current: MonthSummaryResult
+): { minProlabore: number; extraForYou: number } {
+  const minimum = calculateMonthSummary(revenue, history, { ...settings, prolaboreRule: 'exact_rbt12' }, competence);
+  const youGet = (s: MonthSummaryResult) => s.consolidated.prolaboreNet + s.consolidated.taxFreeDividends;
+  return { minProlabore: minimum.prolabore.gross, extraForYou: youGet(minimum) - youGet(current) };
+}

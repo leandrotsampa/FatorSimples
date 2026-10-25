@@ -6,11 +6,11 @@
 
 const TITLEBAR_HEIGHT = 40;
 
-// Cores dos botões nativos (minimizar/maximizar/fechar) iguais às do cabeçalho do app
+// Cores dos botões nativos (minimizar/maximizar/fechar) iguais ao fundo da janela (--canvas em index.css)
 function titleBarOverlayFor(theme) {
   return theme === 'light'
-    ? { color: '#ffffff', symbolColor: '#334155', height: TITLEBAR_HEIGHT }
-    : { color: '#0f172a', symbolColor: '#cbd5e1', height: TITLEBAR_HEIGHT };
+    ? { color: '#e7eee9', symbolColor: '#334155', height: TITLEBAR_HEIGHT }
+    : { color: '#080b0a', symbolColor: '#aeb9b2', height: TITLEBAR_HEIGHT };
 }
 
 function windowChromeOptions(platform, theme) {

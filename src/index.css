@@ -28,6 +28,37 @@
   --ease-theme: cubic-bezier(.65, 0, .35, 1);
 }
 
+/* Fundo da janela: os blocos brancos flutuam sobre ele (no vídeo de referência, verde-acinzentado) */
+:root {
+  --canvas: #e7eee9;
+  --canvas-glow: rgb(16 185 129 / 0.13);
+}
+
+/* Escuro: neutros com um toque de verde no lugar do cinza-azulado padrão.
+   Redefinir a escala muda de uma vez todos os dark:bg-slate-*, bordas e textos */
+.dark {
+  --canvas: #080b0a;
+  --canvas-glow: rgb(16 185 129 / 0.09);
+  --color-slate-50: #f3f6f4;
+  --color-slate-100: #e7ece9;
+  --color-slate-200: #d1d9d4;
+  --color-slate-300: #aeb9b2;
+  --color-slate-400: #85928a;
+  --color-slate-500: #64706a;
+  --color-slate-600: #4a544f;
+  --color-slate-700: #323a36;
+  --color-slate-800: #212825;
+  --color-slate-900: #141916;
+  --color-slate-950: #0c100e;
+}
+
+.app-canvas {
+  background:
+    radial-gradient(1100px 560px at 12% -8%, var(--canvas-glow), transparent 62%),
+    radial-gradient(900px 600px at 100% 110%, rgb(16 185 129 / 0.05), transparent 60%),
+    var(--canvas);
+}
+
 /* Quem pede menos movimento no sistema vê tudo já no estado final */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
