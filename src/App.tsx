@@ -15,6 +15,15 @@ import {
   fillMissingTaxes,
 } from './utils/taxCalculations';
 import { getTaxTableForCompetence, OFFICIAL_TAX_TABLES } from './utils/taxTablesRegistry';
+import {
+  applyRemoteTables,
+  checkLatestVersion,
+  checkRemoteTables,
+  loadStoredRemoteTables,
+  shouldAutoCheck,
+  type TablesCheckResult,
+  type VersionCheckResult,
+} from './utils/remoteTables';
 import { buildDataExport, parseDataImport, DataImport } from './utils/dataTransfer';
 
 import { storageAdapter } from './utils/storageAdapter';
@@ -202,15 +211,49 @@ export default function App() {
     }
   }, [history]);
 
-  // ATUALIZAÇÃO AUTOMÁTICA DE TABELAS CONFORME A COMPETÊNCIA SELECIONADA
+  // Atualização das tabelas pelo GitHub e aviso de versão nova do app. Ao abrir, no máximo uma
+  // vez por dia (se a atualização automática estiver ligada); e sempre que o usuário pedir
+  const [tablesRevision, setTablesRevision] = useState(0);
+  const [newVersion, setNewVersion] = useState<string | null>(null);
+  const runUpdateCheck = async (): Promise<{ tables: TablesCheckResult; version: VersionCheckResult }> => {
+    const [tables, version] = await Promise.all([checkRemoteTables(), checkLatestVersion(__APP_VERSION__)]);
+    if (tables.kind === 'updated') setTablesRevision((r) => r + 1);
+    if (version.kind !== 'offline') setNewVersion(version.kind === 'newer' ? version.version : null);
+    return { tables, version };
+  };
+  // Ao abrir: aplica as tabelas já baixadas (guardadas no banco) e confere o GitHub se for a hora
+  const [remoteTablesLoaded, setRemoteTablesLoaded] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadStoredRemoteTables().then((stored) => {
+      if (!alive) return;
+      if (stored.doc) {
+        applyRemoteTables(stored.doc);
+        setTablesRevision((r) => r + 1);
+      }
+      setRemoteTablesLoaded(true);
+      if (settings.autoUpdateTables && shouldAutoCheck(stored.checkedAt)) void runUpdateCheck();
+    });
+    return () => {
+      alive = false;
+    };
+    // Só na abertura
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tabela da competência selecionada (reaplicada também quando chegam tabelas novas do GitHub)
+  const appliedRevision = useRef(0);
   useEffect(() => {
     if (settings.autoUpdateTables && selectedMonth) {
+      const tablesChanged = appliedRevision.current !== tablesRevision;
+      appliedRevision.current = tablesRevision;
       const targetTable = getTaxTableForCompetence(selectedMonth);
       // Reaplica também quando a tabela oficial do mesmo ano foi revisada no app (o nome muda);
       // ajustes manuais feitos depois da aplicação não são sobrescritos
       const isOutdated =
         targetTable &&
-        (targetTable.id !== settings.taxVersionId ||
+        (tablesChanged ||
+          targetTable.id !== settings.taxVersionId ||
           !(settings.lastTableUpdateDate ?? '').includes(targetTable.name));
       if (isOutdated) {
         setSettings((prev) => ({
@@ -220,11 +263,11 @@ export default function App() {
           inssCeiling: targetTable.inssCeiling,
           simplifiedIrDeduction: targetTable.simplifiedIrDeduction,
           dependentDeduction: targetTable.dependentDeduction,
-          lastTableUpdateDate: `Auto-atualizado p/ competência ${selectedMonth}: ${targetTable.name}`,
+          lastTableUpdateDate: `Tabela da competência ${selectedMonth}: ${targetTable.name}`,
         }));
       }
     }
-  }, [selectedMonth, settings.autoUpdateTables, settings.taxVersionId, settings.lastTableUpdateDate]);
+  }, [selectedMonth, settings.autoUpdateTables, settings.taxVersionId, settings.lastTableUpdateDate, tablesRevision]);
 
   // Ações de gerenciamento de dados
   // Último mês salvo/editado: o Histórico destaca a linha por um instante
@@ -359,7 +402,8 @@ export default function App() {
         history={history}
         theme={theme}
         toggleTheme={toggleTheme}
-        isLoading={!isHistoryLoaded}
+        isLoading={!(isHistoryLoaded && remoteTablesLoaded)}
+        newVersion={newVersion}
         mode={sidebarMode}
         onToggleMode={toggleSidebar}
       />
@@ -403,7 +447,7 @@ export default function App() {
             }}
             exit={{ opacity: 0, filter: 'blur(4px)', transition: instantIf(reduceMotion, { duration: 0.18, ease: EASE_OUT }) }}
           >
-          {!isHistoryLoaded ? (
+          {!(isHistoryLoaded && remoteTablesLoaded) ? (
             <PageSkeleton />
           ) : (
           <>
@@ -477,6 +521,8 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={setSettings}
+        onCheckUpdates={runUpdateCheck}
+        newVersion={newVersion}
       />
       )}
       </AnimatePresence>

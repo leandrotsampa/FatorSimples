@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "publishedAt": "2026-10-25",
+  "tables": [
+    {
+      "id": "2026_oficial",
+      "validFrom": "2026-01",
+      "validTo": "2026-12",
+      "name": "Vigente Oficial 2026 (Lei 15.191/2025 + redução da Lei 15.270/2025)",
+      "year": 2026,
+      "effectiveDate": "Janeiro/2026 a Dezembro/2026",
+      "legalBasis": "Lei nº 15.191/2025 (tabela progressiva), Lei nº 15.270/2025 (redução), Decreto do salário mínimo e Portaria Interministerial MPS/MF 2026",
+      "minimumWage": 1621,
+      "inssCeiling": 8475.55,
+      "inssRate": 0.11,
+      "dependentDeduction": 189.59,
+      "simplifiedIrDeduction": 607.2,
+      "irrfBrackets": [
+        {
+          "faixa": 1,
+          "limit": 2428.8,
+          "rate": 0,
+          "deduction": 0
+        },
+        {
+          "faixa": 2,
+          "limit": 2826.65,
+          "rate": 0.075,
+          "deduction": 182.16
+        },
+        {
+          "faixa": 3,
+          "limit": 3751.05,
+          "rate": 0.15,
+          "deduction": 394.16
+        },
+        {
+          "faixa": 4,
+          "limit": 4664.68,
+          "rate": 0.225,
+          "deduction": 675.49
+        },
+        {
+          "faixa": 5,
+          "limit": null,
+          "rate": 0.275,
+          "deduction": 908.73
+        }
+      ],
+      "irrfReduction": {
+        "legalBasis": "Lei nº 15.270/2025",
+        "fullExemptionLimit": 5000,
+        "maxReduction": 312.89,
+        "phaseOutLimit": 7350,
+        "phaseOutBase": 978.62,
+        "phaseOutRate": 0.133145
+      },
+      "dividendWithholding": {
+        "legalBasis": "Lei nº 15.270/2025",
+        "monthlyThreshold": 50000,
+        "rate": 0.1
+      }
+    },
+    {
+      "id": "2027_projetado_ldo",
+      "validFrom": "2027-01",
+      "name": "2027 (valores de 2026 até a publicação oficial)",
+      "year": 2027,
+      "effectiveDate": "01/01/2027 em diante (Automático para competências de 2027)",
+      "legalBasis": "Valores de 2026 mantidos até a publicação do novo salário mínimo, teto do INSS e tabela do IRRF",
+      "minimumWage": 1621,
+      "inssCeiling": 8475.55,
+      "inssRate": 0.11,
+      "dependentDeduction": 189.59,
+      "simplifiedIrDeduction": 607.2,
+      "irrfBrackets": [
+        {
+          "faixa": 1,
+          "limit": 2428.8,
+          "rate": 0,
+          "deduction": 0
+        },
+        {
+          "faixa": 2,
+          "limit": 2826.65,
+          "rate": 0.075,
+          "deduction": 182.16
+        },
+        {
+          "faixa": 3,
+          "limit": 3751.05,
+          "rate": 0.15,
+          "deduction": 394.16
+        },
+        {
+          "faixa": 4,
+          "limit": 4664.68,
+          "rate": 0.225,
+          "deduction": 675.49
+        },
+        {
+          "faixa": 5,
+          "limit": null,
+          "rate": 0.275,
+          "deduction": 908.73
+        }
+      ],
+      "irrfReduction": {
+        "legalBasis": "Lei nº 15.270/2025",
+        "fullExemptionLimit": 5000,
+        "maxReduction": 312.89,
+        "phaseOutLimit": 7350,
+        "phaseOutBase": 978.62,
+        "phaseOutRate": 0.133145
+      },
+      "dividendWithholding": {
+        "legalBasis": "Lei nº 15.270/2025",
+        "monthlyThreshold": 50000,
+        "rate": 0.1
+      }
+    },
+    {
+      "id": "2025_oficial",
+      "validFrom": "2025-01",
+      "validTo": "2025-04",
+      "name": "Oficial 2025 · jan a abr (Lei 14.848/2024)",
+      "year": 2025,
+      "effectiveDate": "01/01/2025 a 30/04/2025",
+      "legalBasis": "Lei nº 14.848/2024 (tabela do IRRF) e Portaria Interministerial MPS/MF nº 6/2025",
+      "minimumWage": 1518,
+      "inssCeiling": 8157.41,
+      "inssRate": 0.11,
+      "dependentDeduction": 189.59,
+      "simplifiedIrDeduction": 564.8,
+      "irrfBrackets": [
+        {
+          "faixa": 1,
+          "limit": 2259.2,
+          "rate": 0,
+          "deduction": 0
+        },
+        {
+          "faixa": 2,
+          "limit": 2826.65,
+          "rate": 0.075,
+          "deduction": 169.44
+        },
+        {
+          "faixa": 3,
+          "limit": 3751.05,
+          "rate": 0.15,
+          "deduction": 381.44
+        },
+        {
+          "faixa": 4,
+          "limit": 4664.68,
+          "rate": 0.225,
+          "deduction": 662.77
+        },
+        {
+          "faixa": 5,
+          "limit": null,
+          "rate": 0.275,
+          "deduction": 896
+        }
+      ]
+    },
+    {
+      "id": "2025_maio_oficial",
+      "validFrom": "2025-05",
+      "validTo": "2025-12",
+      "name": "Oficial 2025 · mai a dez (Lei 15.191/2025)",
+      "year": 2025,
+      "effectiveDate": "01/05/2025 a 31/12/2025",
+      "legalBasis": "MP nº 1.294/2025 convertida na Lei nº 15.191/2025 e Portaria Interministerial MPS/MF nº 6/2025",
+      "minimumWage": 1518,
+      "inssCeiling": 8157.41,
+      "inssRate": 0.11,
+      "dependentDeduction": 189.59,
+      "simplifiedIrDeduction": 607.2,
+      "irrfBrackets": [
+        {
+          "faixa": 1,
+          "limit": 2428.8,
+          "rate": 0,
+          "deduction": 0
+        },
+        {
+          "faixa": 2,
+          "limit": 2826.65,
+          "rate": 0.075,
+          "deduction": 182.16
+        },
+        {
+          "faixa": 3,
+          "limit": 3751.05,
+          "rate": 0.15,
+          "deduction": 394.16
+        },
+        {
+          "faixa": 4,
+          "limit": 4664.68,
+          "rate": 0.225,
+          "deduction": 675.49
+        },
+        {
+          "faixa": 5,
+          "limit": null,
+          "rate": 0.275,
+          "deduction": 908.73
+        }
+      ]
+    },
+    {
+      "id": "2024_oficial",
+      "validFrom": "2000-01",
+      "validTo": "2024-12",
+      "name": "Oficial 2024 (MP nº 1.206/2024)",
+      "year": 2024,
+      "effectiveDate": "Fevereiro/2024 a Dezembro/2024",
+      "legalBasis": "Medida Provisória nº 1.206/2024 e Portaria MPS/MF nº 2/2024",
+      "minimumWage": 1412,
+      "inssCeiling": 7786.02,
+      "inssRate": 0.11,
+      "dependentDeduction": 189.59,
+      "simplifiedIrDeduction": 564.8,
+      "irrfBrackets": [
+        {
+          "faixa": 1,
+          "limit": 2259.2,
+          "rate": 0,
+          "deduction": 0
+        },
+        {
+          "faixa": 2,
+          "limit": 2826.65,
+          "rate": 0.075,
+          "deduction": 169.44
+        },
+        {
+          "faixa": 3,
+          "limit": 3751.05,
+          "rate": 0.15,
+          "deduction": 381.44
+        },
+        {
+          "faixa": 4,
+          "limit": 4664.68,
+          "rate": 0.225,
+          "deduction": 662.77
+        },
+        {
+          "faixa": 5,
+          "limit": null,
+          "rate": 0.275,
+          "deduction": 896
+        }
+      ]
+    }
+  ]
+}

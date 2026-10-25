@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Settings,
@@ -11,6 +11,7 @@ import {
   DollarSign,
   FileText,
   Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { TaxSettings } from '../types/tax';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
@@ -18,44 +19,89 @@ import { formatCurrency, formatPercent, ANEXO_III_TABLE, ANEXO_V_TABLE } from '.
 import { ModalShell } from './ui/ModalShell';
 import { useUiPrefs } from '../hooks/useUiPrefs';
 import { playSound } from '../hooks/useSound';
+import { CurrencyInput } from './CurrencyInput';
+import {
+  loadStoredRemoteTables,
+  openReleasesPage,
+  type StoredRemoteTables,
+  type TablesCheckResult,
+  type VersionCheckResult,
+} from '../utils/remoteTables';
 
 interface SettingsModalProps {
   onClose: () => void;
   settings: TaxSettings;
   onSave: (newSettings: TaxSettings) => void;
+  // Busca real: arquivo de tabelas no GitHub e última versão publicada do app
+  onCheckUpdates: () => Promise<{ tables: TablesCheckResult; version: VersionCheckResult }>;
+  newVersion: string | null;
 }
+
+const formatDateBR = (iso: string) => {
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
+  return Number.isFinite(d.getTime()) ? d.toLocaleDateString('pt-BR') : iso;
+};
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onSave,
+  onCheckUpdates,
+  newVersion,
 }) => {
   const [formData, setFormData] = useState<TaxSettings>({ ...settings });
   const [activeTab, setActiveTab] = useState<'tables' | 'parameters' | 'company' | 'auto_explain' | 'interface'>('tables');
   const [uiPrefs, setUiPrefs] = useUiPrefs();
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [stored, setStored] = useState<StoredRemoteTables>({ doc: null, checkedAt: null });
+  useEffect(() => {
+    loadStoredRemoteTables().then(setStored);
+  }, []);
+  const [latestVersion, setLatestVersion] = useState<string | null>(newVersion);
 
 
-  // Lógica de sincronização / checagem automática das tabelas da Receita Federal
-  const handleSyncTables = () => {
+  // Verificação real: baixa o arquivo de tabelas publicado no GitHub e confere a última versão do app
+  const handleSyncTables = async () => {
     setIsSyncing(true);
     setSyncStatus(null);
+    const { tables, version } = await onCheckUpdates();
+    setStored(await loadStoredRemoteTables());
+    if (version.kind === 'newer') setLatestVersion(version.version);
+    if (version.kind === 'current') setLatestVersion(null);
 
-    setTimeout(() => {
-      const activeVersion = OFFICIAL_TAX_TABLES[formData.taxVersionId] || OFFICIAL_TAX_TABLES['2026_oficial'];
-      setFormData((prev) => ({
-        ...prev,
-        minimumWage: activeVersion.minimumWage,
-        inssCeiling: activeVersion.inssCeiling,
-        simplifiedIrDeduction: activeVersion.simplifiedIrDeduction,
-        dependentDeduction: activeVersion.dependentDeduction,
-        lastTableUpdateDate: `Sincronizado com Receita Federal em ${new Date().toLocaleDateString('pt-BR')} (Base: ${activeVersion.legalBasis})`,
-      }));
-      setIsSyncing(false);
-      setSyncStatus('Tabelas de IRPF/IRRF, INSS e Simples Nacional validadas e atualizadas com sucesso!');
-      setTimeout(() => setSyncStatus(null), 4000);
-    }, 600);
+    if (tables.kind === 'updated') {
+      // A tabela escolhida pode ter mudado: traz os valores novos para o formulário
+      const fresh = OFFICIAL_TAX_TABLES[formData.taxVersionId];
+      if (fresh) {
+        setFormData((prev) => ({
+          ...prev,
+          minimumWage: fresh.minimumWage,
+          inssCeiling: fresh.inssCeiling,
+          simplifiedIrDeduction: fresh.simplifiedIrDeduction,
+          dependentDeduction: fresh.dependentDeduction,
+        }));
+      }
+      setSyncStatus({
+        tone: 'ok',
+        text: `${tables.changed} ${tables.changed === 1 ? 'tabela atualizada' : 'tabelas atualizadas'} a partir do arquivo publicado em ${formatDateBR(tables.publishedAt)}.`,
+      });
+    } else if (tables.kind === 'up-to-date') {
+      setSyncStatus({ tone: 'ok', text: `As tabelas já estão em dia (arquivo publicado em ${formatDateBR(tables.publishedAt)}).` });
+    } else if (tables.kind === 'not-published') {
+      setSyncStatus({
+        tone: 'warn',
+        text: 'O arquivo de tabelas ainda não foi publicado no GitHub. O app segue com as tabelas embutidas.',
+      });
+    } else if (tables.kind === 'offline') {
+      setSyncStatus({ tone: 'warn', text: 'Sem conexão com o GitHub agora. O app segue com as tabelas que já tem.' });
+    } else {
+      setSyncStatus({
+        tone: 'warn',
+        text: 'O arquivo de tabelas publicado está incompleto e foi ignorado. O app segue com as tabelas que já tem.',
+      });
+    }
+    setIsSyncing(false);
   };
 
   const handleTableVersionChange = (versionId: string) => {
@@ -114,7 +160,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            01. Tabelas de IRPF / IRRF
+            Tabelas
           </button>
 
           <button
@@ -127,7 +173,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Como Atualiza em 2026/2027</span>
+            <span>Como atualiza</span>
           </button>
 
           <button
@@ -139,7 +185,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            02. INSS & Deduções
+            INSS e deduções
           </button>
 
           <button
@@ -151,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            03. Empresa (Brusque - SC)
+            Empresa
           </button>
 
           <button
@@ -163,7 +209,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            04. Interface
+            Interface
           </button>
         </div>
 
@@ -176,23 +222,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 rounded-lg space-y-3">
                 <div className="font-bold text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Como as Tabelas Atualizam Sozinhas em 2026 e 2027:</span>
+                  <span>Como as tabelas se atualizam</span>
                 </div>
 
-                <div className="space-y-2.5 text-slate-700 dark:text-slate-300 text-[11px] leading-relaxed">
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">1. Transição Automática de Ano (Competência):</strong>
-                    Ao selecionar qualquer mês do ano de 2026 ou 2027 na barra superior de competência, o motor fiscal detecta o ano do calendário e ativa automaticamente as faixas oficiais e pisos salariais daquele ano, sem você precisar configurar nada manualmente.
+                <div className="space-y-2.5 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+                    <strong className="text-slate-900 dark:text-white block mb-0.5">1. A tabela de cada mês</strong>
+                    Cada tabela (salário mínimo, teto do INSS, faixas do IRRF) tem um período de vigência. Ao trocar de
+                    competência, o app usa a que vale naquele mês.
                   </div>
 
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">2. Detecção de Medidas Provisórias e Leis:</strong>
-                    Sempre que o Governo Federal ou o Ministério da Fazenda publica um novo decreto ou portaria (como o reajuste anual do salário mínimo e do teto do INSS), a versão oficial registrada no aplicativo é atualizada, mantendo a memória de cálculo 100% aderente à Receita Federal.
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+                    <strong className="text-slate-900 dark:text-white block mb-0.5">2. Atualização pelo GitHub do FatorSimples</strong>
+                    Quando sai uma lei ou portaria nova, o FatorSimples publica um arquivo de tabelas no GitHub. O app
+                    confere esse arquivo ao abrir (no máximo uma vez por dia) e quando você clica em "Verificar
+                    atualizações". Só aplica se o arquivo estiver completo; sem internet, segue com as tabelas que já
+                    tem. O app não consulta a Receita Federal diretamente: ela não oferece esse serviço.
                   </div>
 
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">3. Sincronização Sob Demanda:</strong>
-                    Você também pode clicar no botão <em>&quot;Verificar Atualizações&quot;</em> na aba de tabelas para validar se há novas alterações legislativas.
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+                    <strong className="text-slate-900 dark:text-white block mb-0.5">3. Versão nova do app</strong>
+                    Mudanças de regra, como faixas e alíquotas do Simples Nacional ou um imposto novo, exigem uma versão
+                    nova. O app avisa quando houver uma e leva à página de download.
                   </div>
                 </div>
               </div>
@@ -208,10 +259,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div>
                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Versão das Tabelas Fiscais Aplicadas</span>
+                      <span>Origem das tabelas</span>
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      {formData.lastTableUpdateDate}
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      {stored.doc
+                        ? `Arquivo do GitHub do FatorSimples, publicado em ${formatDateBR(stored.doc.publishedAt)}`
+                        : `Tabelas embutidas na versão ${__APP_VERSION__} do app`}
+                      {' · '}
+                      {stored.checkedAt ? `verificado em ${new Date(stored.checkedAt).toLocaleString('pt-BR')}` : 'ainda não verificado'}
                     </div>
                   </div>
 
@@ -222,14 +277,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? 'Sincronizando...' : 'Verificar Atualizações'}</span>
+                    <span>{isSyncing ? 'Verificando…' : 'Verificar atualizações'}</span>
                   </button>
                 </div>
 
                 {syncStatus && (
-                  <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 p-2 rounded text-[11px] flex items-center gap-1.5 font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{syncStatus}</span>
+                  <div
+                    role="status"
+                    className={`p-2 rounded-lg text-xs flex items-center gap-1.5 font-medium border ${
+                      syncStatus.tone === 'ok'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-200'
+                    }`}
+                  >
+                    {syncStatus.tone === 'ok' ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                    <span>{syncStatus.text}</span>
+                  </div>
+                )}
+
+                {latestVersion && (
+                  <div className="p-2 rounded-lg text-xs flex items-center justify-between gap-2 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/50 text-sky-900 dark:text-sky-200">
+                    <span>
+                      A versão <b className="font-num">{latestVersion}</b> do app está disponível (você usa a {__APP_VERSION__}).
+                      Mudanças de regra, como faixas do Simples, chegam por versão nova.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={openReleasesPage}
+                      className="shrink-0 px-3 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold cursor-pointer"
+                    >
+                      Baixar
+                    </button>
                   </div>
                 )}
 
@@ -258,10 +340,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800/80">
                   <div>
                     <div className="text-slate-800 dark:text-slate-200 font-bold text-xs">
-                      Atualização Automática Conforme Competência
+                      Atualizar automaticamente
                     </div>
-                    <div className="text-[11px] text-slate-500">
-                      Alterna automaticamente entre as tabelas vigentes oficiais ao mudar o mês/ano (2024, 2025, 2026, 2027).
+                    <div className="text-xs text-slate-500">
+                      Usa a tabela vigente em cada mês e confere o GitHub ao abrir o app (no máximo uma vez por dia).
                     </div>
                   </div>
                   <input
@@ -340,10 +422,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-emerald-900 dark:text-emerald-300 block mb-0.5">
-                    Atualização 100% Automática das Deduções e Salário Mínimo
+                    Valores da tabela de {activeVersion.year}
                   </strong>
                   <span>
-                    Sim! O Salário Mínimo Nacional, o Teto do INSS e o Desconto Simplificado do IRPF <strong>atualizam automaticamente</strong> com base na competência anual ativa. A tabela ativa ({activeVersion.year}) usa {formatCurrency(activeVersion.minimumWage)} de salário mínimo e {formatCurrency(activeVersion.inssCeiling)} de teto do INSS{activeVersion.irrfReduction ? `, com a redução do IRRF da ${activeVersion.irrfReduction.legalBasis}` : ''}. Você também tem a liberdade de ajustá-los manualmente abaixo se desejar.
+                    O salário mínimo, o teto do INSS e o desconto simplificado vêm da tabela da competência
+                    ({activeVersion.name}): {formatCurrency(activeVersion.minimumWage)} de salário mínimo e{' '}
+                    {formatCurrency(activeVersion.inssCeiling)} de teto do INSS
+                    {activeVersion.irrfReduction ? `, com a redução do IRRF da ${activeVersion.irrfReduction.legalBasis}` : ''}.
+                    Se precisar, ajuste abaixo.
                   </span>
                 </div>
               </div>
@@ -506,6 +592,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     placeholder="6201-5/01 - Desenvolvimento de Programas de Computador"
                   />
                 </div>
+              </div>
+
+              {/* Honorários: ficam na conta junto com os impostos e saem do lucro a transferir */}
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                <label htmlFor="accounting-fee" className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Honorários mensais da contabilidade
+                </label>
+                <CurrencyInput
+                  id="accounting-fee"
+                  value={formData.accountingFee ?? 0}
+                  onChange={(v) => setFormData({ ...formData, accountingFee: v })}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                  Na Apuração, esse valor fica na conta junto com os impostos e sai do lucro que você transfere.
+                </p>
               </div>
             </div>
           )}

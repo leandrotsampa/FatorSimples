@@ -94,6 +94,14 @@ function initDatabase() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Tabelas fiscais baixadas do GitHub (arquivo validado inteiro, em JSON) e a última verificação
+      CREATE TABLE IF NOT EXISTS remote_tax_tables (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        doc TEXT,
+        checked_at TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS monthly_history (
         id TEXT PRIMARY KEY,
         year_month TEXT NOT NULL UNIQUE,
@@ -192,6 +200,11 @@ function getFallbackFilePath() {
 
 // Configuração dos canais IPC do SQLite para o Renderer (React)
 function setupIpcHandlers() {
+  // Página de versões do FatorSimples no navegador (endereço fixo: o renderer não escolhe a URL)
+  ipcMain.handle('app:open-releases', () => {
+    shell.openExternal('https://github.com/leandrotsampa/FatorSimples/releases/latest');
+  });
+
   // Cor dos botões nativos da janela acompanha o tema do app (no macOS os botões são os do sistema)
   ipcMain.handle('window:set-titlebar-theme', (event, theme) => {
     if (process.platform === 'darwin' || !mainWindow) return;
@@ -300,6 +313,41 @@ function setupIpcHandlers() {
         fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
       } catch (e) {}
     }
+    return true;
+  });
+
+  // Tabelas fiscais baixadas do GitHub: ficam no banco (ou no JSON de fallback)
+  ipcMain.handle('sqlite:get-remote-tables', () => {
+    if (db) {
+      const row = db.prepare('SELECT doc, checked_at FROM remote_tax_tables WHERE id = 1').get();
+      if (!row) return null;
+      let doc = null;
+      try { doc = row.doc ? JSON.parse(row.doc) : null; } catch (e) {}
+      return { doc, checkedAt: row.checked_at || null };
+    }
+    const fallbackFile = getFallbackFilePath();
+    if (fs.existsSync(fallbackFile)) {
+      try { return JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')).remoteTables || null; } catch (e) {}
+    }
+    return null;
+  });
+
+  ipcMain.handle('sqlite:save-remote-tables', (event, stored) => {
+    const doc = stored && stored.doc ? JSON.stringify(stored.doc) : null;
+    const checkedAt = stored && typeof stored.checkedAt === 'string' ? stored.checkedAt : null;
+    if (db) {
+      db.prepare(
+        'INSERT OR REPLACE INTO remote_tax_tables (id, doc, checked_at, updated_at) VALUES (1, ?, ?, CURRENT_TIMESTAMP)'
+      ).run(doc, checkedAt);
+      return true;
+    }
+    const fallbackFile = getFallbackFilePath();
+    let data = { history: [], settings: null };
+    if (fs.existsSync(fallbackFile)) {
+      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
+    }
+    data.remoteTables = { doc: stored && stored.doc ? stored.doc : null, checkedAt };
+    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   });
 

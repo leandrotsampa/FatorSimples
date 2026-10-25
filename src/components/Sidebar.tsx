@@ -49,6 +49,8 @@ interface SidebarProps {
   theme: 'dark' | 'light';
   toggleTheme: (origin?: HTMLElement | null) => void;
   isLoading?: boolean;
+  // Versão mais nova do app publicada no GitHub (null quando em dia ou sem verificar)
+  newVersion?: string | null;
   mode: 'expanded' | 'collapsed';
   onToggleMode: () => void;
 }
@@ -82,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   toggleTheme,
   isLoading = false,
+  newVersion = null,
   mode,
   onToggleMode,
 }) => {
@@ -594,21 +597,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </RailTooltip>
 
             {/* Configurações Fiscais */}
-            <RailTooltip enabled={collapsed} label="Configurações" detail="Tabelas 2026/27">
+            <RailTooltip
+              enabled={collapsed}
+              label="Configurações"
+              detail={newVersion ? `Versão ${newVersion} disponível` : 'Empresa, tabelas e interface'}
+            >
               <button
                 onClick={onOpenSettings}
                 className={footerButtonClass}
-                aria-label={collapsed ? 'Configurações' : undefined}
+                aria-label={collapsed ? `Configurações${newVersion ? `, versão ${newVersion} disponível` : ''}` : undefined}
               >
-                <span className="flex items-center gap-2">
+                <span className="relative flex items-center gap-2">
                   <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  {collapsed && newVersion && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-slate-950" />
+                  )}
                   {expanded && <span className="whitespace-nowrap">Configurações</span>}
                 </span>
-                {expanded && (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-num whitespace-nowrap">
-                    Tabelas 2026/27
-                  </span>
-                )}
+                {expanded &&
+                  (newVersion ? (
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-semibold whitespace-nowrap">
+                      Versão {newVersion}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                      v{__APP_VERSION__}
+                    </span>
+                  ))}
               </button>
             </RailTooltip>
           </div>

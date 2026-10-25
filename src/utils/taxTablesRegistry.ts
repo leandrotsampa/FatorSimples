@@ -5,6 +5,9 @@ export interface TaxTableVersion {
   name: string;
   year: number;
   effectiveDate: string;
+  // Vigência por competência ("AAAA-MM"); sem validTo vale daí em diante
+  validFrom: string;
+  validTo?: string;
   legalBasis: string;
   minimumWage: number;
   inssCeiling: number;
@@ -66,13 +69,15 @@ const LEI_15270_REDUCTION: IrrfReductionRule = {
 };
 
 /**
- * Registro oficial de tabelas fiscais versionadas (Receita Federal, INSS e Simples Nacional).
- * Atualizado automaticamente conforme a legislação e competência anual (2024, 2025, 2026, 2027+).
+ * Tabelas fiscais embutidas no app (IRRF, INSS, salário mínimo e teto), cada uma com a sua vigência.
+ * Podem ser substituídas ou complementadas pelo arquivo publicado no GitHub (ver remoteTables.ts).
  */
 export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   // Tabela Vigente Oficial de 2026 (Ano corrente)
   '2026_oficial': {
     id: '2026_oficial',
+    validFrom: '2026-01',
+    validTo: '2026-12',
     name: 'Vigente Oficial 2026 (Lei 15.191/2025 + redução da Lei 15.270/2025)',
     year: 2026,
     effectiveDate: 'Janeiro/2026 a Dezembro/2026',
@@ -96,6 +101,7 @@ export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   // 2027: sem tabela oficial publicada, repete os valores de 2026 (a redução da Lei 15.270/2025 não tem prazo final)
   '2027_projetado_ldo': {
     id: '2027_projetado_ldo',
+    validFrom: '2027-01',
     name: '2027 (valores de 2026 até a publicação oficial)',
     year: 2027,
     effectiveDate: '01/01/2027 em diante (Automático para competências de 2027)',
@@ -119,6 +125,8 @@ export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   // Tabela Oficial de 2025 (janeiro a abril): ainda a tabela progressiva de fevereiro/2024
   '2025_oficial': {
     id: '2025_oficial',
+    validFrom: '2025-01',
+    validTo: '2025-04',
     name: 'Oficial 2025 · jan a abr (Lei 14.848/2024)',
     year: 2025,
     effectiveDate: '01/01/2025 a 30/04/2025',
@@ -140,6 +148,8 @@ export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   // Tabela Oficial de 2025 (maio a dezembro): nova faixa de isenção da MP 1.294/2025, convertida na Lei 15.191/2025
   '2025_maio_oficial': {
     id: '2025_maio_oficial',
+    validFrom: '2025-05',
+    validTo: '2025-12',
     name: 'Oficial 2025 · mai a dez (Lei 15.191/2025)',
     year: 2025,
     effectiveDate: '01/05/2025 a 31/12/2025',
@@ -161,6 +171,8 @@ export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   // Tabela Oficial de 2024
   '2024_oficial': {
     id: '2024_oficial',
+    validFrom: '2000-01',
+    validTo: '2024-12',
     name: 'Oficial 2024 (MP nº 1.206/2024)',
     year: 2024,
     effectiveDate: 'Fevereiro/2024 a Dezembro/2024',
@@ -180,27 +192,26 @@ export const OFFICIAL_TAX_TABLES: Record<string, TaxTableVersion> = {
   },
 };
 
-// Alias para compatibilidade retroativa com dados salvos no localStorage
-OFFICIAL_TAX_TABLES['2025_2026_vigente'] = OFFICIAL_TAX_TABLES['2026_oficial'];
+// Apelido antigo (configurações salvas por versões anteriores). Não enumerável: resolve o id,
+// mas não aparece nas listas de tabelas
+Object.defineProperty(OFFICIAL_TAX_TABLES, '2025_2026_vigente', {
+  get: () => OFFICIAL_TAX_TABLES['2026_oficial'],
+  enumerable: false,
+  configurable: true,
+});
 
-/**
- * Seleciona automaticamente a tabela oficial apropriada com base no ano da competência
- * (e no mês, em 2025, quando a tabela do IRRF mudou em maio).
- * Quando o ano 2027 chegar (ou você selecionar um mês de 2027), ele pega sozinho a tabela de 2027!
- */
+// Tabela que vale para a competência: entre as vigentes no mês, a de início mais recente
+// (empate: a última da lista, que é a baixada quando houver)
+export function selectTableForCompetence(tables: TaxTableVersion[], yearMonth: string): TaxTableVersion {
+  const pick = (list: TaxTableVersion[]) =>
+    list.reduce((best, t) => (t.validFrom >= best.validFrom ? t : best), list[0]);
+  const active = tables.filter((t) => t.validFrom <= yearMonth && (!t.validTo || yearMonth <= t.validTo));
+  if (active.length > 0) return pick(active);
+  const started = tables.filter((t) => t.validFrom <= yearMonth);
+  if (started.length > 0) return pick(started);
+  return tables.reduce((first, t) => (t.validFrom < first.validFrom ? t : first), tables[0]);
+}
+
 export function getTaxTableForCompetence(yearMonth: string): TaxTableVersion {
-  const year = parseInt(yearMonth.split('-')[0], 10);
-  if (year <= 2024) {
-    return OFFICIAL_TAX_TABLES['2024_oficial'];
-  }
-  if (year === 2025) {
-    // A tabela progressiva mudou a partir da competência de maio/2025
-    const month = parseInt(yearMonth.split('-')[1], 10);
-    return month >= 5 ? OFFICIAL_TAX_TABLES['2025_maio_oficial'] : OFFICIAL_TAX_TABLES['2025_oficial'];
-  }
-  if (year === 2026) {
-    return OFFICIAL_TAX_TABLES['2026_oficial'];
-  }
-  // Para 2027 ou anos futuros: ativa automaticamente a tabela de 2027+
-  return OFFICIAL_TAX_TABLES['2027_projetado_ldo'];
+  return selectTableForCompetence(Object.values(OFFICIAL_TAX_TABLES), yearMonth);
 }
