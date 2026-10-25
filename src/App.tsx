@@ -60,6 +60,7 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    window.electronAPI?.setTitleBarTheme?.(theme);
   }, [theme]);
 
   // Inicialização da Competência Atual (ex: 2026-01 ou ano atual)
@@ -316,8 +317,8 @@ export default function App() {
 
       {/* Viewport Principal com Rolagem Independente */}
       <div ref={scrollRef} className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Top Window Bar (Cabeçalho de Aplicação Desktop) */}
-        <header className="no-print bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos */}
+        <header className="no-print app-drag titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
               {settings.companyName || 'Empresa Simples Nacional'}

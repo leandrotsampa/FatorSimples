@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
+  platform: process.platform,
+  setTitleBarTheme: (theme) => ipcRenderer.invoke('window:set-titlebar-theme', theme),
   getDbPath: () => ipcRenderer.invoke('sqlite:get-db-path'),
   getStorageMode: () => ipcRenderer.invoke('sqlite:get-storage-mode'),
   getHistory: () => ipcRenderer.invoke('sqlite:get-history'),

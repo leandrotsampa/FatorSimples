@@ -123,19 +123,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col flex-1 min-h-0">
         
         {/* Brand & Traffic lights */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950">
-          <div className="flex items-center gap-1.5 mb-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block hover:opacity-80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block hover:opacity-80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block hover:opacity-80" />
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1.5 font-mono">FatorSimples v{__APP_VERSION__}</span>
-          </div>
-
+        {/* Topo: também arrasta a janela; no macOS deixa espaço para os botões nativos */}
+        <div
+          className={`app-drag p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950 ${
+            window.electronAPI?.platform === 'darwin' ? 'pt-9' : ''
+          }`}
+        >
           <div className="flex items-center gap-2.5">
             <img src="./icon.png" alt="" className="w-9 h-9 shrink-0" draggable={false} />
             <div className="min-w-0">
               <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
                 FatorSimples
+                <span className="ml-1.5 text-[10px] font-normal font-mono text-slate-400 dark:text-slate-500">
+                  v{__APP_VERSION__}
+                </span>
               </h1>
               <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                 <span className="truncate">{settings.cityState || 'Brusque - SC'}</span>

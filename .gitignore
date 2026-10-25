@@ -14,6 +14,8 @@ Thumbs.db
 # Dados reais do usuário (banco local, backups e importações)
 *.sqlite
 *.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
 fatorsimples_data.json
 fatorsimples-*.json
 *.pdf

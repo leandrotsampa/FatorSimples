@@ -53,6 +53,21 @@
   mix-blend-mode: normal;
 }
 
+/* Barra de título própria (Electron com titleBarOverlay) */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag,
+.app-drag button,
+.app-drag input,
+.app-drag a {
+  -webkit-app-region: no-drag;
+}
+/* Reserva à direita a largura dos botões nativos da janela; fora do Electron vale 0 */
+.titlebar-safe {
+  padding-right: max(1.5rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.75rem));
+}
+
 /* Custom scrollbars for native desktop feel */
 ::-webkit-scrollbar {
   width: 8px;

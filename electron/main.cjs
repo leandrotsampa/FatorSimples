@@ -4,9 +4,10 @@
  * e comunicação direta com o Banco de Dados SQLite local (fatorsimples.sqlite).
  */
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { windowChromeOptions, titleBarOverlayFor, shortcutFor } = require('./windowChrome.cjs');
 
 let mainWindow = null;
 let db = null;
@@ -127,6 +128,8 @@ function createWindow() {
     minHeight: 650,
     title: 'FatorSimples - Calculadora Simples Nacional & Fator R',
     backgroundColor: '#020617',
+    // Barra de título desenhada pelo app; abre no tema escuro (padrão) e o renderer corrige via IPC
+    ...windowChromeOptions(process.platform, 'dark'),
     // Ícone da janela/barra de tarefas (copiado de public/ para dist/ no build)
     icon: path.join(__dirname, '..', 'dist', 'icon.png'),
     webPreferences: {
@@ -149,9 +152,34 @@ function createWindow() {
     mainWindow.loadFile(prodPath);
   }
 
+  // Atalhos que vinham do menu padrão (zoom sempre; recarregar e DevTools só fora do build)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    const action = shortcutFor(input, app.isPackaged);
+    if (!action) return;
+    event.preventDefault();
+    const wc = mainWindow.webContents;
+    const zoom = (delta) => wc.setZoomLevel(Math.min(3, Math.max(-3, wc.getZoomLevel() + delta)));
+    if (action === 'zoom-in') zoom(0.5);
+    else if (action === 'zoom-out') zoom(-0.5);
+    else if (action === 'zoom-reset') wc.setZoomLevel(0);
+    else if (action === 'reload') wc.reload();
+    else if (action === 'devtools') wc.toggleDevTools();
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+// Sem a barra File/Edit/View/Window. No macOS fica um menu mínimo: sem o menu Editar
+// o Cmd+C/V para de funcionar nos campos
+function setupApplicationMenu() {
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }]));
+  } else {
+    Menu.setApplicationMenu(null);
+  }
 }
 
 // Arquivo JSON de fallback, na mesma pasta do banco
@@ -161,6 +189,12 @@ function getFallbackFilePath() {
 
 // Configuração dos canais IPC do SQLite para o Renderer (React)
 function setupIpcHandlers() {
+  // Cor dos botões nativos da janela acompanha o tema do app (no macOS os botões são os do sistema)
+  ipcMain.handle('window:set-titlebar-theme', (event, theme) => {
+    if (process.platform === 'darwin' || !mainWindow) return;
+    mainWindow.setTitleBarOverlay(titleBarOverlayFor(theme === 'light' ? 'light' : 'dark'));
+  });
+
   ipcMain.handle('sqlite:get-db-path', () => {
     return dbPath;
   });
@@ -347,6 +381,7 @@ function setupIpcHandlers() {
 app.whenReady().then(() => {
   initDatabase();
   setupIpcHandlers();
+  setupApplicationMenu();
   createWindow();
 
   app.on('activate', () => {

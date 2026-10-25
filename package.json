@@ -63,7 +63,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "!electron/**/*.test.ts"
     ],
     "win": {
       "target": [
