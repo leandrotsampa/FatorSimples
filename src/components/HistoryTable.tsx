@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   History,
   Plus,
@@ -29,6 +30,7 @@ import { AreaChart } from './charts/AreaChart';
 import { Sparkline } from './charts/Sparkline';
 import type { ChartTone } from './charts/tones';
 import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
+import { DURATION, EASE_OUT } from '../utils/motion';
 
 const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MONTH_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -83,6 +85,8 @@ interface HistoryTableProps {
   onDeleteMonth: (id: string) => void;
   onGenerateSample: () => void;
   onClearHistory: () => void;
+  // Mês recém-salvo ou editado: a linha pisca em verde
+  highlightId?: string;
 }
 
 export const HistoryTable: React.FC<HistoryTableProps> = ({
@@ -92,8 +96,16 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   onDeleteMonth,
   onGenerateSample,
   onClearHistory,
+  highlightId,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const reduceMotion = Boolean(useReducedMotion());
+  // Cascata das linhas só na primeira montagem; depois (busca, novos meses) entram só com fade
+  const introDone = useRef(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => (introDone.current = true), 700);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Ordena por competência decrescente (mais recente no topo)
   const sortedHistory = [...history].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
@@ -339,6 +351,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-num">
+                <AnimatePresence initial>
                 {filteredHistory.map((item, idx) => {
                   const apuration = apurationByMonth.get(item.yearMonth);
                   const factorR = apuration?.factorRPercentage ?? 0;
@@ -346,11 +359,20 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   const monthRatio = item.revenue > 0 ? (item.payroll / item.revenue) * 100 : 0;
 
                   return (
-                    <tr
+                    <motion.tr
                       key={item.id}
+                      layout={reduceMotion ? false : 'position'}
+                      initial={reduceMotion ? false : introDone.current ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                      animate={{ opacity: idx < 12 ? 1 : 0.75, y: 0 }}
+                      exit={{ opacity: 0, x: -16, transition: { duration: DURATION.base } }}
+                      transition={{
+                        duration: DURATION.base,
+                        ease: EASE_OUT,
+                        delay: introDone.current || reduceMotion ? 0 : Math.min(idx * 0.03, 0.3),
+                      }}
                       className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
-                        idx < 12 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50/50 dark:bg-slate-950/30 opacity-75'
-                      }`}
+                        idx < 12 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50/50 dark:bg-slate-950/30'
+                      } ${item.id === highlightId ? 'row-flash' : ''}`}
                     >
                       <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
                         <span>{item.yearMonth}</span>
@@ -426,9 +448,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>

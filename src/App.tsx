@@ -221,7 +221,14 @@ export default function App() {
   }, [selectedMonth, settings.autoUpdateTables, settings.taxVersionId, settings.lastTableUpdateDate]);
 
   // Ações de gerenciamento de dados
+  // Último mês salvo/editado: o Histórico destaca a linha por um instante
+  const [lastSavedId, setLastSavedId] = useState<string | undefined>(undefined);
+  const lastSavedTimer = useRef<number | undefined>(undefined);
+
   const handleSaveMonthToHistory = (newRecord: MonthRecord) => {
+    setLastSavedId(newRecord.id);
+    window.clearTimeout(lastSavedTimer.current);
+    lastSavedTimer.current = window.setTimeout(() => setLastSavedId(undefined), 1500);
     setHistory((prev) => {
       const filtered = prev.filter((item) => item.yearMonth !== newRecord.yearMonth);
       return [newRecord, ...filtered];
@@ -413,6 +420,7 @@ export default function App() {
               onDeleteMonth={handleDeleteMonth}
               onGenerateSample={handleGenerateSample}
               onClearHistory={handleClearHistory}
+              highlightId={lastSavedId}
             />
           )}
 

@@ -97,6 +97,15 @@
 .page-stagger > :nth-child(5) { animation-delay: 200ms; }
 .page-stagger > :nth-child(n + 6) { animation-delay: 250ms; }
 
+/* Linha recém-salva no Histórico: pisca em verde e volta ao normal */
+@keyframes row-flash {
+  0%, 35% { background-color: rgb(16 185 129 / 0.22); }
+  100% { background-color: transparent; }
+}
+.row-flash {
+  animation: row-flash 1.2s var(--ease-out);
+}
+
 /* Custom scrollbars for native desktop feel */
 ::-webkit-scrollbar {
   width: 8px;
