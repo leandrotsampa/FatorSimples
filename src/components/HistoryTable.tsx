@@ -323,7 +323,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
             {history.length === 0 && (
               <button
                 onClick={onGenerateSample}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-full transition-colors shadow-xs cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Gerar 11 Meses de Exemplo Agora</span>

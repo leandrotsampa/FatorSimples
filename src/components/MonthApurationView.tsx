@@ -197,22 +197,54 @@ const DetailRow: React.FC<{ label: React.ReactNode; value: React.ReactNode; stro
 );
 
 // Seção recolhível de detalhes (memória de cálculo)
+// Seção recolhível: o chevron gira e o conteúdo abre com altura animada (Enter/Espaço no botão)
 const DetailSection: React.FC<{ title: string; summary: React.ReactNode; children: React.ReactNode }> = ({
   title,
   summary,
   children,
-}) => (
-  <details className="group border-t border-slate-200 dark:border-slate-800 first:border-t-0">
-    <summary className="flex items-center justify-between gap-4 py-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-emerald-500 rounded">
-      <span className="text-sm font-semibold text-slate-900 dark:text-white">{title}</span>
-      <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-0">
-        <span className="truncate">{summary}</span>
-        <ChevronDown className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" />
-      </span>
-    </summary>
-    <div className="pb-4 pl-1">{children}</div>
-  </details>
-);
+}) => {
+  const [open, setOpen] = useState(false);
+  const reduceMotion = Boolean(useReducedMotion());
+  const contentId = React.useId();
+  return (
+    <div className="border-t border-slate-200 dark:border-slate-800 first:border-t-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={contentId}
+        className="w-full flex items-center justify-between gap-4 py-3.5 cursor-pointer rounded text-left active:scale-100"
+      >
+        <span className="text-sm font-semibold text-slate-900 dark:text-white">{title}</span>
+        <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-0">
+          <span className="truncate">{summary}</span>
+          <motion.span
+            className="shrink-0"
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </motion.span>
+        </span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={contentId}
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
+            className="overflow-hidden"
+          >
+            <div className="pb-4 pl-1">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   currentRevenue,
@@ -231,6 +263,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   onNavigateToHistory,
 }) => {
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
+  // Logo depois de salvar, o botão mostra um check por um instante
+  const [justSaved, setJustSaved] = useState(false);
   const reduceMotion = Boolean(useReducedMotion());
   const sizeTransition = instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT });
 
@@ -318,6 +352,8 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
     };
 
     onSaveCurrentMonthToHistory(newRecord);
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 1200);
     setSavedSuccessMessage(`Apuração de ${formatCompetence(selectedMonth)} salva no histórico`);
     setTimeout(() => setSavedSuccessMessage(null), 4000);
   };
@@ -472,17 +508,46 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             {savedRecord ? (
               <button
                 onClick={() => onEditSavedRecord(savedRecord)}
-                className="w-full lg:w-auto h-10 flex items-center justify-center gap-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-lg border border-slate-300 dark:border-slate-700 cursor-pointer"
+                className={`w-full lg:w-auto h-10 flex items-center justify-center gap-2 px-4 font-semibold text-sm rounded-full border cursor-pointer transition-colors duration-[var(--duration-number)] ${
+                  justSaved
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                }`}
                 title="Competência já gravada: a edição é feita pelo Histórico"
               >
-                <Pencil className="w-4 h-4" />
-                Editar no histórico
+                <span className="relative w-4 h-4">
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {justSaved ? (
+                      <motion.span
+                        key="ok"
+                        className="absolute inset-0"
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="edit"
+                        className="absolute inset-0"
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.6, opacity: 0 }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </span>
+                {justSaved ? 'Salvo' : 'Editar no histórico'}
               </button>
             ) : (
               <button
                 onClick={handleSaveMonth}
                 disabled={!hasRevenue}
-                className="w-full lg:w-auto h-10 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg cursor-pointer"
+                className="w-full lg:w-auto h-10 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-full cursor-pointer"
                 title={hasRevenue ? 'Salvar a apuração deste mês no histórico' : 'Informe o faturamento para salvar'}
               >
                 <BookmarkCheck className="w-4 h-4" />

@@ -48,6 +48,21 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Anel de foco do teclado em tudo que é clicável, nos dois temas */
+  button:focus-visible,
+  summary:focus-visible,
+  a:focus-visible,
+  [role='switch']:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-emerald-500);
+    outline-offset: 2px;
+  }
+
+  /* Botão "afunda" de leve ao clicar */
+  button:not(:disabled):active {
+    transform: scale(0.98);
+  }
+
   .font-num, .tabular-nums {
     font-family: var(--font-num);
     font-variant-numeric: tabular-nums;

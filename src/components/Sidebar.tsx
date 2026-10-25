@@ -87,8 +87,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const widthTransition = instantIf(reduceMotion, widthSpring);
 
   // Stepper para avançar ou retroceder o mês rapidamente
+  // Troca pelas setas: o mês desliza na direção usada (digitar no campo não anima)
+  const [step, setStep] = useState<{ n: number; dir: number }>({ n: 0, dir: 0 });
   const handleStepMonth = (delta: number) => {
     playSound('tick');
+    setStep((s) => ({ n: s.n + 1, dir: delta }));
     const [yearStr, monthStr] = selectedMonth.split('-');
     let year = parseInt(yearStr, 10);
     let month = parseInt(monthStr, 10) + delta;
@@ -216,13 +219,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="flex-1 relative">
-        <input
-          type="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-num font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
-        />
+      <div className="flex-1 relative overflow-hidden rounded-md">
+        <motion.div
+          key={step.n}
+          initial={step.n === 0 || reduceMotion ? false : { x: step.dir * 18, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: DURATION.base, ease: EASE_OUT }}
+        >
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            aria-label="Competência ativa"
+            className="w-full py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-emerald-700 dark:text-emerald-400 font-num font-bold text-xs text-center focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
+          />
+        </motion.div>
       </div>
 
       <button
