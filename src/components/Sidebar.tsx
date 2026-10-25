@@ -24,7 +24,6 @@ import { TaxSettings, MonthRecord } from '../types/tax';
 import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
-import type { SidebarMode } from '../utils/sidebarMode';
 import type { StorageMode } from '../types/electron';
 
 const formatPercent1 = (n: number) => formatPercent(n, 1);
@@ -47,9 +46,8 @@ interface SidebarProps {
   history: MonthRecord[];
   theme: 'dark' | 'light';
   toggleTheme: (origin?: HTMLElement | null) => void;
-  mode: SidebarMode;
+  mode: 'expanded' | 'collapsed';
   onToggleMode: () => void;
-  onCloseOverlay: () => void;
 }
 
 // Texto que some na hora ao recolher e aparece logo depois da largura ao expandir
@@ -82,7 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   toggleTheme,
   mode,
   onToggleMode,
-  onCloseOverlay,
 }) => {
   const expanded = mode !== 'collapsed';
   const collapsed = !expanded;
@@ -248,22 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Fundo escurecido quando o menu abre por cima do conteúdo (janela estreita) */}
-      <AnimatePresence>
-        {mode === 'overlay' && (
-          <motion.div
-            key="sidebar-scrim"
-            className="no-print fixed inset-0 z-40 bg-slate-950/40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: DURATION.base }}
-            onClick={onCloseOverlay}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Espaço que o menu ocupa no layout; em sobreposição continua com a largura recolhida */}
+      {/* Espaço que o menu ocupa no layout */}
       <motion.div
         className="no-print shrink-0 h-screen sticky top-0 z-50"
         initial={false}
@@ -379,7 +361,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => {
                         if (!isActive) playSound('tick');
                         setActiveTab(item.id);
-                        if (mode === 'overlay') onCloseOverlay();
                       }}
                       aria-current={isActive ? 'page' : undefined}
                       data-liquid-active={isActive}

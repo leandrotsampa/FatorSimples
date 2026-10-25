@@ -24,7 +24,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { DURATION, EASE_OUT } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { playSound } from './hooks/useSound';
-import { resolveSidebarMode, SIDEBAR_COLLAPSE_BELOW } from './utils/sidebarMode';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -85,28 +84,12 @@ export default function App() {
   const [prolaboreRule, setProlaboreRule] = useState<TaxSettings['prolaboreRule']>('auto_28_month');
   const [manualProlabore, setManualProlabore] = useState<number>(0);
 
-  // Menu lateral: preferência salva + largura da janela (recolhe sozinho em janela estreita)
+  // Menu lateral: segue só a escolha do usuário (expandido fica expandido até ele recolher)
   const [uiPrefs, setUiPrefs] = useUiPrefs();
-  // Só re-renderiza ao cruzar o limite de largura, não a cada pixel do redimensionamento
-  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
-  const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia(`(min-width: ${SIDEBAR_COLLAPSE_BELOW}px)`);
-    const onChange = () => setWindowWidth(window.innerWidth);
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
-  }, []);
-  useEffect(() => {
-    if (windowWidth >= SIDEBAR_COLLAPSE_BELOW) setSidebarOverlayOpen(false);
-  }, [windowWidth]);
-  const sidebarMode = resolveSidebarMode(uiPrefs.sidebar, windowWidth, sidebarOverlayOpen);
+  const sidebarMode = uiPrefs.sidebar;
   const toggleSidebar = () => {
     playSound('tick');
-    if (window.innerWidth < SIDEBAR_COLLAPSE_BELOW) {
-      setSidebarOverlayOpen((open) => !open);
-    } else {
-      setUiPrefs({ sidebar: uiPrefs.sidebar === 'expanded' ? 'collapsed' : 'expanded' });
-    }
+    setUiPrefs({ sidebar: uiPrefs.sidebar === 'expanded' ? 'collapsed' : 'expanded' });
   };
   const toggleSidebarRef = useRef(toggleSidebar);
   toggleSidebarRef.current = toggleSidebar;
@@ -364,16 +347,13 @@ export default function App() {
         toggleTheme={toggleTheme}
         mode={sidebarMode}
         onToggleMode={toggleSidebar}
-        onCloseOverlay={() => setSidebarOverlayOpen(false)}
       />
 
       {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos.
-            Com o menu aberto por cima, deixa de arrastar: o Electron monta a área de arraste pela
-            ordem do DOM (ignora z-index) e os botões do menu sobre a barra ficariam sem clique */}
-        <header className={`no-print ${sidebarMode === 'overlay' ? '' : 'app-drag'} titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between z-30`}>
+        {/* Barra de título da janela: arrasta a janela e deixa espaço para os botões nativos */}
+        <header className={`no-print app-drag titlebar-safe h-10 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-6 flex items-center justify-between z-30`}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
               {settings.companyName || 'Empresa Simples Nacional'}
