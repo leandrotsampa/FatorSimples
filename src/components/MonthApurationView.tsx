@@ -31,7 +31,6 @@ import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { CopyButton } from './ui/CopyButton';
 import { formatForCopy } from '../utils/copyFormat';
-import { useTransfersDone, type TransferKey } from '../hooks/useTransfersDone';
 import { Sparkline } from './charts/Sparkline';
 import { FactorRGauge } from './charts/FactorRGauge';
 import type { ChartTone } from './charts/tones';
@@ -182,28 +181,20 @@ const Indicator: React.FC<{
   </div>
 );
 
-// Uma transferência do mês: valor para copiar e marcar como feita
+// Uma transferência do mês: o valor a mandar para a conta pessoal
 const TransferRow: React.FC<{
   step: number;
   title: string;
   hint: string;
   value: number;
   detail: React.ReactNode;
-  done?: boolean;
-  onToggleDone?: () => void;
-}> = ({ step, title, hint, value, detail, done, onToggleDone }) => (
-  <div
-    className={`flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-xl transition-colors ${
-      done ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-slate-50 dark:bg-slate-950/50'
-    }`}
-  >
+}> = ({ step, title, hint, value, detail }) => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
     <span
-      className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${
-        done ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950' : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10'
-      }`}
+      className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10"
       aria-hidden="true"
     >
-      {done ? <CheckCircle2 className="w-4 h-4" /> : step}
+      {step}
     </span>
     <div className="min-w-0 flex-1">
       <div className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -216,15 +207,6 @@ const TransferRow: React.FC<{
       format={formatCurrency}
       className="text-xl font-bold font-num tabular-nums text-slate-900 dark:text-white"
     />
-    <div className="flex items-center gap-2">
-      <CopyButton text={formatForCopy(value, 'money')} label={title} />
-      {onToggleDone && (
-        <label className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-semibold cursor-pointer select-none bg-white ring-1 ring-slate-200 text-slate-700 dark:bg-slate-900 dark:ring-white/10 dark:text-slate-200">
-          <input type="checkbox" checked={!!done} onChange={onToggleDone} className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer" />
-          Feito
-        </label>
-      )}
-    </div>
   </div>
 );
 
@@ -314,9 +296,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   onOpenSettings,
 }) => {
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
-  // Transferências já feitas nesta competência (marcadas pelo usuário)
-  const [transfersDone, toggleTransfer] = useTransfersDone(selectedMonth);
-  const toggle = (key: TransferKey) => () => toggleTransfer(key);
 
   // Logo depois de salvar, o botão mostra um check por um instante
   // (só na competência que acabou de ser salva; trocar de mês não leva o "Salvo" junto)
@@ -853,8 +832,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                     <span className="font-num">{formatCurrency(prolabore.irrf)}</span>
                   </>
                 }
-                done={transfersDone.prolabore}
-                onToggleDone={toggle('prolabore')}
               />
               <TransferRow
                 step={2}
@@ -870,8 +847,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                     'Isento de imposto de renda'
                   )
                 }
-                done={transfersDone.lucro}
-                onToggleDone={toggle('lucro')}
               />
 
               {/* Fica na conta da empresa: impostos e contabilidade */}
