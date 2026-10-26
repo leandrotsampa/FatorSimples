@@ -12,8 +12,6 @@ import {
   ChevronRight,
   ChevronDown,
   CalendarDays,
-  PanelLeftClose,
-  PanelLeftOpen,
   LifeBuoy,
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -37,6 +35,12 @@ const WIDTH_EXPANDED = 288;
 const WIDTH_COLLAPSED = 68;
 // Espaço entre a cápsula do menu e a borda da janela
 const GUTTER = 12;
+// Topo do botão de recolher: centrado no logo (36 px) do cabeçalho do menu, que muda de respiro
+// recolhido (12 px) ou aberto (16 px); no macOS o cabeçalho desce para os botões do sistema
+const toggleTop = (expanded: boolean) => {
+  const headerPadTop = window.electronAPI?.platform === 'darwin' ? 36 : expanded ? 16 : 12;
+  return GUTTER + headerPadTop + 18 - 14;
+};
 const widthSpring = { type: 'spring', stiffness: 400, damping: 40 } as const;
 
 interface SidebarProps {
@@ -323,15 +327,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Simples</span>
                   </div>
                 </Reveal>
-                <button
-                  onClick={onToggleMode}
-                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                  title={expanded ? 'Recolher menu (Ctrl+B)' : 'Expandir menu (Ctrl+B)'}
-                  aria-label={expanded ? 'Recolher menu' : 'Expandir menu'}
-                  aria-expanded={expanded}
-                >
-                  {expanded ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
-                </button>
               </div>
             </div>
 
@@ -646,6 +641,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </RailTooltip>
           </div>
         </motion.aside>
+
+        {/* Recolher/expandir: botão redondo encaixado na borda do menu, na altura do logo, no visual das pílulas
+            (branco com a seta verde; o anel na cor do fundo recorta a borda do menu) */}
+        <motion.button
+          type="button"
+          onClick={onToggleMode}
+          className="group app-no-drag absolute z-10 w-7 h-7 rounded-full flex items-center justify-center bg-white text-emerald-700 ring-1 ring-slate-900/[0.08] shadow-[0_0_0_3px_var(--canvas),0_6px_14px_-6px_rgba(16,40,28,0.45)] hover:bg-emerald-600 hover:text-white hover:ring-emerald-600 dark:bg-slate-800 dark:text-emerald-400 dark:ring-white/10 dark:shadow-[0_0_0_3px_var(--canvas),0_6px_14px_-6px_rgba(0,0,0,0.9)] dark:hover:bg-emerald-500 dark:hover:text-emerald-950 dark:hover:ring-emerald-500 transition-colors cursor-pointer"
+          title={expanded ? 'Recolher menu (Ctrl+B)' : 'Expandir menu (Ctrl+B)'}
+          aria-label={expanded ? 'Recolher menu' : 'Expandir menu'}
+          aria-expanded={expanded}
+          initial={false}
+          animate={{
+            left: GUTTER + (expanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED) - 14,
+            top: toggleTop(expanded),
+          }}
+          transition={widthTransition}
+        >
+          <motion.span
+            className="flex"
+            initial={false}
+            animate={{ rotate: expanded ? 0 : 180 }}
+            transition={instantIf(reduceMotion, { type: 'spring', stiffness: 380, damping: 26 } as const)}
+          >
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-px" strokeWidth={2.5} />
+          </motion.span>
+        </motion.button>
       </motion.div>
 
       {/* Grade de meses da competência */}
