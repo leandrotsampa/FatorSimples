@@ -45,19 +45,64 @@ export function parseTourState(raw: string | null): TourState {
   }
 }
 
-const KEY = 'fatorsimples_tour_v1';
+// Registro antigo (versões até 1.3.2): ficava no armazenamento interno do app, fora do banco
+const LEGACY_KEY = 'fatorsimples_tour_v1';
+// Chave no banco (tabela app_state), junto com os dados: banco novo traz o tutorial de volta
+const DB_KEY = 'tour';
 
-export function loadTourState(): TourState {
+// O banco manda; o registro antigo só vale (e é migrado) enquanto o banco ainda não tem o seu
+export function resolveStoredTourState(
+  dbRaw: string | null,
+  legacyRaw: string | null
+): { state: TourState; migrate: boolean } {
+  if (dbRaw != null) return { state: parseTourState(dbRaw), migrate: false };
+  if (legacyRaw != null) return { state: parseTourState(legacyRaw), migrate: true };
+  return { state: emptyTourState, migrate: false };
+}
+
+const readLegacy = () => {
   try {
-    return parseTourState(localStorage.getItem(KEY));
+    return localStorage.getItem(LEGACY_KEY);
   } catch {
-    return emptyTourState;
+    return null;
+  }
+};
+
+// Cópia em memória: carregada uma vez na abertura; cada mudança vai para o banco
+let cache: TourState = emptyTourState;
+
+export async function initTourState(): Promise<void> {
+  const api = window.electronAPI;
+  if (!api?.getAppState || !api.setAppState) {
+    // Navegador: continua no armazenamento do navegador
+    cache = parseTourState(readLegacy());
+    return;
+  }
+  const { state, migrate } = resolveStoredTourState(await api.getAppState(DB_KEY).catch(() => null), readLegacy());
+  cache = state;
+  if (migrate) {
+    await api.setAppState(DB_KEY, JSON.stringify(state)).catch(() => undefined);
+    try {
+      localStorage.removeItem(LEGACY_KEY);
+    } catch {
+      // sem armazenamento: nada a limpar
+    }
   }
 }
 
+export function loadTourState(): TourState {
+  return cache;
+}
+
 export function saveTourState(state: TourState) {
+  cache = state;
+  const api = window.electronAPI;
+  if (api?.setAppState) {
+    void api.setAppState(DB_KEY, JSON.stringify(state)).catch(() => undefined);
+    return;
+  }
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(state));
   } catch {
     // Sem armazenamento: o tutorial só volta a aparecer na próxima abertura
   }

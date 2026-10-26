@@ -12,6 +12,9 @@ export interface ElectronAPI {
   onWindowMaximized?: (callback: (maximized: boolean) => void) => () => void;
   // Abre a página de versões do FatorSimples no navegador do sistema
   openReleasesPage?: () => Promise<void>;
+  // Estado do app guardado junto com os dados (ex.: 'tour', o que o tutorial já mostrou)
+  getAppState?: (key: 'tour') => Promise<string | null>;
+  setAppState?: (key: 'tour', value: string) => Promise<boolean>;
   // Tabelas fiscais baixadas do GitHub, guardadas no banco
   getRemoteTables?: () => Promise<unknown>;
   saveRemoteTables?: (stored: { doc: unknown; checkedAt: string | null }) => Promise<boolean>;

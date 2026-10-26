@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('window:maximized', listener);
   },
   openReleasesPage: () => ipcRenderer.invoke('app:open-releases'),
+  getAppState: (key) => ipcRenderer.invoke('sqlite:get-app-state', key),
+  setAppState: (key, value) => ipcRenderer.invoke('sqlite:set-app-state', key, value),
   getRemoteTables: () => ipcRenderer.invoke('sqlite:get-remote-tables'),
   saveRemoteTables: (stored) => ipcRenderer.invoke('sqlite:save-remote-tables', stored),
   getDbPath: () => ipcRenderer.invoke('sqlite:get-db-path'),

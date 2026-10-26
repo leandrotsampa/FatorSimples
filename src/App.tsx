@@ -33,7 +33,7 @@ import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { playSound } from './hooks/useSound';
 import { ALL_TOUR_STEP_IDS, isTourRunning, runTour, screenStepIds, type TourScreen } from './tour/tour';
-import { completeTour, loadTourState, planScreenTour, planTour, saveTourState, skipTour } from './tour/tourState';
+import { completeTour, initTourState, loadTourState, planScreenTour, planTour, saveTourState, skipTour } from './tour/tourState';
 
 const SETTINGS_STORAGE_KEY = 'fatorsimples_settings_v2';
 const HISTORY_STORAGE_KEY = 'fatorsimples_history_v2';
@@ -340,6 +340,7 @@ export default function App() {
 
   // Primeira abertura: boas-vindas; depois de atualizar o app: só os passos novos da tela do mês
   const tourChecked = useRef(false);
+  const [tourReady, setTourReady] = useState(false);
   const appReady = isHistoryLoaded && remoteTablesLoaded;
   // Com a primeira tela pronta, baixa o resto em segundo plano (quando o navegador estiver livre)
   useEffect(() => {
@@ -350,33 +351,37 @@ export default function App() {
   useEffect(() => {
     if (!appReady || tourChecked.current) return;
     tourChecked.current = true;
-    const plan = planTour(screenStepIds('apuration'), loadTourState());
-    if (plan.kind === 'news') {
-      startTour('apuration', plan.ids, true);
-    } else if (plan.kind === 'welcome') {
-      void confirm({
-        title: 'Bem-vindo ao FatorSimples',
-        message:
-          'Em 1 minuto você vê o essencial: a alíquota para a nota, quanto transferir para você e como o Fator R economiza imposto.',
-        confirmLabel: 'Mostrar como funciona',
-        cancelLabel: 'Explorar sozinho',
-      }).then((ok) => {
-        if (ok) startTour('apuration');
-        // Explorar sozinho: nenhuma tela se apresenta; só novidades futuras e o "Como usar"
-        else saveTourState(skipTour(loadTourState(), ALL_TOUR_STEP_IDS));
-      });
-    }
+    // O registro do tutorial vem do banco (junto com os dados) antes de decidir o que mostrar
+    void initTourState().then(() => {
+      setTourReady(true);
+      const plan = planTour(screenStepIds('apuration'), loadTourState());
+      if (plan.kind === 'news') {
+        startTour('apuration', plan.ids, true);
+      } else if (plan.kind === 'welcome') {
+        void confirm({
+          title: 'Bem-vindo ao FatorSimples',
+          message:
+            'Em 1 minuto você vê o essencial: a alíquota para a nota, quanto transferir para você e como o Fator R economiza imposto.',
+          confirmLabel: 'Mostrar como funciona',
+          cancelLabel: 'Explorar sozinho',
+        }).then((ok) => {
+          if (ok) startTour('apuration');
+          // Explorar sozinho: nenhuma tela se apresenta; só novidades futuras e o "Como usar"
+          else saveTourState(skipTour(loadTourState(), ALL_TOUR_STEP_IDS));
+        });
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appReady]);
 
   // As outras telas se apresentam na primeira vez que a pessoa entra nelas
   const currentScreen: TourScreen = isSettingsOpen ? 'settings' : activeTab;
   useEffect(() => {
-    if (!appReady || !tourChecked.current || currentScreen === 'apuration' || isTourRunning()) return;
+    if (!tourReady || currentScreen === 'apuration' || isTourRunning()) return;
     const plan = planScreenTour(screenStepIds(currentScreen), loadTourState());
     if (plan.kind !== 'none') startTour(currentScreen, plan.ids, plan.kind === 'news');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appReady, currentScreen]);
+  }, [tourReady, currentScreen]);
 
   const handleDeleteMonth = async (id: string) => {
     const rec = history.find((h) => h.id === id);

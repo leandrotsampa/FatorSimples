@@ -10,6 +10,7 @@ const fs = require('fs');
 const { windowChromeOptions, windowControlFor, shortcutFor } = require('./windowChrome.cjs');
 const { ensureSettingsColumns } = require('./settingsSchema.cjs');
 const { portableDirectoryFor } = require('./dataDirectory.cjs');
+const { APP_STATE_KEYS, appStateEntryFor } = require('./appState.cjs');
 
 let mainWindow = null;
 let db = null;
@@ -90,6 +91,13 @@ function initDatabase() {
         id INTEGER PRIMARY KEY CHECK (id = 1),
         doc TEXT,
         checked_at TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Estado do app que acompanha os dados (ex.: o que o tutorial já mostrou)
+      CREATE TABLE IF NOT EXISTS app_state (
+        key TEXT PRIMARY KEY,
+        value TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -338,6 +346,43 @@ function setupIpcHandlers() {
   });
 
   // Tabelas fiscais baixadas do GitHub: ficam no banco (ou no JSON de fallback)
+  // Estado do app guardado junto com os dados (no banco; sem SQLite, no arquivo JSON de fallback)
+  ipcMain.handle('sqlite:get-app-state', (event, key) => {
+    if (!APP_STATE_KEYS.includes(key)) return null;
+    if (db) {
+      const row = db.prepare('SELECT value FROM app_state WHERE key = ?').get(key);
+      return row ? row.value : null;
+    }
+    const fallbackFile = getFallbackFilePath();
+    if (fs.existsSync(fallbackFile)) {
+      try {
+        const value = (JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')).appState || {})[key];
+        return typeof value === 'string' ? value : null;
+      } catch (e) {}
+    }
+    return null;
+  });
+
+  ipcMain.handle('sqlite:set-app-state', (event, key, value) => {
+    const entry = appStateEntryFor(key, value);
+    if (!entry) return false;
+    if (db) {
+      db.prepare('INSERT OR REPLACE INTO app_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run(
+        entry.key,
+        entry.value
+      );
+      return true;
+    }
+    const fallbackFile = getFallbackFilePath();
+    let data = { history: [], settings: null };
+    if (fs.existsSync(fallbackFile)) {
+      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
+    }
+    data.appState = { ...(data.appState || {}), [entry.key]: entry.value };
+    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
+    return true;
+  });
+
   ipcMain.handle('sqlite:get-remote-tables', () => {
     if (db) {
       const row = db.prepare('SELECT doc, checked_at FROM remote_tax_tables WHERE id = 1').get();
