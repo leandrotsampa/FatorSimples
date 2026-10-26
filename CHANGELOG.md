@@ -2,6 +2,21 @@
 
 Todas as versões do FatorSimples e o que mudou em cada uma.
 
+## v1.3.1 (2026-10-26)
+
+### ✨ Novidades
+
+- Tela de carregamento enquanto o app se descompacta (8316cba)
+- Botão de recolher redondo na borda do menu, no visual das pílulas (b692e56)
+
+### 🐛 Correções
+
+- Metade do botão de recolher não respondia e o duplo clique maximizava a janela (9aa6315)
+
+### 🔧 Manutenção
+
+- Versão 1.3.1 (6ddc172)
+
 ## v1.3.0 (2026-10-25)
 
 ### ✨ Novidades
