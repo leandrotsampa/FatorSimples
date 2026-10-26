@@ -28,6 +28,11 @@ A alíquota para a nota, quanto transferir para você e quanto deixar na conta d
 [Como o cálculo funciona](#-como-o-cálculo-funciona) ·
 [Desenvolvimento](#-desenvolvimento)
 
+<br />
+
+<img src="docs/demo.webp" alt="Demonstração: o faturamento digitado gera a alíquota para a nota, o DAS e as transferências do mês; depois o botão Tirar a folga, as telas Vale a pena? e Histórico e a troca para o tema escuro" width="100%" />
+<sub>Do faturamento às transferências do mês em segundos (dados de exemplo)</sub>
+
 </div>
 
 ---
