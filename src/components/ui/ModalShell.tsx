@@ -18,9 +18,10 @@ export const ModalShell: React.FC<{ children: React.ReactNode; panelClassName: s
     return () => previous?.focus?.({ preventScroll: true });
   }, []);
 
+  // Camada 70: acima do botão de recolher o menu (55), da grade de meses e das dicas do menu (60)
   return (
     <motion.div
-      className="app-no-drag fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+      className="app-no-drag fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
