@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  Fonte da tela de carregamento do portátil do Windows (build/splash.bmp).
+  O portátil mostra a imagem numa janela retangular opaca enquanto se descompacta (plugin BgImage do NSIS):
+  só BMP, sem animação e sem transparência. Por isso a imagem ocupa a janela inteira.
+  Para regerar: abra esta página com 480×300 px, fotografe e converta para BMP de 24 bits.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: 'IBM Plex Sans';
+        font-weight: 400;
+        src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'IBM Plex Sans';
+        font-weight: 500;
+        src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'IBM Plex Sans';
+        font-weight: 700;
+        src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 480px;
+        height: 300px;
+        overflow: hidden;
+      }
+      /* Painel inteiro no verde do app, com luz no alto e anéis discretos ao fundo */
+      body {
+        position: relative;
+        font-family: 'IBM Plex Sans', sans-serif;
+        color: #ffffff;
+        background:
+          radial-gradient(360px 240px at 22% 0%, rgb(52 211 153 / 0.22), transparent 70%),
+          radial-gradient(300px 220px at 100% 100%, rgb(2 44 34 / 0.55), transparent 70%),
+          linear-gradient(150deg, #047857 0%, #065f46 52%, #064e3b 100%);
+        border: 1px solid #053d30;
+      }
+      .rings {
+        position: absolute;
+        right: -90px;
+        top: -70px;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        box-shadow:
+          0 0 0 34px rgb(255 255 255 / 0.03),
+          0 0 0 35px rgb(255 255 255 / 0.08),
+          0 0 0 80px rgb(255 255 255 / 0.02),
+          0 0 0 81px rgb(255 255 255 / 0.06);
+      }
+      .content {
+        position: absolute;
+        inset: 0;
+        padding: 34px 36px 28px;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      /* O ícone é verde: um "chip" claro em volta o destaca do fundo verde */
+      .chip {
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+        background: rgb(255 255 255 / 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 28px -10px rgb(2 44 34 / 0.7), inset 0 -2px 0 rgb(15 23 20 / 0.06);
+      }
+      .chip img {
+        width: 60px;
+        height: 60px;
+      }
+      h1 {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        line-height: 1.05;
+      }
+      .sub {
+        margin-top: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #d1fae5;
+      }
+      .footer {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-top: 18px;
+        border-top: 1px solid rgb(255 255 255 / 0.16);
+        font-size: 13px;
+        color: #ecfdf5;
+      }
+      .dots {
+        display: flex;
+        gap: 5px;
+      }
+      .dots i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ffffff;
+      }
+      .dots i:nth-child(2) {
+        opacity: 0.6;
+      }
+      .dots i:nth-child(3) {
+        opacity: 0.3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="rings"></div>
+    <div class="content">
+      <div class="brand">
+        <div class="chip"><img src="../../public/icon.png" alt="" /></div>
+        <div>
+          <h1>FatorSimples</h1>
+          <p class="sub">Simples Nacional · Fator R</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="dots"><i></i><i></i><i></i></span>
+        Preparando o app… isso leva alguns segundos
+      </div>
+    </div>
+  </body>
+</html>

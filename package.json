@@ -91,7 +91,8 @@
       "icon": "build/icon.ico"
     },
     "portable": {
-      "artifactName": "FatorSimples-${version}-portable.exe"
+      "artifactName": "FatorSimples-${version}-portable.exe",
+      "splashImage": "build/splash.bmp"
     },
     "nsis": {
       "artifactName": "FatorSimples-${version}-setup.exe",
