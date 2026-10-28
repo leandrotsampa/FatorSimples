@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, ChevronRight, Copy, MapPin, Minus, Square, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { ArrowDownToLine, Building2, ChevronRight, Copy, MapPin, Minus, Square, X } from 'lucide-react';
 import type { TaxSettings } from '../types/tax';
 import { companyInitials } from '../utils/companyInitials';
 
@@ -62,8 +63,71 @@ const WindowControls: React.FC = () => {
   );
 };
 
+const secondaryNoticeButton =
+  'h-7 px-2 rounded-full text-emerald-800/80 hover:text-emerald-950 hover:bg-emerald-600/10 dark:text-emerald-200/80 dark:hover:text-white dark:hover:bg-emerald-400/10 transition-colors cursor-pointer whitespace-nowrap';
+
+// Aviso discreto de versão nova (portátil e instalado): "Baixar" abre a página da versão no GitHub;
+// "Mais tarde" esconde até a próxima abertura; "Ignorar esta versão" só volta com outra mais nova
+const UpdateNotice: React.FC<{ version: string; onDownload: () => void; onLater: () => void; onIgnore: () => void }> = ({
+  version,
+  onDownload,
+  onLater,
+  onIgnore,
+}) => (
+  <motion.div
+    role="status"
+    initial={{ opacity: 0, y: -6 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -6 }}
+    transition={{ duration: 0.25 }}
+    className="h-9 flex items-center gap-1 pl-3 pr-1 rounded-full text-xs shrink-0 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-400/25"
+  >
+    <span className="relative flex w-2 h-2 mr-1" aria-hidden="true">
+      <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
+      <span className="relative w-2 h-2 rounded-full bg-emerald-500" />
+    </span>
+    <span className="whitespace-nowrap">
+      Versão <b className="font-num font-semibold">{version}</b>
+      <span className="hidden xl:inline"> disponível</span> —
+    </span>
+    <button
+      type="button"
+      onClick={onDownload}
+      title="Abre a página da versão no navegador"
+      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white dark:text-emerald-300 dark:hover:bg-emerald-500 dark:hover:text-emerald-950 transition-colors cursor-pointer"
+    >
+      <ArrowDownToLine className="w-3.5 h-3.5" />
+      Baixar
+    </button>
+    <span className="w-px h-3.5 bg-emerald-700/20 dark:bg-emerald-300/20 mx-0.5" aria-hidden="true" />
+    <button
+      type="button"
+      onClick={onLater}
+      title="Esconder até a próxima abertura do app"
+      className={secondaryNoticeButton}
+    >
+      Mais tarde
+    </button>
+    <button
+      type="button"
+      onClick={onIgnore}
+      title={`Não avisar mais sobre a versão ${version}; avisa de novo quando sair outra mais nova`}
+      className={secondaryNoticeButton}
+    >
+      Ignorar esta versão
+    </button>
+  </motion.div>
+);
+
 // Barra de título da janela: arrasta a janela (duplo clique maximiza) e traz os botões da janela
-export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void }> = ({ settings, onEditCompany }) => {
+export const TopBar: React.FC<{
+  settings: TaxSettings;
+  onEditCompany: () => void;
+  newVersion?: string | null;
+  onDownloadNewVersion?: () => void;
+  onLaterNewVersion?: () => void;
+  onIgnoreNewVersion?: () => void;
+}> = ({ settings, onEditCompany, newVersion, onDownloadNewVersion, onLaterNewVersion, onIgnoreNewVersion }) => {
   const now = new Date();
   const name = settings.companyName.trim() || 'Sua empresa';
 
@@ -73,7 +137,7 @@ export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void
         type="button"
         onClick={onEditCompany}
         title="Editar os dados da empresa"
-        className={`${pill} group min-w-0 flex items-center gap-2.5 pl-1 pr-3 cursor-pointer transition-colors hover:bg-white dark:hover:bg-slate-900`}
+        className={`${pill} group min-w-0 overflow-hidden flex items-center gap-2.5 pl-1 pr-3 cursor-pointer transition-colors hover:bg-white dark:hover:bg-slate-900`}
       >
         <span
           aria-hidden="true"
@@ -82,12 +146,12 @@ export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void
           {settings.companyName.trim() ? companyInitials(name) : <Building2 className="w-3.5 h-3.5" />}
         </span>
         <span className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">{name}</span>
-        <span className="hidden sm:flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 shrink-0">
+        <span className={`hidden ${newVersion ? 'xl:flex' : 'sm:flex'} items-center gap-1 text-xs text-slate-600 dark:text-slate-400 shrink-0`}>
           <span className="w-px h-3.5 bg-slate-900/10 dark:bg-white/10 mr-1.5" />
           <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           {settings.cityState || 'Cidade - UF'}
         </span>
-        <span className="hidden lg:flex items-center text-xs font-num text-slate-500 dark:text-slate-400 shrink-0">
+        <span className={`hidden ${newVersion ? '2xl:flex' : 'lg:flex'} items-center text-xs font-num text-slate-500 dark:text-slate-400 shrink-0`}>
           <span className="w-px h-3.5 bg-slate-900/10 dark:bg-white/10 mx-2" />
           CNPJ {settings.cnpj || 'não informado'}
         </span>
@@ -95,7 +159,19 @@ export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void
       </button>
 
       <div className="flex items-center gap-2 shrink-0">
-        <div className={`${pill} hidden md:flex items-center gap-2 px-3.5 text-xs shrink-0`}>
+        <AnimatePresence>
+          {newVersion && (
+            <UpdateNotice
+              key={newVersion}
+              version={newVersion}
+              onDownload={() => onDownloadNewVersion?.()}
+              onLater={() => onLaterNewVersion?.()}
+              onIgnore={() => onIgnoreNewVersion?.()}
+            />
+          )}
+        </AnimatePresence>
+        {/* Com o aviso de versão nova, a saudação (e a cidade e o CNPJ da empresa) só aparecem em janelas largas */}
+        <div className={`${pill} hidden ${newVersion ? '2xl:flex' : 'md:flex'} items-center gap-2 px-3.5 text-xs shrink-0`}>
           <span className="font-semibold text-slate-800 dark:text-slate-100">{greeting(now.getHours())}</span>
           <span className="w-1 h-1 rounded-full bg-emerald-500" />
           <span className="text-slate-600 dark:text-slate-400">

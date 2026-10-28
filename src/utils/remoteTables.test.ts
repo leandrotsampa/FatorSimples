@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { isNewerThanBuiltin, isNewerVersion, mergeTables, parseStoredRemoteTables, selectTableForCompetence, validateRemoteTables } from './remoteTables';
+import { isNewerThanBuiltin, planStartupChecks, shouldShowUpdateNotice, isNewerVersion, mergeTables, parseStoredRemoteTables, selectTableForCompetence, validateRemoteTables } from './remoteTables';
 import { BUILTIN_TABLES_DATE } from './taxTablesRegistry';
 import { OFFICIAL_TAX_TABLES, getTaxTableForCompetence, type TaxTableVersion } from './taxTablesRegistry';
 
@@ -177,5 +177,46 @@ describe('tabelas guardadas mais velhas que as embutidas', () => {
   it('o arquivo publicado tem a data das tabelas embutidas', () => {
     const json = JSON.parse(readFileSync('tax-tables/tabelas.json', 'utf-8'));
     expect(json.publishedAt).toBe(BUILTIN_TABLES_DATE);
+  });
+});
+
+describe('o que o app confere ao abrir', () => {
+  const agora = new Date('2026-10-28T12:00:00Z');
+
+  it('a versão nova é conferida em toda abertura, mesmo com a atualização de tabelas desligada', () => {
+    expect(planStartupChecks({ autoUpdateTables: false, checkedAt: null, now: agora }).version).toBe(true);
+    expect(planStartupChecks({ autoUpdateTables: true, checkedAt: '2026-10-28T11:00:00Z', now: agora }).version).toBe(true);
+  });
+
+  it('as tabelas fiscais continuam no máximo uma vez por dia, e só com a opção ligada', () => {
+    expect(planStartupChecks({ autoUpdateTables: true, checkedAt: '2026-10-28T11:00:00Z', now: agora }).tables).toBe(false);
+    expect(planStartupChecks({ autoUpdateTables: true, checkedAt: '2026-10-27T11:00:00Z', now: agora }).tables).toBe(true);
+    expect(planStartupChecks({ autoUpdateTables: false, checkedAt: null, now: agora }).tables).toBe(false);
+  });
+});
+
+describe('aviso de versão nova: Mais tarde e Ignorar esta versão', () => {
+  it('mostra quando há versão nova e nada foi escolhido', () => {
+    expect(shouldShowUpdateNotice({ latest: '1.3.4', ignored: null, later: false })).toBe(true);
+  });
+
+  it('sem versão nova não mostra', () => {
+    expect(shouldShowUpdateNotice({ latest: null, ignored: null, later: false })).toBe(false);
+  });
+
+  it('"Mais tarde" esconde só nesta abertura', () => {
+    expect(shouldShowUpdateNotice({ latest: '1.3.4', ignored: null, later: true })).toBe(false);
+  });
+
+  it('"Ignorar esta versão" esconde essa versão e volta a avisar quando sair outra mais nova', () => {
+    expect(shouldShowUpdateNotice({ latest: '1.3.4', ignored: '1.3.4', later: false })).toBe(false);
+    expect(shouldShowUpdateNotice({ latest: '1.3.5', ignored: '1.3.4', later: false })).toBe(true);
+    expect(shouldShowUpdateNotice({ latest: '1.4.0', ignored: 'v1.3.4', later: false })).toBe(true);
+  });
+});
+
+describe('versão ignorada corrompida', () => {
+  it('é desconsiderada: o aviso não some para sempre', () => {
+    expect(shouldShowUpdateNotice({ latest: '1.3.4', ignored: 'lixo', later: false })).toBe(true);
   });
 });

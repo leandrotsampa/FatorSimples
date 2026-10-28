@@ -249,6 +249,41 @@ export function openReleasesPage() {
   else window.open(RELEASES_PAGE, '_blank', 'noopener');
 }
 
+// Aviso de versão nova: "Mais tarde" esconde só nesta abertura; "Ignorar esta versão" esconde
+// aquela versão até sair outra mais nova
+export function shouldShowUpdateNotice(opts: { latest: string | null; ignored: string | null; later: boolean }): boolean {
+  if (!opts.latest || opts.later) return false;
+  const ignoredIsValid = !!opts.ignored && /^v?\d+\.\d+\.\d+/.test(opts.ignored.trim());
+  return !ignoredIsValid || isNewerVersion(opts.latest, opts.ignored as string);
+}
+
+// Versão ignorada: fica neste computador (é sobre o app instalado, não sobre os dados)
+const IGNORED_VERSION_KEY = 'fatorsimples_ignored_version';
+export function loadIgnoredVersion(): string | null {
+  try {
+    return localStorage.getItem(IGNORED_VERSION_KEY);
+  } catch {
+    return null;
+  }
+}
+export function saveIgnoredVersion(version: string) {
+  try {
+    localStorage.setItem(IGNORED_VERSION_KEY, version);
+  } catch {
+    // sem armazenamento: o aviso volta na próxima abertura
+  }
+}
+
+// Ao abrir: a versão nova é conferida sempre (aviso de atualização para portátil e instalado);
+// as tabelas fiscais, no máximo uma vez por dia e só com a atualização automática ligada
+export function planStartupChecks(opts: {
+  autoUpdateTables: boolean;
+  checkedAt: string | null;
+  now?: Date;
+}): { version: boolean; tables: boolean } {
+  return { version: true, tables: opts.autoUpdateTables && shouldAutoCheck(opts.checkedAt, opts.now) };
+}
+
 // Verificação automática no máximo uma vez por dia
 export function shouldAutoCheck(checkedAt: string | null, now = new Date()): boolean {
   if (!checkedAt) return true;
