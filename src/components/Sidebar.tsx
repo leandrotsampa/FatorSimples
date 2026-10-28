@@ -14,6 +14,7 @@ import {
   ChevronDown,
   CalendarDays,
   LifeBuoy,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from './ui/AnimatedNumber';
@@ -59,6 +60,11 @@ interface SidebarProps {
   isLoading?: boolean;
   // Versão mais nova do app publicada no GitHub (null quando em dia ou sem verificar)
   newVersion?: string | null;
+  // Aviso de versão nova no rodapé do menu (null = não mostrar)
+  updateNotice?: string | null;
+  onDownloadUpdate?: () => void;
+  onLaterUpdate?: () => void;
+  onIgnoreUpdate?: () => void;
   mode: 'expanded' | 'collapsed';
   onToggleMode: () => void;
 }
@@ -94,6 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   toggleTheme,
   isLoading = false,
   newVersion = null,
+  updateNotice = null,
+  onDownloadUpdate,
+  onLaterUpdate,
+  onIgnoreUpdate,
   mode,
   onToggleMode,
 }) => {
@@ -537,6 +547,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
               collapsed ? 'p-2' : 'p-3'
             }`}
           >
+            {/* Versão nova: cartão verde no rodapé (menu aberto) ou ícone de download com dica (recolhido) */}
+            <AnimatePresence initial={false}>
+              {updateNotice && (
+                <motion.div
+                  key={updateNotice}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
+                  className="overflow-hidden"
+                >
+                  {expanded ? (
+                    <div
+                      role="status"
+                      // Mesmo vocabulário do app: fundo do item ativo do menu, ícone em quadrado verde,
+                      // botão principal em pílula verde e textos secundários em cinza
+                      className="mb-2 p-3 rounded-xl bg-emerald-50 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:ring-emerald-500/30"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-emerald-600 text-white shadow-[0_4px_10px_-4px_rgba(5,150,105,0.6)]">
+                          <ArrowDownToLine className="w-3.5 h-3.5" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-slate-900 dark:text-white">
+                            Versão <span className="font-num">{updateNotice}</span> disponível
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                            Você usa a <span className="font-num">{__APP_VERSION__}</span>. Seus dados continuam.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onDownloadUpdate?.()}
+                        title="Abre a página da versão no navegador"
+                        className="mt-3 w-full h-8 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors cursor-pointer"
+                      >
+                        <ArrowDownToLine className="w-3.5 h-3.5" />
+                        Baixar no GitHub
+                      </button>
+                      <div className="mt-2 flex items-center justify-between text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => onLaterUpdate?.()}
+                          title="Esconder até a próxima abertura do app"
+                          className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                          Mais tarde
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onIgnoreUpdate?.()}
+                          title={`Não avisar mais sobre a versão ${updateNotice}; avisa de novo quando sair outra mais nova`}
+                          className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                          Ignorar esta versão
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <RailTooltip enabled label={`Versão ${updateNotice} disponível`} detail="Clique para baixar no GitHub">
+                      <button
+                        type="button"
+                        onClick={() => onDownloadUpdate?.()}
+                        aria-label={`Versão ${updateNotice} disponível. Baixar no GitHub`}
+                        className="mb-1 w-full h-9 flex items-center justify-center rounded-md cursor-pointer"
+                      >
+                        <span className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-600 text-white shadow-[0_6px_16px_-6px_rgba(5,150,105,0.6)] hover:bg-emerald-500 transition-colors">
+                          <ArrowDownToLine className="w-4 h-4" />
+                        </span>
+                      </button>
+                    </RailTooltip>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Tema: um botão; o ícone gira entre sol e lua e o círculo da troca nasce nele */}
             <RailTooltip enabled={collapsed} label="Tema" detail={theme === 'dark' ? 'Escuro (clique para claro)' : 'Claro (clique para escuro)'}>
               <button

@@ -239,7 +239,7 @@ export default function App() {
   // vez por dia (se a atualização automática estiver ligada); e sempre que o usuário pedir
   const [tablesRevision, setTablesRevision] = useState(0);
   const [newVersion, setNewVersion] = useState<string | null>(null);
-  // Aviso de versão nova na barra do topo: "Mais tarde" vale só nesta abertura; "Ignorar esta versão"
+  // Balão de versão nova no item Configurações do menu: "Mais tarde" vale só nesta abertura; "Ignorar esta versão"
   // fica guardado e só volta a avisar quando sair outra mais nova
   const [updateLater, setUpdateLater] = useState(false);
   const [ignoredVersion, setIgnoredVersion] = useState<string | null>(loadIgnoredVersion);
@@ -536,6 +536,14 @@ export default function App() {
         toggleTheme={toggleTheme}
         isLoading={!(isHistoryLoaded && remoteTablesLoaded)}
         newVersion={shouldShowUpdateNotice({ latest: newVersion, ignored: ignoredVersion, later: false }) ? newVersion : null}
+        updateNotice={showUpdateNotice ? newVersion : null}
+        onDownloadUpdate={openReleasesPage}
+        onLaterUpdate={() => setUpdateLater(true)}
+        onIgnoreUpdate={() => {
+          if (!newVersion) return;
+          saveIgnoredVersion(newVersion);
+          setIgnoredVersion(newVersion);
+        }}
         mode={sidebarMode}
         onToggleMode={toggleSidebar}
       />
@@ -543,18 +551,7 @@ export default function App() {
       {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        <TopBar
-          settings={settings}
-          onEditCompany={() => openSettings('company')}
-          newVersion={showUpdateNotice ? newVersion : null}
-          onDownloadNewVersion={openReleasesPage}
-          onLaterNewVersion={() => setUpdateLater(true)}
-          onIgnoreNewVersion={() => {
-            if (!newVersion) return;
-            saveIgnoredVersion(newVersion);
-            setIgnoredVersion(newVersion);
-          }}
-        />
+        <TopBar settings={settings} onEditCompany={() => openSettings('company')} />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
