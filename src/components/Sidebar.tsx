@@ -328,9 +328,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Reveal show={expanded} className="min-w-0 flex-1">
                   <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
                     FatorSimples
-                    <span className="ml-1.5 text-[11px] font-normal font-num text-slate-400 dark:text-slate-500">
-                      v{__APP_VERSION__}
-                    </span>
                   </h1>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                     <span className="truncate">{settings.cityState || 'Brusque - SC'}</span>
