@@ -2,6 +2,33 @@
 
 Todas as versões do FatorSimples e o que mudou em cada uma.
 
+## v1.4.0 (2026-10-28)
+
+### ✨ Novidades
+
+- Aviso de versão nova no rodapé do menu, no lugar da barra do topo (ad8cba7)
+- Aviso de versão nova na barra do topo, conferido em toda abertura (433cbea)
+
+### 🐛 Correções
+
+- Registro do tutorial guardado no banco, junto com os dados (108d040)
+- Botão de recolher aparecia por cima dos diálogos (79f5804)
+
+### ♻️ Melhorias internas
+
+- Versão sai do título (continua no rodapé, em Configurações) (ad6f251)
+
+### 📝 Documentação
+
+- README e imagens atualizados para a 1.4.0 (a562cb6)
+- Animação de demonstração do app no topo do README (3cea738)
+
+### 🔧 Manutenção
+
+- Versão 1.4.0 (7d3c709)
+- Versão 1.3.3 (6ca24db)
+- Versão 1.3.2 (ea6ebfc)
+
 ## v1.3.1 (2026-10-26)
 
 ### ✨ Novidades
