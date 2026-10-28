@@ -83,7 +83,8 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 
 ### 🧾 Tabelas e regras atualizadas
 - Tabelas oficiais por competência: salário mínimo, teto do INSS e IRRF (2024 a 2027)
-- **Atualização pelo GitHub:** o app já vem com as tabelas e confere se há tabelas novas (no máximo uma vez por dia). Também avisa quando sai uma versão nova do app
+- **Tabelas pelo GitHub:** o app já vem com as tabelas e confere se há tabelas novas, no máximo uma vez por dia
+- **Aviso de versão nova:** a cada abertura, o app confere se saiu uma versão nova e avisa no rodapé do menu, com **Baixar no GitHub**, **Mais tarde** (até a próxima abertura) e **Ignorar esta versão** (só volta a avisar com outra mais nova)
 - **Lei 15.270/2025:** redução do IRRF até R$ 7.350 e retenção de 10% sobre lucros acima de R$ 50 mil/mês
 - Regras da Resolução CGSN 140/2018 para folha ou receita zeradas
 - **Resumo do mês** pronto para imprimir, salvar em PDF ou mandar para a contabilidade
@@ -97,15 +98,16 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 - **Tutorial guiado** na primeira abertura, em 1 minuto, com a opção de explorar sozinho
 - Cada tela se apresenta na primeira visita, e o botão **Como usar** mostra o passo a passo da tela atual
 - Depois de atualizar o app, só as **novidades** aparecem, uma vez
+- O que o tutorial já mostrou fica guardado junto com os dados: um banco novo começa o tutorial de novo
 
 </td>
 <td valign="top">
 
 ### 🎨 Interface
 - Tema **claro** por padrão e **escuro** a um clique, com a troca animada a partir do botão
-- Menu lateral recolhível, que lembra a sua escolha
+- Menu lateral recolhível pelo botão redondo na borda, e que lembra a sua escolha
 - Animações suaves e sons sutis (ligados por padrão), que podem ser desligados nas Configurações
-- Barra de título própria, com os dados da empresa a um clique
+- Barra de título própria, com os dados da empresa a um clique e os botões de minimizar, maximizar e fechar no visual do app
 
 </td>
 </tr>
@@ -232,7 +234,7 @@ Baixe o arquivo do seu sistema em [**Releases**](https://github.com/leandrotsamp
 2. Para atualizar, rode o instalador da versão nova. Ele instala por cima, fecha o app se estiver aberto e mantém os seus dados
 3. Os dados ficam em `%APPDATA%\FatorSimples` e continuam lá mesmo se você desinstalar o app
 
-**Portátil.** Não instala nada, mas demora mais para abrir, porque descompacta o app a cada abertura.
+**Portátil.** Não instala nada, mas demora mais para abrir, porque descompacta o app a cada abertura. Enquanto isso, mostra uma tela de carregamento.
 
 1. Coloque o `.exe` numa pasta sua, por exemplo `Documentos\FatorSimples`, e abra
 2. Para atualizar, troque só o `.exe` e mantenha o `fatorsimples.sqlite` ao lado
