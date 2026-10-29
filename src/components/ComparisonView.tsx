@@ -21,7 +21,7 @@ import {
   StrategyCost,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
-import { card } from './ui/card';
+import { card, tile } from './ui/card';
 import { PageHeader } from './ui/PageHeader';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { FactorRGauge } from './charts/FactorRGauge';
@@ -195,7 +195,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 ring-2 ring-emerald-500/60 shadow-[0_8px_24px_-12px_rgba(5,150,105,0.45)]">
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 ring-2 ring-emerald-500/60 shadow-[0_8px_24px_-12px_rgba(5,150,105,0.45)]">
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 Resultado real em {realized.length} {realized.length === 1 ? 'mês' : 'meses'}
               </div>
@@ -206,7 +206,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 {totalResult >= 0 ? 'economizados frente ao Anexo V' : 'pagos a mais que no Anexo V'}
               </div>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+            <div className={`${tile} p-3.5`}>
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Tributos pagos × sem Fator R</div>
               <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
                 <AnimatedNumber value={totalReal} format={formatCurrency} />
@@ -215,7 +215,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 vs {formatCurrency(totalSemFatorR)}
               </div>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+            <div className={`${tile} p-3.5`}>
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Meses no Anexo III</div>
               <div className="text-sm font-bold font-num tabular-nums text-slate-900 dark:text-white mt-1">
                 {monthsInIII} de {realized.length}
@@ -223,8 +223,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               <div className="text-[11px] text-slate-500 dark:text-slate-400">Fator R ≥ 28% na apuração</div>
             </div>
             <div
-              className={`p-3.5 rounded-xl ${
-                totalMissed > 0 ? 'bg-rose-50 dark:bg-rose-950/30 ring-1 ring-rose-300/70 dark:ring-rose-500/30' : 'bg-slate-50 dark:bg-slate-950/50'
+              className={`p-3.5 ${
+                totalMissed > 0 ? 'rounded-2xl bg-rose-50 dark:bg-rose-950/30 ring-1 ring-inset ring-rose-300/70 dark:ring-rose-500/30' : tile
               }`}
             >
               <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Economia perdida</div>
@@ -267,7 +267,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               </div>
             </div>
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+              <div className={`${tile} p-3.5`}>
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Fator R</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   {formatYearMonth(selectedMonth)}: <b>{formatPercent(currentSimples.factorRPercentage)}</b> (Anexo{' '}
@@ -282,7 +282,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+              <div className={`${tile} p-3.5`}>
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Pró-labore deste mês</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginProlabore)}</b>
@@ -304,7 +304,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+              <div className={`${tile} p-3.5`}>
                 <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Faturamento deste mês</div>
                 <div className="mt-1 font-num tabular-nums text-slate-900 dark:text-white">
                   Atual: <b>{formatCurrency(marginRevenue)}</b>

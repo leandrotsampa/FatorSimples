@@ -4,7 +4,7 @@ export const card =
   'bg-white dark:bg-slate-900 border border-slate-900/[0.06] dark:border-white/[0.06] rounded-[22px] shadow-[0_1px_2px_rgba(16,40,28,0.05),0_16px_40px_-20px_rgba(16,60,40,0.24)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_40px_-24px_rgba(0,0,0,0.7)] transition-colors';
 
 // Bloco interno (indicador dentro de um card)
-export const tile = 'bg-slate-50 ring-1 ring-inset ring-slate-900/[0.05] dark:bg-slate-950/60 dark:ring-white/[0.05] rounded-2xl';
+export const tile = 'bg-slate-50 ring-1 ring-inset ring-slate-900/[0.07] dark:bg-slate-950/60 dark:ring-white/[0.05] rounded-2xl';
 
 // Botões: ação principal (verde, com sombra na cor) e secundária. A secundária, no claro, é branca
 // com borda e sombra leve (o cinza claro sumia no fundo); no escuro, um degrau acima do cartão

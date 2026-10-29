@@ -33,6 +33,10 @@
 
 /* Fundo da janela: os blocos brancos flutuam sobre ele (no vídeo de referência, verde-acinzentado) */
 :root {
+  /* Claro: os dois tons mais claros da escala puxam para o verde do fundo e ficam um degrau abaixo
+     do branco, para os blocos internos aparecerem dentro dos cartões */
+  --color-slate-50: #f0f4f1;
+  --color-slate-100: #e5ebe7;
   --canvas: #e7eee9;
   --canvas-glow: rgb(16 185 129 / 0.13);
 }
