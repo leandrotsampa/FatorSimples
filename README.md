@@ -75,6 +75,7 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 ### 🗂️ Histórico
 - Receita, folha, INSS, IRRF e DAS por competência
 - Fator R **de apuração** de cada mês (12 meses anteriores), com o anexo
+- **Importa os PDFs da Receita:** a declaração do PGDAS-D e o relatório de pagamentos viram os meses do Histórico, com conferência antes de gravar
 - Importação e exportação em JSON, com cálculo automático de INSS, IRRF e DAS que vierem zerados
 - Alerta de divergência entre o DAS pago e o calculado
 
@@ -95,7 +96,11 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 <td valign="top">
 
 ### 🎓 Fácil de começar
-- **Tutorial guiado** na primeira abertura, em 1 minuto, com a opção de explorar sozinho
+- **Tela inicial** na primeira abertura, com três caminhos: **explorar com um exemplo**, **cadastrar a empresa** em 4 etapas curtas ou **importar a declaração do PGDAS-D** e pular o cadastro
+- **Modo exemplo:** uma empresa fictícia com meses prontos para testar. O botão **Usar o meu**, no topo, apaga o exemplo e abre o cadastro
+- **Ajuda em cada campo:** o **?** explica o que é e **onde encontrar** a informação (cartão CNPJ, PGDAS-D, e-CAC)
+- **Lembretes no mês:** avisa quando o mês anterior ainda não está no Histórico ou quando um mês recente está sem pró-labore, porque os dois mudam o Fator R
+- **Tutorial guiado** em 1 minuto, com a opção de explorar sozinho
 - Cada tela se apresenta na primeira visita, e o botão **Como usar** mostra o passo a passo da tela atual
 - Depois de atualizar o app, só as **novidades** aparecem, uma vez
 - O que o tutorial já mostrou fica guardado junto com os dados: um banco novo começa o tutorial de novo
@@ -277,9 +282,49 @@ chmod +x FatorSimples-*.AppImage
 
 Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Dados e backup** do app mostra onde ele está e abre a pasta.
 
+## 💾 Seus dados
+
+Tudo fica num único arquivo SQLite, o `fatorsimples.sqlite` (veja onde na tabela acima). Copiar esse arquivo leva **tudo**: meses, empresa, tema, preferências e o que o tutorial já mostrou. Duas cópias do app portátil em pastas diferentes são independentes, e uma pasta sem banco começa vazia, com a tela inicial.
+
+| Tabela | O que guarda |
+|---|---|
+| `monthly_history` | Um mês por linha: receita, folha, INSS, IRRF, DAS pago e anotações |
+| `tax_settings` | Empresa (razão social, CNPJ, cidade, CNAE), honorários da contabilidade, regra do pró-labore e tabela fiscal escolhida |
+| `remote_tax_tables` | Tabelas fiscais baixadas do GitHub e a data da última verificação |
+| `app_state` | Tema, preferências da interface, versão ignorada, o que o tutorial já mostrou e o estado da tela inicial (`done`, `demo` no exemplo, `new` depois do **Usar o meu**) |
+
+**Cuidados com o banco:**
+- **Uma fonte só:** no app desktop, os dados vivem só no SQLite. Nada fica guardado no navegador interno do Electron, que é comum a todas as cópias do app no computador
+- **Versão da estrutura:** o banco guarda a versão das suas tabelas (`PRAGMA user_version`). Uma versão nova do app atualiza a estrutura numa transação: ou entra inteira, ou o banco fica como estava. Um banco gravado por uma versão **mais nova** do app não é aberto por uma mais antiga, para nada ser gravado por cima
+- **Transações:** importação, exemplo e **Usar o meu** gravam todos os meses de uma vez: ou entra tudo, ou nada
+- **Se o banco não abrir** (arquivo bloqueado, sem permissão, versão mais nova), o app mostra uma tela com o caminho do arquivo, o que tentar e os botões **Tentar de novo** e **Abrir a pasta do banco**. Ele não cria outro banco em outro lugar, para não separar os seus dados
+- **Versões antigas:** o JSON de reserva que versões anteriores gravavam ao lado do banco é importado uma vez e renomeado para `.importado`
+
 ## 🔄 Importando o seu histórico
 
-Pelo menu **Dados e backup → Importar Dados**, o app aceita um JSON no formato abaixo. As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
+### Pelos PDFs da Receita (recomendado)
+
+Em **Histórico → Importar PGDAS-D** (ou na tela inicial), arraste os PDFs. Dá para trazer os dois juntos ou um de cada vez. Os arquivos são lidos só no seu computador, e o app guarda os valores de cada mês, nunca o PDF.
+
+| Documento | Onde conseguir | O que o app tira dele |
+|---|---|---|
+| **Declaração do PGDAS-D** | A contabilidade envia todo mês, junto com a guia do DAS. Ou no [Portal do Simples Nacional](https://www8.receita.fazenda.gov.br/SimplesNacional/) → *PGDAS-D e DEFIS → Consultar Declaração* | Razão social, CNPJ, cidade/UF, receita do mês e dos meses desde janeiro do ano anterior, folha dos 12 meses anteriores, RBT12 e DAS declarado |
+| **Relatório de pagamentos** | Em [servicos.receitafederal.gov.br/servico/pagamentos](https://servicos.receitafederal.gov.br/servico/pagamentos), entrando com o certificado ou o gov.br da empresa, e salvando a consulta em PDF | DAS pago (código **3333**) e DARF da DCTFWeb (código **1410**, com **INSS e IRRF juntos**) de cada competência |
+
+**Como os dois se juntam:**
+- Os documentos são a palavra da Receita: nos meses que cobrem, os valores deles substituem os do app. As anotações que você fez no mês são mantidas
+- Com várias declarações, a mais nova prevalece nos meses em comum. Meses anteriores à abertura da empresa ficam de fora
+- O DAS e o DARF pagos completam os meses. O DARF 1410 é separado em INSS (11% do pró-labore, até o teto) e IRRF
+- **Folha estimada pelo DARF:** quando a declaração não traz a folha de um mês (ela traz só os 12 meses anteriores ao mês declarado), o app calcula o pró-labore cujo INSS + IRRF dá exatamente o DARF pago, e anota no mês que a folha foi estimada
+- Pagamentos de meses sem faturamento na declaração nem no app (por exemplo, uma guia de INSS de antes do primeiro faturamento) ficam de fora. Uma declaração mais antiga traz o faturamento desses meses
+- **Conferência:** antes de gravar, o app mostra mês a mês o que entra e o que muda, e confere se chega ao **mesmo RBT12 da declaração** com os meses importados
+- Importar de novo não duplica nada: cada mês é atualizado no lugar
+
+Por enquanto o app lê o modelo de declaração gerado pelo PGDAS-D e o relatório do serviço Pagamentos da Receita.
+
+### Por um arquivo JSON
+
+Pelo menu **Dados e backup → Importar Dados**, o app aceita um JSON no formato abaixo (o mesmo do **Exportar Dados**). As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
 
 ```json
 {
@@ -291,17 +336,6 @@ Pelo menu **Dados e backup → Importar Dados**, o app aceita um JSON no formato
   ]
 }
 ```
-
-**De onde tirar os números oficiais:**
-- **Receita e folha:** recibo do PGDAS-D. Cada recibo traz as receitas desde janeiro do ano anterior e as folhas dos 12 meses anteriores
-- **DAS, INSS e IRRF pagos:** e-CAC → *Pagamentos e Parcelamentos → Consulta Comprovante de Pagamento*. Na lista, cada guia aparece com o código da receita:
-
-  | Código | Guia | Campo no app |
-  |---|---|---|
-  | **3333** | DAS do Simples Nacional | DAS pago |
-  | **1410** | DARF da DCTFWeb, com **INSS e IRRF juntos** | INSS + IRRF |
-
-  Para separar a guia 1410, o INSS é 11% do pró-labore (limitado ao teto) e o restante é IRRF. A data da guia é a do pagamento: a competência é sempre o mês anterior
 
 ## 🛠️ Desenvolvimento
 
@@ -326,6 +360,9 @@ npm run dev
 | `npm run dist:portable` | Gera só o portátil `release/FatorSimples-<versão>-portable.exe` (Windows) |
 | `npm run dist:mac` | Gera os `.dmg` para Mac com chip Apple e Intel (macOS) |
 | `npm run dist:linux` | Gera o `.AppImage` (Linux) |
+| `npm run splash` | Redesenha a tela de carregamento do portátil (`build/splash.bmp`) a partir de `scripts/splash/` |
+
+No Windows, o empacotamento roda o [`scripts/after-pack.cjs`](scripts/after-pack.cjs), que deixa no app só o SQLite compilado para o sistema empacotado (o portátil fica uns 5 MB menor).
 
 ### Publicando uma versão
 
@@ -351,6 +388,9 @@ fatorsimples/
 │   │   ├── taxTablesRegistry.ts  # tabelas oficiais por competência
 │   │   ├── remoteTables.ts       # atualização das tabelas pelo GitHub e aviso de versão nova
 │   │   ├── dataTransfer.ts       # importação e exportação em JSON
+│   │   ├── taxDocuments.ts       # leitura dos PDFs: declaração do PGDAS-D e relatório de pagamentos
+│   │   ├── documentImport.ts     # junta os documentos no Histórico (folha pelo DARF, conferência do RBT12)
+│   │   ├── pdfText.ts            # texto do PDF em linhas (pdf.js, carregado só ao importar)
 │   │   └── storageAdapter.ts     # SQLite (desktop) ou localStorage (navegador)
 │   └── types/             # tipos do domínio fiscal
 ├── tax-tables/            # tabelas.json publicado para os apps já instalados
@@ -376,7 +416,8 @@ npx tsx scripts/export-tax-tables.ts
 
 ## 🗺️ Próximos passos
 
-- [ ] Importar recibos do PGDAS-D e a lista de pagamentos do e-CAC direto em PDF
+- [x] Importar a declaração do PGDAS-D e o relatório de pagamentos da Receita direto em PDF
+- [ ] Ler declarações do PGDAS-D geradas por outros sistemas de contabilidade
 - [ ] Indicar quando a linha do histórico não tem os 12 meses anteriores disponíveis
 - [ ] Suporte a mais de um sócio na distribuição de lucros
 - [x] Testes automatizados dos cálculos com casos reais
