@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { applyDocumentImport, planDocumentImport } from './documentImport';
 import { parsePayments, parsePgdas } from './taxDocuments';
 import { PAYMENTS_LINES, PGDAS_LINES } from './taxDocuments.fixtures';
-import { DEFAULT_SETTINGS } from './taxCalculations';
+import { DEFAULT_SETTINGS, calculateProlabore, settingsForCompetence } from './taxCalculations';
+import { payrollFromDarf } from './documentImport';
 import type { MonthRecord } from '../types/tax';
 
 const pgdas = parsePgdas(PGDAS_LINES)!;
@@ -102,7 +103,9 @@ describe('planDocumentImport com os pagamentos', () => {
     const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
     expect(byMonth(plan, '2026-08').record).toMatchObject({ dasPaid: 2300, inss: 932.31, irrf: 1317.69 });
     expect(byMonth(plan, '2026-07').record.dasPaid).toBe(1350);
-    expect(byMonth(plan, '2026-09').record).toMatchObject({ dasPaid: 1500, inss: 700, irrf: 0 });
+    const sep = byMonth(plan, '2026-09');
+    expect(sep.record.dasPaid).toBe(1500);
+    expect(Math.round((sep.record.inss + sep.record.irrf) * 100) / 100).toBe(700);
   });
 
   it('pagamentos de meses sem faturamento no app ficam de fora', () => {
@@ -130,5 +133,37 @@ describe('applyDocumentImport', () => {
     const { history, settings } = applyDocumentImport(plan, [rec('2020-01')], DEFAULT_SETTINGS);
     expect(history).toHaveLength(22);
     expect(settings).toMatchObject({ cnpj: '11.222.333/0001-81', cnae: DEFAULT_SETTINGS.cnae });
+  });
+});
+
+describe('payrollFromDarf', () => {
+  const darfOf = (payroll: number, ym: string) => {
+    const p = calculateProlabore(payroll, settingsForCompetence(DEFAULT_SETTINGS, ym));
+    return Math.round(p.inss * 100) / 100 + Math.round(p.irrf * 100) / 100;
+  };
+
+  it('acha a folha cujo INSS + IRRF dá o DARF pago', () => {
+    expect(payrollFromDarf(145.2, '2023-10', DEFAULT_SETTINGS)).toBe(1320);
+    const p = payrollFromDarf(darfOf(5980.45, '2025-01'), '2025-01', DEFAULT_SETTINGS)!;
+    expect(Math.abs(p - 5980.45)).toBeLessThan(0.05);
+  });
+
+  it('não estima sem DARF', () => {
+    expect(payrollFromDarf(0, '2025-01', DEFAULT_SETTINGS)).toBeNull();
+  });
+});
+
+describe('planDocumentImport estimando a folha pelo DARF', () => {
+  it('mês sem folha na declaração ganha a folha do DARF e deixa de ser avisado', () => {
+    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
+    const sep = byMonth(plan, '2026-09');
+    expect(sep.payrollMissing).toBe(false);
+    expect(sep.record.payroll).toBeGreaterThan(0);
+    expect(sep.record.notes).toMatch(/folha estimada pelo DARF/);
+  });
+
+  it('a folha da declaração prevalece sobre a estimativa', () => {
+    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
+    expect(byMonth(plan, '2026-08').record.payroll).toBe(9000);
   });
 });

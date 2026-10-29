@@ -34,8 +34,11 @@ import { useAppDialog } from './components/ui/AppDialog';
 import { resolveInitialTheme } from './utils/initialTheme';
 import { getPref, setPref } from './utils/appPrefs';
 import { shouldShowWelcome } from './utils/welcome';
+import { pendingMonths } from './utils/pendingMonths';
+import { monthLongName } from './utils/monthPicker';
 import type { DocumentImportResult } from './components/ImportDocumentModal';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { CalendarClock } from 'lucide-react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
 import { useClock } from './hooks/useClock';
@@ -478,6 +481,9 @@ export default function App() {
     playSound('delete');
   };
 
+  // Lembretes da tela do mês: o mês anterior ainda não salvo e meses recentes sem pró-labore
+  const pending = appReady ? pendingMonths(history, selectedMonth) : null;
+
   // Importação da declaração do PGDAS-D e dos pagamentos. No exemplo, os documentos partem do zero
   const importBase = isDemo ? { history: [] as MonthRecord[], settings: DEFAULT_SETTINGS } : { history, settings };
   const handleApplyDocuments = async (result: DocumentImportResult): Promise<boolean> => {
@@ -662,6 +668,59 @@ export default function App() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
         <main className="relative p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {activeTab === 'apuration' && !isDemo && pending && (pending.missing || pending.noPayroll.length > 0) && (
+            <div
+              role="status"
+              className="no-print mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 ring-1 ring-inset ring-amber-200 dark:ring-amber-800/50 text-sm text-amber-950 dark:text-amber-100"
+            >
+              <span className="flex items-start gap-2 min-w-0">
+                <CalendarClock className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>
+                  {pending.missing ? (
+                    <>
+                      <b>{monthLongName(pending.missing)} de {pending.missing.slice(0, 4)} ainda não está no Histórico.</b> O Fator R e a
+                      alíquota de {monthLongName(selectedMonth).toLowerCase()} dependem dele.
+                    </>
+                  ) : (
+                    <>
+                      <b>
+                        {pending.noPayroll.length === 1
+                          ? `${monthLongName(pending.noPayroll[0])} de ${pending.noPayroll[0].slice(0, 4)} está sem pró-labore.`
+                          : `${pending.noPayroll.length} meses recentes estão sem pró-labore.`}
+                      </b>{' '}
+                      Sem a folha, o Fator R de {monthLongName(selectedMonth).toLowerCase()} sai mais baixo do que é.
+                    </>
+                  )}
+                </span>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                {pending.missing ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMonth(pending.missing!)}
+                    className="px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold cursor-pointer"
+                  >
+                    Apurar {monthLongName(pending.missing).toLowerCase()}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('history')}
+                    className="px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold cursor-pointer"
+                  >
+                    Corrigir no Histórico
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsImportOpen(true)}
+                  className="px-3 py-1 rounded-full bg-white/80 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 ring-1 ring-inset ring-amber-300 dark:ring-amber-700 text-xs font-semibold cursor-pointer"
+                >
+                  Importar PGDAS-D
+                </button>
+              </span>
+            </div>
+          )}
           {hasSampleMonths && (
             <div
               role="status"

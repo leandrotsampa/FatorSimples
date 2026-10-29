@@ -46,6 +46,41 @@ interface Draft {
   payrollKnown: boolean;
 }
 
+// INSS + IRRF que o app calcula para um pró-labore, como nas guias (centavos arredondados)
+const darfFor = (payroll: number, settings: TaxSettings) => {
+  const p = calculateProlabore(payroll, settings);
+  return round(round(p.inss) + round(p.irrf));
+};
+
+// Pró-labore cujo INSS (11%) + IRRF dá o DARF 1410 pago: a folha do mês quando nenhum documento a
+// traz. O total cresce com o pró-labore, então uma busca binária acha a faixa de valores que dão
+// exatamente o DARF (o arredondamento junta alguns centavos) e fica com o meio dela
+export function payrollFromDarf(darf: number, yearMonth: string, settings: TaxSettings): number | null {
+  if (!(darf > 0)) return null;
+  const monthSettings = settingsForCompetence(settings, yearMonth);
+  const MAX = 1_000_000;
+  if (darfFor(MAX, monthSettings) < darf) return null;
+  // Menor pró-labore cujo DARF passa de "alvo" (ou o alcança, com inclusive)
+  const firstReaching = (target: number, inclusive: boolean) => {
+    let lo = 0;
+    let hi = MAX;
+    for (let k = 0; k < 64 && hi - lo > 0.0005; k++) {
+      const mid = (lo + hi) / 2;
+      const v = darfFor(mid, monthSettings);
+      if (inclusive ? v < target : v <= target) lo = mid;
+      else hi = mid;
+    }
+    return hi;
+  };
+  const from = firstReaching(darf, true);
+  const to = firstReaching(darf, false);
+  const mid = round((from + to) / 2);
+  if (darfFor(mid, monthSettings) === darf) return mid;
+  // O DARF não fecha exatamente (ex.: tabela diferente): o centavo mais próximo
+  const near = [Math.floor(from * 100) / 100, Math.ceil(from * 100) / 100];
+  return near.reduce((best, c) => (Math.abs(darfFor(c, monthSettings) - darf) < Math.abs(darfFor(best, monthSettings) - darf) ? c : best));
+}
+
 function noteFor(previous: string | undefined, sources: Set<string>): string {
   const note = `${IMPORT_NOTE}: ${[...sources].join(' · ')}`;
   return previous && !previous.startsWith(IMPORT_NOTE) ? `${previous} · ${note}` : note;
@@ -114,6 +149,15 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     d.sources.add('pagamentos');
     if (sum.das > 0) d.record.dasPaid = sum.das;
     if (sum.darf > 0) {
+      // Sem folha no app nem na declaração: a do DARF pago
+      if (!d.payrollKnown && d.record.payroll <= 0) {
+        const estimated = payrollFromDarf(sum.darf, ym, settings);
+        if (estimated) {
+          d.record.payroll = estimated;
+          d.payrollKnown = true;
+          d.sources.add('folha estimada pelo DARF');
+        }
+      }
       // O DARF 1410 junta o INSS do pró-labore (11%, até o teto) e o IRRF
       const inss = d.record.payroll > 0 ? round(calculateProlabore(d.record.payroll, settingsForCompetence(settings, ym)).inss) : sum.darf;
       d.record.inss = Math.min(inss, sum.darf);
