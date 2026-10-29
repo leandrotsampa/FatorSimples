@@ -36,6 +36,7 @@ import { getPref, setPref } from './utils/appPrefs';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
+import { useClock } from './hooks/useClock';
 import { playSound } from './hooks/useSound';
 import { ALL_TOUR_STEP_IDS, isTourRunning, runTour, screenStepIds, type TourScreen } from './tour/tour';
 import { completeTour, initTourState, loadTourState, planScreenTour, planTour, saveTourState, skipTour } from './tour/tourState';
@@ -61,6 +62,8 @@ const preloadDeferredChunks = () => {
 };
 
 export default function App() {
+  // Relógio do app: com a janela aberta por dias, a saudação e o mês atual acompanham a virada
+  const now = useClock();
   // Tema visual (dark ou light)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return resolveInitialTheme(getPref('theme'));
@@ -247,6 +250,16 @@ export default function App() {
     if (version.kind !== 'offline') setNewVersion(version.kind === 'newer' ? version.version : null);
     return { tables, version };
   };
+  // Com o app aberto por muito tempo, a versão nova também é conferida a cada 6 horas
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void checkLatestVersion(__APP_VERSION__).then((version) => {
+        if (version.kind === 'newer') setNewVersion(version.version);
+      });
+    }, 6 * 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   // Ao abrir: aplica as tabelas já baixadas (guardadas no banco) e confere o GitHub se for a hora
   const [remoteTablesLoaded, setRemoteTablesLoaded] = useState(false);
   useEffect(() => {
@@ -520,6 +533,7 @@ export default function App() {
     } app-canvas`}>
       {/* Menu Lateral Desktop (Sidebar) */}
       <Sidebar
+        now={now}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         selectedMonth={selectedMonth}
@@ -548,7 +562,7 @@ export default function App() {
       {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        <TopBar settings={settings} onEditCompany={() => openSettings('company')} />
+        <TopBar settings={settings} onEditCompany={() => openSettings('company')} now={now} />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}

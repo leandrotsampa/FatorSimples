@@ -63,8 +63,11 @@ const WindowControls: React.FC = () => {
 };
 
 // Barra de título da janela: arrasta a janela (duplo clique maximiza) e traz os botões da janela
-export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void }> = ({ settings, onEditCompany }) => {
-  const now = new Date();
+export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void; now?: Date }> = ({
+  settings,
+  onEditCompany,
+  now = new Date(),
+}) => {
   const name = settings.companyName.trim() || 'Sua empresa';
 
   return (

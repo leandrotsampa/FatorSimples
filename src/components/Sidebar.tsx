@@ -62,6 +62,7 @@ interface SidebarProps {
   newVersion?: string | null;
   // Aviso de versão nova no rodapé do menu (null = não mostrar)
   updateNotice?: string | null;
+  now?: Date; // relógio do app (virada da hora e do dia)
   onDownloadUpdate?: () => void;
   onLaterUpdate?: () => void;
   onIgnoreUpdate?: () => void;
@@ -101,6 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isLoading = false,
   newVersion = null,
   updateNotice = null,
+  now,
   onDownloadUpdate,
   onLaterUpdate,
   onIgnoreUpdate,
@@ -116,9 +118,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Troca pelas setas: o mês desliza na direção usada (digitar no campo não anima)
   const [step, setStep] = useState<{ n: number; dir: number }>({ n: 0, dir: 0 });
   // Competência que ainda não chegou fica bloqueada
-  const atCurrentMonth = selectedMonth >= currentYearMonth();
+  const atCurrentMonth = selectedMonth >= currentYearMonth(now);
   const goToMonth = (next: string) => {
-    if (next === selectedMonth || isFutureMonth(next)) return;
+    if (next === selectedMonth || isFutureMonth(next, currentYearMonth(now))) return;
     playSound('tick');
     setStep((s) => ({ n: s.n + 1, dir: next > selectedMonth ? 1 : -1 }));
     setSelectedMonth(next);
@@ -774,7 +776,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             exit={collapsed ? { opacity: 0, x: -6 } : { opacity: 0, y: -6 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT }}
           >
-            <MonthPickerPanel value={selectedMonth} savedMonths={savedMonths} onSelect={pickMonth} />
+            <MonthPickerPanel value={selectedMonth} savedMonths={savedMonths} onSelect={pickMonth} now={now} />
           </motion.div>
         )}
       </AnimatePresence>

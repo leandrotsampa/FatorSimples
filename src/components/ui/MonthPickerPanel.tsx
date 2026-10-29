@@ -13,12 +13,13 @@ export const MonthPickerPanel: React.FC<{
   value: string;
   savedMonths: Set<string>;
   onSelect: (yearMonth: string) => void;
-}> = ({ value, savedMonths, onSelect }) => {
+  now?: Date; // relógio do app: o mês atual acompanha a virada do mês com o app aberto
+}> = ({ value, savedMonths, onSelect, now }) => {
   const reduceMotion = Boolean(useReducedMotion());
   const [viewYear, setViewYear] = useState(() => Number(value.slice(0, 4)));
   const [focused, setFocused] = useState(value);
   const gridRef = useRef<HTMLDivElement>(null);
-  const today = currentYearMonth();
+  const today = currentYearMonth(now);
   const todayYear = Number(today.slice(0, 4));
 
   // Foco segue o mês navegado pelo teclado (inclusive ao entrar no painel)
