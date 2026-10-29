@@ -45,28 +45,16 @@ export function parseTourState(raw: string | null): TourState {
   }
 }
 
-// Registro antigo (versões até 1.3.2): ficava no armazenamento interno do app, fora do banco
+// Registro antigo (versões até 1.3.2): ficava no armazenamento interno do app, comum a todas as
+// cópias do app no computador. Não vale como dado de nenhum banco: só é apagado
 const LEGACY_KEY = 'fatorsimples_tour_v1';
-// Chave no banco (tabela app_state), junto com os dados: banco novo traz o tutorial de volta
+// Chave no banco (tabela app_state), junto com os dados: banco sem registro mostra o tutorial
 const DB_KEY = 'tour';
 
-// O banco manda; o registro antigo só vale (e é migrado) enquanto o banco ainda não tem o seu
-export function resolveStoredTourState(
-  dbRaw: string | null,
-  legacyRaw: string | null
-): { state: TourState; migrate: boolean } {
-  if (dbRaw != null) return { state: parseTourState(dbRaw), migrate: false };
-  if (legacyRaw != null) return { state: parseTourState(legacyRaw), migrate: true };
-  return { state: emptyTourState, migrate: false };
+// Só o banco vale: sem registro (ou registro corrompido), o tutorial aparece e passa a ser gravado
+export function resolveStoredTourState(dbRaw: string | null): TourState {
+  return parseTourState(dbRaw);
 }
-
-const readLegacy = () => {
-  try {
-    return localStorage.getItem(LEGACY_KEY);
-  } catch {
-    return null;
-  }
-};
 
 // Cópia em memória: carregada uma vez na abertura; cada mudança vai para o banco
 let cache: TourState = emptyTourState;
@@ -74,19 +62,19 @@ let cache: TourState = emptyTourState;
 export async function initTourState(): Promise<void> {
   const api = window.electronAPI;
   if (!api?.getAppState || !api.setAppState) {
-    // Navegador: continua no armazenamento do navegador
-    cache = parseTourState(readLegacy());
+    // Navegador (sem banco): continua no armazenamento do navegador
+    try {
+      cache = parseTourState(localStorage.getItem(LEGACY_KEY));
+    } catch {
+      cache = emptyTourState;
+    }
     return;
   }
-  const { state, migrate } = resolveStoredTourState(await api.getAppState(DB_KEY).catch(() => null), readLegacy());
-  cache = state;
-  if (migrate) {
-    await api.setAppState(DB_KEY, JSON.stringify(state)).catch(() => undefined);
-    try {
-      localStorage.removeItem(LEGACY_KEY);
-    } catch {
-      // sem armazenamento: nada a limpar
-    }
+  cache = resolveStoredTourState(await api.getAppState(DB_KEY).catch(() => null));
+  try {
+    localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    // sem armazenamento: nada a apagar
   }
 }
 

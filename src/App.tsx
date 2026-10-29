@@ -152,8 +152,11 @@ export default function App() {
   const [isAddMonthOpen, setIsAddMonthOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MonthRecord | null>(null);
 
-  // Configurações fiscais com persistência no SQLite (se Electron) ou localStorage (se web)
+  // Configurações fiscais: no desktop só do SQLite (carregadas logo abaixo; banco novo começa no
+  // padrão); no navegador, do localStorage. O armazenamento interno do Electron é comum a todas as
+  // cópias do app no computador e não vale como dado
   const [settings, setSettings] = useState<TaxSettings>(() => {
+    if (storageAdapter.isElectron()) return DEFAULT_SETTINGS;
     try {
       const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (saved) {
@@ -214,20 +217,23 @@ export default function App() {
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(() => !storageAdapter.isElectron());
   useEffect(() => {
     if (storageAdapter.isElectron()) {
-      storageAdapter.loadSettings().then((s) => s && setSettings(s));
-      storageAdapter
-        .loadHistory()
-        .then(setHistory)
-        .finally(() => setIsHistoryLoaded(true));
+      storageAdapter.forgetLegacyBrowserCopies();
+      Promise.all([
+        storageAdapter.loadSettings().then(setSettings),
+        storageAdapter.loadHistory().then(setHistory),
+      ]).finally(() => setIsHistoryLoaded(true));
     }
   }, []);
 
-  // Salva no LocalStorage e SQLite sempre que alterar
+  // Grava sempre que alterar; no desktop, só depois de ler o banco (senão o padrão da abertura
+  // sobrescreveria as configurações salvas)
   useEffect(() => {
+    if (!isHistoryLoaded) return;
     storageAdapter.saveSettings(settings);
-  }, [settings]);
+  }, [settings, isHistoryLoaded]);
 
   useEffect(() => {
+    if (storageAdapter.isElectron()) return; // no desktop o histórico vive só no SQLite
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
     } catch (e) {
@@ -256,7 +262,7 @@ export default function App() {
     let alive = true;
     Promise.all([
       loadStoredRemoteTables(),
-      // No Electron a configuração verdadeira está no banco (o estado inicial vem do localStorage)
+      // No Electron a configuração verdadeira está no banco
       storageAdapter.isElectron() ? storageAdapter.loadSettings() : Promise.resolve(settings),
     ]).then(([stored, savedSettings]) => {
       if (!alive) return;

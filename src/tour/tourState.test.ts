@@ -56,22 +56,18 @@ describe('mini-tutorial ao entrar numa tela', () => {
   });
 });
 
-describe('registro do tutorial guardado junto com os dados', () => {
+describe('registro do tutorial: só o que está no banco', () => {
   const visto = JSON.stringify({ welcomed: true, seen: ['competencia'] });
 
-  it('o banco manda: se ele tem o registro, é esse que vale', () => {
-    expect(resolveStoredTourState(visto, null)).toEqual({ state: { welcomed: true, seen: ['competencia'] }, migrate: false });
+  it('o banco tem o registro: é esse que vale', () => {
+    expect(resolveStoredTourState(visto)).toEqual({ welcomed: true, seen: ['competencia'] });
   });
 
-  it('banco ainda sem registro e registro antigo no app: usa o antigo e migra para o banco', () => {
-    expect(resolveStoredTourState(null, visto)).toEqual({ state: { welcomed: true, seen: ['competencia'] }, migrate: true });
+  it('o banco não tem o registro: o tutorial aparece (nada é presumido)', () => {
+    expect(resolveStoredTourState(null)).toEqual(emptyTourState);
   });
 
-  it('banco novo (apagado) e nada antigo: o tutorial começa do zero', () => {
-    expect(resolveStoredTourState(null, null)).toEqual({ state: emptyTourState, migrate: false });
-  });
-
-  it('com o banco já preenchido, o registro antigo é ignorado', () => {
-    expect(resolveStoredTourState(JSON.stringify(emptyTourState), visto).state).toEqual(emptyTourState);
+  it('registro corrompido no banco: o tutorial aparece', () => {
+    expect(resolveStoredTourState('lixo')).toEqual(emptyTourState);
   });
 });

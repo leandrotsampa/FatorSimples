@@ -42,17 +42,31 @@ export const storageAdapter = {
   },
 
   /**
-   * Carrega as configurações (do SQLite se no Electron, ou do localStorage na web)
+   * Desktop: apaga as cópias de configurações e histórico que versões antigas guardavam no
+   * armazenamento interno do Electron (comum a todas as cópias do app no computador)
+   */
+  forgetLegacyBrowserCopies(): void {
+    try {
+      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      localStorage.removeItem(HISTORY_STORAGE_KEY);
+    } catch {
+      // sem armazenamento: nada a apagar
+    }
+  },
+
+  /**
+   * Carrega as configurações. No desktop, só do SQLite: banco novo começa com o padrão (o
+   * armazenamento interno do Electron é comum a todas as cópias do app no computador e não vale
+   * como dado). No navegador, do localStorage
    */
   async loadSettings(): Promise<TaxSettings> {
     if (typeof window !== 'undefined' && window.electronAPI?.getSettings) {
       try {
         const settings = await window.electronAPI.getSettings();
-        if (settings) {
-          return { ...DEFAULT_SETTINGS, ...settings };
-        }
+        return settings ? { ...DEFAULT_SETTINGS, ...settings } : DEFAULT_SETTINGS;
       } catch (e) {
         console.error('Erro ao ler settings via SQLite:', e);
+        return DEFAULT_SETTINGS;
       }
     }
 
@@ -69,7 +83,7 @@ export const storageAdapter = {
   },
 
   /**
-   * Salva as configurações (no SQLite se no Electron, e no localStorage na web)
+   * Salva as configurações: no desktop, só no SQLite; no navegador, no localStorage
    */
   async saveSettings(settings: TaxSettings): Promise<void> {
     if (typeof window !== 'undefined' && window.electronAPI?.saveSettings) {
@@ -78,6 +92,7 @@ export const storageAdapter = {
       } catch (e) {
         console.error('Erro ao gravar settings via SQLite:', e);
       }
+      return;
     }
 
     try {
@@ -94,11 +109,10 @@ export const storageAdapter = {
     if (typeof window !== 'undefined' && window.electronAPI?.getHistory) {
       try {
         const records = await window.electronAPI.getHistory();
-        if (Array.isArray(records)) {
-          return records;
-        }
+        return Array.isArray(records) ? records : [];
       } catch (e) {
         console.error('Erro ao ler histórico via SQLite:', e);
+        return [];
       }
     }
 
