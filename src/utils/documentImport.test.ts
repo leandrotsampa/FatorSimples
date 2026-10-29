@@ -200,10 +200,12 @@ describe('folhas estimadas pelo DARF', () => {
     expect(payrollFromDarf(paid, '2025-01', DEFAULT_SETTINGS, 21358.75)).toBe(5980.45);
   });
 
-  it('lista os meses estimados e sugere a declaração que traz a folha real deles', () => {
-    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
+  it('lista os meses estimados e pede a declaração que traz a folha real deles', () => {
+    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS, '2026-10');
     expect(plan.estimatedPayroll).toEqual(['2026-09']);
-    expect(plan.payrollDeclarations).toEqual(['2026-10']);
+    // A de 10/2026 só existe depois que outubro acaba
+    expect(plan.missingDeclarations).toEqual([{ yearMonth: '2026-10', months: ['2026-09'], available: false, affectsCurrent: true }]);
+    expect(planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS, '2026-11').missingDeclarations[0].available).toBe(true);
   });
 
   it('meses antigos estimados pedem a declaração de 12 meses depois', () => {
@@ -212,9 +214,14 @@ describe('folhas estimadas pelo DARF', () => {
       { code: '1410', yearMonth: '2025-01', principal: 1000 },
       { code: '1410', yearMonth: '2025-02', principal: 1000 },
     ] };
-    const plan = planDocumentImport([old, pays], [], DEFAULT_SETTINGS);
+    const plan = planDocumentImport([old, pays], [], DEFAULT_SETTINGS, '2026-10');
     expect(plan.estimatedPayroll).toEqual(['2025-01', '2025-02']);
-    expect(plan.payrollDeclarations).toEqual(['2026-01']);
+    expect(plan.missingDeclarations).toEqual([
+      // O mês declarado fica sem folha: ela vem na declaração seguinte, que ainda não existe, e muda a apuração de hoje
+      { yearMonth: '2026-10', months: ['2026-09'], available: false, affectsCurrent: true },
+      // Folhas de 2025 só mudam meses já apurados: corrigem o Histórico
+      { yearMonth: '2026-01', months: ['2025-01', '2025-02'], available: true, affectsCurrent: false },
+    ]);
   });
 
   it('o mês importado guarda que a folha é estimada', () => {

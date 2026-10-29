@@ -15,6 +15,7 @@ import {
   settingsForCompetence,
   shiftYearMonth,
 } from './taxCalculations';
+import { currentYearMonth } from './monthPicker';
 
 export interface ImportRow {
   record: MonthRecord;
@@ -44,8 +45,18 @@ export interface DocumentImportPlan {
   rbt12Check?: { yearMonth: string; declared: number; app: number };
   anexoCheck?: { yearMonth: string; declared: 'III' | 'V'; app: 'III' | 'V' };
   // Meses com a folha estimada pelo DARF e as declarações do PGDAS-D que trazem a folha real deles
+  // (e dos meses que ficaram sem folha)
   estimatedPayroll: string[];
-  payrollDeclarations: string[];
+  missingDeclarations: MissingDeclaration[];
+}
+
+export interface MissingDeclaration {
+  yearMonth: string; // competência da declaração do PGDAS-D a trazer
+  months: string[]; // meses cuja folha real ela traz
+  available: boolean; // false: ainda não foi transmitida (sai no mês seguinte ao dela)
+  // Algum dos meses ainda entra no Fator R da apuração atual (a folha pesa nos 12 meses seguintes);
+  // senão a declaração só corrige meses já apurados, no Histórico
+  affectsCurrent: boolean;
 }
 
 const round = (v: number) => Math.round(v * 100) / 100;
@@ -56,20 +67,32 @@ const IMPORT_NOTE = 'Importado';
 export const ESTIMATED_PAYROLL_NOTE = 'folha estimada pelo DARF';
 export const isPayrollEstimated = (r: MonthRecord) => Boolean(r.notes?.includes(ESTIMATED_PAYROLL_NOTE));
 
-// Cada declaração traz a folha dos 12 meses anteriores ao mês declarado: as declarações que cobrem
-// os meses estimados, sem passar da seguinte à mais nova já importada (a que ainda nem existe)
-function declarationsFor(months: string[], latestDeclared?: string): string[] {
+// Cada declaração traz a folha dos 12 meses anteriores ao mês declarado: o menor número de
+// declarações que cobre os meses sem folha real, sem passar da seguinte à mais nova já importada.
+// A declaração de um mês só existe depois que ele acaba (é transmitida no mês seguinte)
+function declarationsFor(
+  months: string[],
+  latestDeclared: string | undefined,
+  today: string,
+  isCurrent: (yearMonth: string) => boolean
+): MissingDeclaration[] {
   const limit = latestDeclared ? shiftYearMonth(latestDeclared, 1) : undefined;
-  const out: string[] = [];
+  const out: MissingDeclaration[] = [];
   let coveredUntil = '';
-  for (const m of [...months].sort()) {
-    if (m <= coveredUntil) continue;
+  for (const m of [...new Set(months)].sort()) {
+    if (m <= coveredUntil) {
+      const last = out[out.length - 1];
+      last.months.push(m);
+      last.affectsCurrent ||= isCurrent(m);
+      continue;
+    }
     let period = shiftYearMonth(m, 12);
     if (limit && period > limit) period = limit;
-    out.push(period);
+    out.push({ yearMonth: period, months: [m], available: period < today, affectsCurrent: isCurrent(m) });
     coveredUntil = shiftYearMonth(period, -1);
   }
-  return out;
+  // As que mudam o Fator R de hoje primeiro
+  return out.sort((a, b) => Number(b.affectsCurrent) - Number(a.affectsCurrent));
 }
 
 interface Draft {
@@ -148,7 +171,12 @@ function noteFor(previous: string | undefined, sources: Set<string>): string {
 const sameRecord = (a: MonthRecord, b: MonthRecord) =>
   a.revenue === b.revenue && a.payroll === b.payroll && a.inss === b.inss && a.irrf === b.irrf && a.dasPaid === b.dasPaid;
 
-export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], settings: TaxSettings): DocumentImportPlan {
+export function planDocumentImport(
+  docs: TaxDocument[],
+  history: MonthRecord[],
+  settings: TaxSettings,
+  today: string = currentYearMonth()
+): DocumentImportPlan {
   const base = history.filter((r) => !isSample(r));
   const existing = new Map(base.map((r) => [r.yearMonth, r]));
   const drafts = new Map<string, Draft>();
@@ -305,7 +333,13 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     removedSamples: history.filter(isSample).length,
     paymentsOutside,
     estimatedPayroll,
-    payrollDeclarations: declarationsFor(estimatedPayroll, latest?.yearMonth),
+    missingDeclarations: declarationsFor(
+      [...estimatedPayroll, ...rows.filter((r) => r.payrollMissing).map((r) => r.record.yearMonth)],
+      latest?.yearMonth,
+      today,
+      // A folha de um mês entra no Fator R dos 12 meses seguintes
+      (ym) => shiftYearMonth(ym, 12) >= today
+    ),
     otherCompany,
     ...(rbt12Check ? { rbt12Check } : {}),
     ...(anexoCheck ? { anexoCheck } : {}),

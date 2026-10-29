@@ -7,6 +7,7 @@ import {
   CircleCheck,
   ClipboardCheck,
   ExternalLink,
+  FilePlus,
   FileText,
   FileUp,
   Loader2,
@@ -20,12 +21,28 @@ import { btnGhost, btnPrimary, tile } from './ui/card';
 import { HELP } from './help';
 import type { MonthRecord, TaxSettings } from '../types/tax';
 import { PAYMENTS_SOURCE_URL, PGDAS_SOURCE_URL, readTaxDocument, type TaxDocument } from '../utils/taxDocuments';
-import { applyDocumentImport, planDocumentImport, type DocumentImportPlan } from '../utils/documentImport';
-import { formatCurrency } from '../utils/taxCalculations';
+import { applyDocumentImport, isPayrollEstimated, planDocumentImport, type DocumentImportPlan } from '../utils/documentImport';
+import { formatCurrency, shiftYearMonth } from '../utils/taxCalculations';
 import { EASE_OUT } from '../utils/motion';
 import { playSound } from '../hooks/useSound';
 
 const brMonth = (ym: string) => `${ym.slice(5, 7)}/${ym.slice(0, 4)}`;
+
+const MONTH_NAMES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const shortMonth = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5, 7)) - 1]}/${ym.slice(0, 4)}`;
+
+// "dez/2024 a ago/2025 e set/2026": meses seguidos viram um intervalo
+function monthRanges(months: string[]): string {
+  const sorted = [...months].sort();
+  const ranges: [string, string][] = [];
+  for (const m of sorted) {
+    const last = ranges[ranges.length - 1];
+    if (last && shiftYearMonth(last[1], 1) === m) last[1] = m;
+    else ranges.push([m, m]);
+  }
+  const parts = ranges.map(([a, b]) => (a === b ? shortMonth(a) : `${shortMonth(a)} a ${shortMonth(b)}`));
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} e ${parts[parts.length - 1]}` : parts[0];
+}
 
 export type DocumentImportResult = ReturnType<typeof applyDocumentImport>;
 
@@ -135,7 +152,6 @@ export const ImportDocumentModal: React.FC<{
   );
   const hasPgdas = files.some((f) => f.doc.kind === 'pgdas');
   const nothingToDo = plan ? plan.rows.length === 0 && plan.companyChanges.length === 0 && plan.removedSamples === 0 : true;
-  const missingPayroll = plan?.rows.filter((r) => r.payrollMissing) ?? [];
   const rbt12Ok = plan?.rbt12Check ? Math.abs(plan.rbt12Check.app - plan.rbt12Check.declared) < 0.01 : null;
   const anexoOk = plan?.anexoCheck ? plan.anexoCheck.app === plan.anexoCheck.declared : null;
   const declarationOk = rbt12Ok !== false && anexoOk !== false;
@@ -384,7 +400,7 @@ export const ImportDocumentModal: React.FC<{
                                     </td>
                                     <td className="py-1.5">{formatCurrency(r.revenue)}</td>
                                     <td className={`py-1.5 ${payrollMissing ? 'text-amber-700 dark:text-amber-300' : ''}`}>
-                                      {payrollMissing ? 'sem folha' : formatCurrency(r.payroll)}
+                                      {payrollMissing ? 'sem folha' : `${isPayrollEstimated(r) ? '≈ ' : ''}${formatCurrency(r.payroll)}`}
                                     </td>
                                     <td className="py-1.5">{formatCurrency(r.dasPaid)}</td>
                                     <td className="py-1.5">{formatCurrency(r.inss + r.irrf)}</td>
@@ -443,16 +459,52 @@ export const ImportDocumentModal: React.FC<{
                         </Section>
                       )}
 
-                      {(missingPayroll.length > 0 || plan.paymentsOutside > 0 || plan.removedSamples > 0 || plan.estimatedPayroll.length > 0) && (
+                      {plan.missingDeclarations.length > 0 && (
+                        <Section
+                          icon={FilePlus}
+                          title={
+                            plan.missingDeclarations.length === 1
+                              ? 'Para a folha ficar exata, falta uma declaração'
+                              : `Para a folha ficar exata, faltam ${plan.missingDeclarations.length} declarações`
+                          }
+                          tone="warn"
+                        >
+                          <ul className="space-y-2">
+                            {plan.missingDeclarations.map((d) => (
+                              <li key={d.yearMonth}>
+                                <span>
+                                  <b className="text-slate-900 dark:text-white">PGDAS-D de {brMonth(d.yearMonth)}</b>: traz a folha real de{' '}
+                                  {monthRanges(d.months)}
+                                </span>
+                                <span
+                                  className={`block text-xs font-semibold ${
+                                    d.available ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                                  }`}
+                                >
+                                  <span className="font-normal text-slate-500 dark:text-slate-400">
+                                    {d.affectsCurrent ? 'muda a apuração atual' : 'corrige o Histórico'} ·{' '}
+                                  </span>
+                                  {d.available ? 'já disponível' : `sai em ${shortMonth(shiftYearMonth(d.yearMonth, 1))}`}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                            {plan.missingDeclarations.length === 1 ? 'Sem ela' : 'Sem elas'}, esses meses ficam com a folha estimada pelo DARF
+                            pago (≈) ou sem folha, e o Fator R deles é aproximado. Pode importar assim mesmo: quando trouxer{' '}
+                            {plan.missingDeclarations.length === 1 ? 'a declaração' : 'as declarações'}, os meses são corrigidos.
+                          </p>
+                          {plan.missingDeclarations.some((d) => d.available) && (
+                            <button type="button" onClick={() => setStep('files')} className={`${btnGhost} mt-3`}>
+                              <FilePlus className="w-4 h-4" /> Adicionar declaração
+                            </button>
+                          )}
+                        </Section>
+                      )}
+
+                      {(plan.paymentsOutside > 0 || plan.removedSamples > 0) && (
                         <Section icon={AlertTriangle} title="Bom saber" tone="warn">
                           <ul className="list-disc pl-5 space-y-1">
-                            {missingPayroll.length > 0 && (
-                              <li>
-                                {missingPayroll.length === 1 ? 'O mês' : 'Os meses'} {missingPayroll.map((r) => brMonth(r.record.yearMonth)).join(', ')}{' '}
-                                {missingPayroll.length === 1 ? 'fica' : 'ficam'} sem folha: a declaração traz só a dos 12 meses anteriores. A
-                                do mês declarado vem na declaração seguinte, ou você lança no Histórico.
-                              </li>
-                            )}
                             {plan.paymentsOutside > 0 && (
                               <li>
                                 {plan.paymentsOutside} {plan.paymentsOutside === 1 ? 'mês pago fica' : 'meses pagos ficam'} de fora por não ter
@@ -460,13 +512,6 @@ export const ImportDocumentModal: React.FC<{
                               </li>
                             )}
                             {plan.removedSamples > 0 && <li>Os {plan.removedSamples} meses de exemplo saem do Histórico.</li>}
-                            {plan.estimatedPayroll.length > 0 && (
-                              <li>
-                                A folha de {plan.estimatedPayroll.map(brMonth).join(', ')} foi estimada pelo DARF pago, porque a declaração não
-                                a traz. Se o pró-labore real foi diferente, o Fator R desses períodos também muda. A declaração do PGDAS-D de{' '}
-                                {plan.payrollDeclarations.map(brMonth).join(' e de ')} traz a folha real.
-                              </li>
-                            )}
                           </ul>
                         </Section>
                       )}
