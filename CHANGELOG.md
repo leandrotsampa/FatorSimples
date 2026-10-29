@@ -18,6 +18,7 @@ Todas as versões do FatorSimples e o que mudou em cada uma.
 
 ### 🐛 Correções
 
+- DAS calculado tributo a tributo, como o PGDAS-D (d4e1cea)
 - Importação pede a declaração de todo mês sem folha, não só dos 12 últimos (b30d2ec)
 - Importação diz quando o leitor de PDF não carregou, em vez de "não reconheci" (883abde)
 - No claro, blocos quase brancos com contorno e o cartão branco dominante (2bb7e07)
