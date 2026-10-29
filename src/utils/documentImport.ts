@@ -1,0 +1,198 @@
+// Importa os documentos da Receita para o Histórico: o PGDAS-D traz a empresa, a receita e a folha
+// dos meses anteriores e o DAS do mês declarado; o relatório de pagamentos completa o DAS pago e o
+// DARF do pró-labore (INSS + IRRF). Nada é gravado antes da pessoa conferir o plano
+
+import type { MonthRecord, TaxSettings } from '../types/tax';
+import type { PgdasDeclaration, TaxDocument, TaxPayment } from './taxDocuments';
+import { DARF_PROLABORE_CODE, DAS_CODE } from './taxDocuments';
+import { DEFAULT_SETTINGS, calculateProlabore, calculateRBT12, fillMissingTaxes, settingsForCompetence } from './taxCalculations';
+
+export interface ImportRow {
+  record: MonthRecord;
+  isNew: boolean;
+  // Mês recente sem folha no app nem na declaração: o Fator R dos meses seguintes depende dela
+  payrollMissing: boolean;
+}
+
+export interface CompanyChange {
+  label: string;
+  from: string;
+  to: string;
+}
+
+export type ImportedCompany = Pick<TaxSettings, 'companyName' | 'cnpj'> & { cityState?: string };
+
+export interface DocumentImportPlan {
+  company: ImportedCompany | null;
+  companyChanges: CompanyChange[];
+  rows: ImportRow[]; // só os meses que mudam, do mais antigo ao mais novo
+  replaced: number; // meses do app atualizados
+  removedSamples: number; // meses de exemplo, trocados pelos do documento
+  paymentsOutside: number; // meses pagos sem faturamento no app nem na declaração
+  // CNPJ dos documentos quando a empresa cadastrada é outra
+  otherCompany: string | null;
+  // RBT12 da declaração mais nova contra o que o app calcula com os meses importados
+  rbt12Check?: { yearMonth: string; declared: number; app: number };
+}
+
+const round = (v: number) => Math.round(v * 100) / 100;
+const isSample = (r: MonthRecord) => r.id.startsWith('sample-');
+const fmtYm = (ym: string) => `${ym.slice(5)}/${ym.slice(0, 4)}`;
+const IMPORT_NOTE = 'Importado';
+
+interface Draft {
+  record: MonthRecord;
+  sources: Set<string>;
+  payrollKnown: boolean;
+}
+
+function noteFor(previous: string | undefined, sources: Set<string>): string {
+  const note = `${IMPORT_NOTE}: ${[...sources].join(' · ')}`;
+  return previous && !previous.startsWith(IMPORT_NOTE) ? `${previous} · ${note}` : note;
+}
+
+const sameRecord = (a: MonthRecord, b: MonthRecord) =>
+  a.revenue === b.revenue && a.payroll === b.payroll && a.inss === b.inss && a.irrf === b.irrf && a.dasPaid === b.dasPaid;
+
+export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], settings: TaxSettings): DocumentImportPlan {
+  const base = history.filter((r) => !isSample(r));
+  const existing = new Map(base.map((r) => [r.yearMonth, r]));
+  const drafts = new Map<string, Draft>();
+  const draftFor = (ym: string): Draft => {
+    let d = drafts.get(ym);
+    if (!d) {
+      const old = existing.get(ym);
+      d = {
+        record: old ? { ...old } : { id: `doc-${ym}`, yearMonth: ym, revenue: 0, payroll: 0, inss: 0, irrf: 0, dasPaid: 0 },
+        sources: new Set(),
+        payrollKnown: Boolean(old && old.payroll > 0),
+      };
+      drafts.set(ym, d);
+    }
+    return d;
+  };
+
+  // Declarações da mais antiga para a mais nova: a mais nova prevalece nos meses em comum
+  const declarations = docs.filter((d): d is PgdasDeclaration => d.kind === 'pgdas').sort((a, b) => a.yearMonth.localeCompare(b.yearMonth));
+  for (const doc of declarations) {
+    const source = `PGDAS-D ${fmtYm(doc.yearMonth)}`;
+    const opening = doc.openingDate?.slice(0, 7) ?? '';
+    for (const [ym, revenue] of Object.entries(doc.previousRevenue)) {
+      if (ym < opening) continue;
+      const d = draftFor(ym);
+      d.record.revenue = revenue;
+      d.sources.add(source);
+    }
+    for (const [ym, payroll] of Object.entries(doc.previousPayroll)) {
+      if (ym < opening || !drafts.has(ym)) continue;
+      const d = draftFor(ym);
+      d.record.payroll = payroll;
+      d.payrollKnown = true;
+    }
+    const d = draftFor(doc.yearMonth);
+    d.record.revenue = doc.revenue;
+    d.record.dasPaid = doc.dasDeclared;
+    d.sources.add(source);
+  }
+
+  // Pagamentos: só completam meses que têm faturamento (no app ou na declaração)
+  const paid = new Map<string, { das: number; darf: number }>();
+  for (const p of docs.flatMap((d) => (d.kind === 'payments' ? d.payments : [])) as TaxPayment[]) {
+    if (p.code !== DAS_CODE && p.code !== DARF_PROLABORE_CODE) continue;
+    const sum = paid.get(p.yearMonth) ?? { das: 0, darf: 0 };
+    if (p.code === DAS_CODE) sum.das = round(sum.das + p.principal);
+    else sum.darf = round(sum.darf + p.principal);
+    paid.set(p.yearMonth, sum);
+  }
+  let paymentsOutside = 0;
+  for (const [ym, sum] of paid) {
+    if (!drafts.has(ym) && !existing.has(ym)) {
+      paymentsOutside++;
+      continue;
+    }
+    const d = draftFor(ym);
+    d.sources.add('pagamentos');
+    if (sum.das > 0) d.record.dasPaid = sum.das;
+    if (sum.darf > 0) {
+      // O DARF 1410 junta o INSS do pró-labore (11%, até o teto) e o IRRF
+      const inss = d.record.payroll > 0 ? round(calculateProlabore(d.record.payroll, settingsForCompetence(settings, ym)).inss) : sum.darf;
+      d.record.inss = Math.min(inss, sum.darf);
+      d.record.irrf = round(sum.darf - d.record.inss);
+    }
+  }
+
+  // Impostos que nenhum documento trouxe são calculados com o histórico já mesclado
+  const merged = [...base.filter((r) => !drafts.has(r.yearMonth)), ...[...drafts.values()].map((d) => d.record)];
+  const { records: filled } = fillMissingTaxes(
+    [...drafts.values()].map((d) => d.record),
+    merged,
+    settings
+  );
+  const filledByMonth = new Map(filled.map((r) => [r.yearMonth, r]));
+
+  // Só a folha dos 12 meses mais recentes ainda entra no Fator R de algum mês
+  const months = [...new Set([...drafts.keys(), ...existing.keys()])].sort();
+  const latest12 = new Set(months.slice(-12));
+
+  const rows: ImportRow[] = [];
+  for (const [ym, d] of [...drafts].sort(([a], [b]) => a.localeCompare(b))) {
+    const record = { ...filledByMonth.get(ym)!, notes: undefined as string | undefined };
+    const old = existing.get(ym);
+    if (old && sameRecord(old, record)) continue;
+    record.notes = noteFor(old?.notes, d.sources);
+    if (!record.notes) delete record.notes;
+    rows.push({ record, isNew: !old, payrollMissing: latest12.has(ym) && !d.payrollKnown && record.payroll <= 0 });
+  }
+
+  // Empresa: da declaração mais nova
+  const latest = declarations[declarations.length - 1];
+  const company: ImportedCompany | null = latest
+    ? { companyName: latest.companyName, cnpj: latest.cnpj, ...(latest.cityState ? { cityState: latest.cityState } : {}) }
+    : null;
+  const companyChanges: CompanyChange[] = [];
+  if (company) {
+    const check = (label: string, from: string, to: string | undefined) => to && from !== to && companyChanges.push({ label, from, to });
+    check('Razão social', settings.companyName, company.companyName);
+    check('CNPJ', settings.cnpj, company.cnpj);
+    check('Cidade / UF', settings.cityState, company.cityState);
+  }
+
+  const docCnpj = company?.cnpj ?? docs.find((d) => d.kind === 'payments' && d.cnpj)?.cnpj;
+  const registered = settings.cnpj && settings.cnpj !== DEFAULT_SETTINGS.cnpj ? settings.cnpj : null;
+  const otherCompany = docCnpj && registered && docCnpj !== registered ? docCnpj : null;
+
+  let rbt12Check: DocumentImportPlan['rbt12Check'];
+  if (latest?.rbt12 !== undefined) {
+    const after = [...merged.filter((r) => !filledByMonth.has(r.yearMonth)), ...filled];
+    const current = filledByMonth.get(latest.yearMonth)!;
+    const app = calculateRBT12(after, latest.yearMonth, current.revenue, current.payroll).rbt12;
+    rbt12Check = { yearMonth: latest.yearMonth, declared: latest.rbt12, app: round(app) };
+  }
+
+  return {
+    company,
+    companyChanges,
+    rows,
+    replaced: rows.filter((r) => !r.isNew).length,
+    removedSamples: history.filter(isSample).length,
+    paymentsOutside,
+    otherCompany,
+    ...(rbt12Check ? { rbt12Check } : {}),
+  };
+}
+
+export function applyDocumentImport(
+  plan: DocumentImportPlan,
+  history: MonthRecord[],
+  settings: TaxSettings
+): { history: MonthRecord[]; settings: TaxSettings; saved: MonthRecord[]; removed: MonthRecord[] } {
+  const months = new Set(plan.rows.map((r) => r.record.yearMonth));
+  const removed = history.filter((r) => isSample(r) || months.has(r.yearMonth));
+  const saved = plan.rows.map((r) => r.record);
+  return {
+    history: [...history.filter((r) => !isSample(r) && !months.has(r.yearMonth)), ...saved].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth)),
+    settings: plan.company ? { ...settings, ...plan.company } : settings,
+    saved,
+    removed: removed.filter((r) => isSample(r) || !saved.some((s) => s.id === r.id)),
+  };
+}

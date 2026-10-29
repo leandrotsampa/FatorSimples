@@ -12,6 +12,7 @@ const { ensureSettingsColumns } = require('./settingsSchema.cjs');
 const { portableDirectoryFor } = require('./dataDirectory.cjs');
 const { APP_STATE_KEYS, appStateEntryFor } = require('./appState.cjs');
 const { importLegacyData } = require('./legacyJson.cjs');
+const { isAllowedExternalUrl } = require('./externalLinks.cjs');
 
 let mainWindow = null;
 let db = null;
@@ -186,6 +187,12 @@ function createWindow() {
   } else {
     mainWindow.loadFile(prodPath);
   }
+
+  // Links com target="_blank" (onde baixar os documentos da Receita) abrem no navegador do sistema
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedExternalUrl(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
 
   // Ícone do botão maximizar/restaurar acompanha o estado da janela (também ao arrastar ou dar duplo clique)
   const sendMaximized = () => mainWindow.webContents.send('window:maximized', mainWindow.isMaximized());

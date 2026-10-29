@@ -8,6 +8,7 @@ const VALIDATORS = {
   theme: (v) => v === 'light' || v === 'dark',
   uiPrefs: (v) => v.length <= 4 * 1024, // sons e menu recolhido
   ignoredVersion: (v) => /^v?\d+\.\d+\.\d+$/.test(v), // "Ignorar esta versão"
+  welcome: (v) => /^(done|demo|new)$/.test(v), // tela inicial: deixada, no exemplo ou de volta ao começo
 };
 const APP_STATE_KEYS = Object.keys(VALIDATORS);
 

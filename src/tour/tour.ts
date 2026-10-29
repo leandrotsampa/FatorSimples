@@ -75,6 +75,14 @@ const APURATION_STEPS: TourStep[] = [
 
 const HISTORY_STEPS: TourStep[] = [
   {
+    id: 'hist-importar',
+    title: 'Importe a declaração do Simples',
+    description: () =>
+      'Com o PDF do <b>PGDAS-D</b> que a contabilidade envia, o app traz a empresa, o faturamento e a folha dos meses anteriores e o DAS. O relatório de pagamentos da Receita completa com o DAS e o DARF pagos.',
+    side: 'bottom',
+    align: 'end',
+  },
+  {
     id: 'hist-adicionar',
     title: 'Cadastre os meses anteriores',
     description: () =>

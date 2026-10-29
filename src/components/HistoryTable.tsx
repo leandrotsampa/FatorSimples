@@ -5,7 +5,7 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Sparkles,
+  FileUp,
   AlertCircle,
   CheckCircle2,
   FileSpreadsheet,
@@ -86,7 +86,7 @@ interface HistoryTableProps {
   onAddMonth: () => void;
   onEditMonth: (record: MonthRecord) => void;
   onDeleteMonth: (id: string) => void;
-  onGenerateSample: () => void;
+  onImportDocuments: () => void;
   onClearHistory: () => void;
   // Mês recém-salvo ou editado: a linha pisca em verde
   highlightId?: string;
@@ -97,7 +97,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   onAddMonth,
   onEditMonth,
   onDeleteMonth,
-  onGenerateSample,
+  onImportDocuments,
   onClearHistory,
   highlightId,
 }) => {
@@ -149,16 +149,15 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         description="A alíquota de cada mês depende do faturamento dos 12 meses anteriores. Cadastre aqui os meses que faltam ou corrija algum valor."
         actions={
           <>
-            {history.length === 0 && (
-              <button
-                onClick={onGenerateSample}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-full transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
-                title="Preenche 11 meses anteriores com dados realistas para simulação imediata"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                <span>Gerar 11 Meses Exemplo</span>
-              </button>
-            )}
+            <button
+              onClick={onImportDocuments}
+              data-tour="hist-importar"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-full transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+              title="Traz os meses da declaração do PGDAS-D e do relatório de pagamentos da Receita"
+            >
+              <FileUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Importar PGDAS-D</span>
+            </button>
             <button
               onClick={onAddMonth}
               data-tour="hist-adicionar"
@@ -327,15 +326,15 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               Nenhuma competência cadastrada no histórico
             </div>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Adicione os faturamentos dos meses anteriores para o sistema calcular o RBT12 com precisão, ou clique em &quot;Gerar 11 Meses Exemplo&quot;.
+              Adicione os faturamentos dos meses anteriores para o sistema calcular o RBT12 com precisão, ou importe a declaração do PGDAS-D: ela traz os meses anteriores de uma vez.
             </p>
             {history.length === 0 && (
               <button
-                onClick={onGenerateSample}
+                onClick={onImportDocuments}
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-full transition-colors shadow-xs cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Gerar 11 Meses de Exemplo Agora</span>
+                <FileUp className="w-3.5 h-3.5" />
+                <span>Importar a declaração do PGDAS-D</span>
               </button>
             )}
           </div>

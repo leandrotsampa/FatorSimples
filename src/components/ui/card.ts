@@ -5,3 +5,9 @@ export const card =
 
 // Bloco interno (indicador dentro de um card)
 export const tile = 'bg-slate-50 ring-1 ring-inset ring-slate-900/[0.04] dark:bg-slate-950/70 dark:ring-white/[0.04] rounded-xl';
+
+// Botões: ação principal (verde) e secundária (contorno)
+export const btnPrimary =
+  'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm cursor-pointer transition-colors';
+export const btnGhost =
+  'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold text-sm cursor-pointer transition-colors';

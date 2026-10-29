@@ -62,16 +62,20 @@ const WindowControls: React.FC = () => {
   );
 };
 
-// Barra de título da janela: arrasta a janela (duplo clique maximiza) e traz os botões da janela
-export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void; now?: Date }> = ({
-  settings,
-  onEditCompany,
-  now = new Date(),
-}) => {
+// Barra de título da janela: arrasta a janela (duplo clique maximiza) e traz os botões da janela.
+// Na tela inicial fica sem a empresa; no exemplo, mostra o aviso com a saída para os seus dados
+export const TopBar: React.FC<{
+  settings: TaxSettings;
+  onEditCompany: () => void;
+  now?: Date;
+  showCompany?: boolean;
+  onLeaveDemo?: () => void;
+}> = ({ settings, onEditCompany, now = new Date(), showCompany = true, onLeaveDemo }) => {
   const name = settings.companyName.trim() || 'Sua empresa';
 
   return (
     <header className="no-print app-drag h-12 shrink-0 pl-4 sm:pl-6 pr-3 flex items-center justify-between gap-3 z-30">
+      {showCompany ? (
       <button
         type="button"
         onClick={onEditCompany}
@@ -96,8 +100,24 @@ export const TopBar: React.FC<{ settings: TaxSettings; onEditCompany: () => void
         </span>
         <ChevronRight className="w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
       </button>
+      ) : (
+        <span />
+      )}
 
       <div className="flex items-center gap-2 shrink-0">
+        {onLeaveDemo && (
+          <div className={`${pill} flex items-center gap-2 pl-3.5 pr-1 shrink-0`} role="status">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">Exemplo</span>
+            <button
+              type="button"
+              onClick={onLeaveDemo}
+              title="Apagar o exemplo e cadastrar a sua empresa"
+              className="h-7 px-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer transition-colors"
+            >
+              Usar o meu
+            </button>
+          </div>
+        )}
         <div className={`${pill} hidden md:flex items-center gap-2 px-3.5 text-xs shrink-0`}>
           <span className="font-semibold text-slate-800 dark:text-slate-100">{greeting(now.getHours())}</span>
           <span className="w-1 h-1 rounded-full bg-emerald-500" />

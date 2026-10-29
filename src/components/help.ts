@@ -61,4 +61,9 @@ export const HELP = {
     body: 'Quanto você paga por mês à contabilidade. O app deixa esse valor na conta da empresa, junto com os impostos, e desconta da antecipação de lucros.',
     where: 'No contrato ou no boleto mensal da contabilidade.',
   },
+  pgdasDocument: {
+    title: 'Declaração do PGDAS-D',
+    body: 'O documento que a contabilidade gera todo mês ao declarar o Simples Nacional. Traz a empresa, a receita dos meses anteriores, a folha dos últimos 12 meses, o Fator R e o DAS do mês.',
+    where: 'No e-mail da contabilidade, junto com a guia do DAS. Ou no Portal do Simples Nacional → PGDAS-D e DEFIS → Consultar Declaração → baixar a declaração em PDF.',
+  },
 } satisfies Record<string, HelpContent>;

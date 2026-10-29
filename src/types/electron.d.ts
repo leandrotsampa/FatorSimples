@@ -1,7 +1,7 @@
 import { MonthRecord, TaxSettings } from './tax';
 
 export type StorageMode = 'portable' | 'system';
-export type AppStateKey = 'tour' | 'theme' | 'uiPrefs' | 'ignoredVersion';
+export type AppStateKey = 'tour' | 'theme' | 'uiPrefs' | 'ignoredVersion' | 'welcome';
 
 export interface ElectronAPI {
   isElectron: boolean;

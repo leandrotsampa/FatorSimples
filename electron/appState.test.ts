@@ -33,4 +33,11 @@ describe('preferências do app guardadas no banco', () => {
     expect(appStateEntryFor('ignoredVersion', '1.4.1')).toEqual({ key: 'ignoredVersion', value: '1.4.1' });
     expect(appStateEntryFor('ignoredVersion', '<script>')).toBeNull();
   });
+
+  it('tela inicial: deixada, no exemplo ou de volta ao começo', () => {
+    expect(appStateEntryFor('welcome', 'done')).toEqual({ key: 'welcome', value: 'done' });
+    expect(appStateEntryFor('welcome', 'demo')).toEqual({ key: 'welcome', value: 'demo' });
+    expect(appStateEntryFor('welcome', 'new')).toEqual({ key: 'welcome', value: 'new' });
+    expect(appStateEntryFor('welcome', 'sim')).toBeNull();
+  });
 });

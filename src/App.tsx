@@ -33,6 +33,8 @@ import { PageSkeleton } from './components/ui/Skeleton';
 import { useAppDialog } from './components/ui/AppDialog';
 import { resolveInitialTheme } from './utils/initialTheme';
 import { getPref, setPref } from './utils/appPrefs';
+import { shouldShowWelcome } from './utils/welcome';
+import type { DocumentImportResult } from './components/ImportDocumentModal';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -51,14 +53,19 @@ const loadReport = () => import('./components/ReportPrintView');
 const loadSettings = () => import('./components/SettingsModal');
 const loadAddMonth = () => import('./components/AddMonthModal');
 const loadSqlite = () => import('./components/SqliteManagerModal');
+const loadWelcome = () => import('./components/Welcome');
+const loadImportDocument = () => import('./components/ImportDocumentModal');
 const HistoryTable = lazy(() => loadHistory().then((m) => ({ default: m.HistoryTable })));
 const ComparisonView = lazy(() => loadComparison().then((m) => ({ default: m.ComparisonView })));
 const ReportPrintView = lazy(() => loadReport().then((m) => ({ default: m.ReportPrintView })));
 const SettingsModal = lazy(() => loadSettings().then((m) => ({ default: m.SettingsModal })));
 const AddMonthModal = lazy(() => loadAddMonth().then((m) => ({ default: m.AddMonthModal })));
 const SqliteManagerModal = lazy(() => loadSqlite().then((m) => ({ default: m.SqliteManagerModal })));
+const Welcome = lazy(() => loadWelcome().then((m) => ({ default: m.Welcome })));
+const ImportDocumentModal = lazy(() => loadImportDocument().then((m) => ({ default: m.ImportDocumentModal })));
+const DEMO_COMPANY = 'Empresa de Exemplo Tecnologia LTDA';
 const preloadDeferredChunks = () => {
-  for (const load of [loadHistory, loadComparison, loadReport, loadSettings, loadAddMonth, loadSqlite]) void load();
+  for (const load of [loadHistory, loadComparison, loadReport, loadSettings, loadAddMonth, loadSqlite, loadImportDocument]) void load();
 };
 
 export default function App() {
@@ -367,6 +374,17 @@ export default function App() {
   const tourChecked = useRef(false);
   const [tourReady, setTourReady] = useState(false);
   const appReady = isHistoryLoaded && remoteTablesLoaded;
+
+  // Tela inicial e modo exemplo: o registro fica no banco (app_state "welcome")
+  const [welcomePref, setWelcomePref] = useState(() => getPref('welcome'));
+  const setWelcome = (value: 'done' | 'demo' | 'new') => {
+    setPref('welcome', value);
+    setWelcomePref(value);
+  };
+  const isDemo = welcomePref === 'demo';
+  const [welcomeStage, setWelcomeStage] = useState<'welcome' | 'setup'>('welcome');
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const showWelcome = appReady && shouldShowWelcome(welcomePref, history, settings);
   // Com a primeira tela pronta, baixa o resto em segundo plano (quando o navegador estiver livre)
   useEffect(() => {
     if (!appReady) return;
@@ -374,7 +392,8 @@ export default function App() {
     idle(preloadDeferredChunks);
   }, [appReady]);
   useEffect(() => {
-    if (!appReady || tourChecked.current) return;
+    // Espera a tela inicial e a importação fecharem: o convite do tutorial não aparece por cima
+    if (!appReady || showWelcome || isImportOpen || tourChecked.current) return;
     tourChecked.current = true;
     // O registro do tutorial vem do banco (junto com os dados) antes de decidir o que mostrar
     void initTourState().then(() => {
@@ -397,7 +416,7 @@ export default function App() {
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appReady]);
+  }, [appReady, showWelcome, isImportOpen]);
 
   // As outras telas se apresentam na primeira vez que a pessoa entra nelas
   const currentScreen: TourScreen = isSettingsOpen ? 'settings' : activeTab;
@@ -423,29 +442,51 @@ export default function App() {
     }
   };
 
-  // Exemplo só pode ser gerado com o histórico vazio, para nunca sobrescrever dados reais
-  const handleGenerateSample = () => {
-    if (history.length > 0) {
-      void notify({
-        title: 'Histórico já tem meses',
-        message: 'Os meses de exemplo só podem ser gerados com o histórico vazio, para nunca se misturarem aos seus.',
-      });
-      return;
-    }
-    const sample = generateSampleHistory(currentRevenue || 25000, 0.285);
+  // Modo exemplo: uma empresa fictícia com meses gerados. "Usar o meu" apaga tudo e volta ao cadastro
+  const startDemo = () => {
+    const sample = generateSampleHistory(25000, 0.285);
     setHistory(sample);
-    if (storageAdapter.isElectron()) {
-      sample.forEach((rec) => storageAdapter.saveMonth(rec));
-    }
+    sample.forEach((rec) => storageAdapter.saveMonth(rec));
+    setSettings({ ...DEFAULT_SETTINGS, companyName: DEMO_COMPANY });
+    setWelcome('demo');
+    setActiveTab('apuration');
+    playSound('success');
   };
 
-  // Meses de exemplo (id "sample-…"): entram nos cálculos, então ficam sinalizados e removíveis
-  const hasSampleMonths = history.some((h) => h.id.startsWith('sample-'));
+  const leaveDemo = async () => {
+    const ok = await confirm({
+      title: 'Cadastrar a sua empresa',
+      message: 'O exemplo e tudo o que você registrou nele serão apagados para começar com os seus dados.',
+      confirmLabel: 'Começar',
+    });
+    if (!ok) return;
+    setHistory([]);
+    await storageAdapter.clearHistory();
+    setSettings(DEFAULT_SETTINGS);
+    setWelcomeStage('setup');
+    setWelcome('new');
+    setActiveTab('apuration');
+    tourChecked.current = false;
+  };
+
+  // Meses de exemplo de versões anteriores (id "sample-…") fora do modo exemplo: removíveis
+  const hasSampleMonths = !isDemo && history.some((h) => h.id.startsWith('sample-'));
   const handleRemoveSample = () => {
     const samples = history.filter((h) => h.id.startsWith('sample-'));
     setHistory((prev) => prev.filter((h) => !h.id.startsWith('sample-')));
     samples.forEach((rec) => storageAdapter.deleteMonth(rec.id));
     playSound('delete');
+  };
+
+  // Importação da declaração do PGDAS-D e dos pagamentos. No exemplo, os documentos partem do zero
+  const importBase = isDemo ? { history: [] as MonthRecord[], settings: DEFAULT_SETTINGS } : { history, settings };
+  const handleApplyDocuments = async (result: DocumentImportResult) => {
+    if (isDemo) await storageAdapter.clearHistory();
+    else result.removed.forEach((rec) => storageAdapter.deleteMonth(rec.id));
+    result.saved.forEach((rec) => storageAdapter.saveMonth(rec));
+    setHistory(result.history);
+    setSettings(result.settings);
+    if (welcomePref !== 'done') setWelcome('done');
   };
 
   const handleClearHistory = async () => {
@@ -525,12 +566,54 @@ export default function App() {
     window.print();
   };
 
+  const importModal = (
+    <AnimatePresence>
+      {isImportOpen && (
+        <Suspense key="import-document" fallback={null}>
+          <ImportDocumentModal
+            history={importBase.history}
+            settings={importBase.settings}
+            onApply={(result) => void handleApplyDocuments(result)}
+            onClose={() => setIsImportOpen(false)}
+          />
+        </Suspense>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <div className={`min-h-screen flex flex-row font-sans overflow-hidden ${
       theme === 'dark'
         ? 'text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200'
         : 'text-slate-800 selection:bg-emerald-500/20 selection:text-emerald-800'
     } app-canvas`}>
+      {/* Primeira abertura (ou saída do exemplo): a tela inicial ocupa a janela, sem o menu. Os modais
+          ficam fora dos dois ramos, no mesmo lugar, para não remontarem quando a tela troca */}
+      {showWelcome ? (
+        <div className="flex-1 flex flex-col h-screen">
+          <TopBar settings={settings} onEditCompany={() => undefined} now={now} showCompany={false} />
+          <div className="flex-1 overflow-y-auto">
+            <Suspense fallback={null}>
+              <Welcome
+                key={welcomeStage}
+                initialStage={welcomeStage}
+                dark={theme === 'dark'}
+                settings={settings}
+                onDemo={startDemo}
+                onImport={() => setIsImportOpen(true)}
+                onSetup={(company) => {
+                  setSettings((prev) => ({ ...prev, ...company }));
+                  setWelcome('done');
+                  setActiveTab('apuration');
+                  playSound('success');
+                }}
+                toggleTheme={toggleTheme}
+              />
+            </Suspense>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Menu Lateral Desktop (Sidebar) */}
       <Sidebar
         now={now}
@@ -562,7 +645,12 @@ export default function App() {
       {/* Viewport principal: barra de título fixa e, abaixo dela, a área que rola
           (assim a barra de rolagem nunca passa por baixo dos botões nativos da janela) */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        <TopBar settings={settings} onEditCompany={() => openSettings('company')} now={now} />
+        <TopBar
+          settings={settings}
+          onEditCompany={() => openSettings('company')}
+          now={now}
+          onLeaveDemo={isDemo ? () => void leaveDemo() : undefined}
+        />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Main Content View */}
@@ -633,7 +721,7 @@ export default function App() {
               }}
               onEditMonth={handleEditMonth}
               onDeleteMonth={handleDeleteMonth}
-              onGenerateSample={handleGenerateSample}
+              onImportDocuments={() => setIsImportOpen(true)}
               onClearHistory={handleClearHistory}
               highlightId={lastSavedId}
             />
@@ -666,6 +754,9 @@ export default function App() {
         </main>
         </div>
       </div>
+
+      </>
+      )}
 
       {/* Modais: montados só enquanto abertos, para a saída animar (ModalShell) */}
       <AnimatePresence>
@@ -716,6 +807,7 @@ export default function App() {
       </Suspense>
       )}
       </AnimatePresence>
+      {importModal}
       {dialog}
     </div>
   );
