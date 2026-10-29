@@ -2,6 +2,44 @@
 
 Todas as versões do FatorSimples e o que mudou em cada uma.
 
+## v1.5.0 (2026-10-29)
+
+### ✨ Novidades
+
+- Importação sugere o relatório de pagamentos quando ele falta (c3b7523)
+- Importação pede a declaração do PGDAS-D que falta para a folha ficar exata (4952ce1)
+- Seletor de competência abre a grade de anos ao clicar no ano (856807b)
+- Vitrine da tela inicial conta a história do pró-labore ao DAS (3fb3a4e)
+- Visual mais elegante, Configurações reorganizadas e modo escuro novo (4caa7fd)
+- Lembrete de mês pendente e folha estimada pelo DARF na importação (19d97ea)
+- Tela inicial, modo exemplo e importação do PGDAS-D e dos pagamentos da Receita (59a15e7)
+- Ajuda nos campos com o que é e onde encontrar cada informação (9e55df5)
+- App aberto por dias acompanha o relógio e confere versão nova a cada 6 horas (5ef858b)
+
+### 🐛 Correções
+
+- Importação pede a declaração de todo mês sem folha, não só dos 12 últimos (b30d2ec)
+- Importação diz quando o leitor de PDF não carregou, em vez de "não reconheci" (883abde)
+- No claro, blocos quase brancos com contorno e o cartão branco dominante (2bb7e07)
+- Blocos internos visíveis no tema claro (7ae80a7)
+- Importação não grava DAS calculado sem os 12 meses anteriores (640e8b9)
+- Importação reparte o DARF 1410 pelo pró-labore da guia e arredonda os 28% para cima (e1c17b7)
+- Folha estimada pelo DARF ao centavo certo e Fator R marcado como estimado (0ada48d)
+- Banco com versão da estrutura e gravações em lote numa transação (a7606e7)
+- Tudo no SQLite no desktop (tema, preferências e versão ignorada) e sem banco paralelo (81d05d7)
+- No desktop o banco SQLite é a única fonte; banco novo começa vazio (86ff9a9)
+
+### 📝 Documentação
+
+- Capturas e demonstração com o visual novo, tela inicial, Configurações e Dados e backup (5b07906)
+- Tela inicial, importação dos PDFs da Receita e seção Seus dados (7b23e18)
+
+### 📦 Build e distribuição
+
+- Leitor de PDF só no build, fora do pacote do app (portátil volta a ~96 MB) (601c1b8)
+- App menor (SQLite só do sistema empacotado) e tela de carregamento com npm run splash (0f052b9)
+- Release roda os testes, não repete a versão e notas sem as trocas de versão (279774d)
+
 ## v1.4.0 (2026-10-28)
 
 ### ✨ Novidades
