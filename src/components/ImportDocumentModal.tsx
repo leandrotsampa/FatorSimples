@@ -118,7 +118,14 @@ export const ImportDocumentModal: React.FC<{
     }
     setReading(true);
     const unknown: string[] = [];
+    const unreadable: string[] = [];
     const loaded: LoadedFile[] = [];
+    // O leitor de PDF (pdf.js) é carregado só agora: se ele não vier, não é culpa do arquivo
+    let readerFailed = false;
+    const isReaderFailure = (e: unknown) =>
+      /dynamically imported module|fake worker|Failed to fetch|Loading chunk|Importing a module script failed/i.test(
+        e instanceof Error ? e.message : String(e)
+      );
     try {
       const { pdfLines } = await import('../utils/pdfText');
       for (const f of pdfs) {
@@ -126,22 +133,34 @@ export const ImportDocumentModal: React.FC<{
           const doc = readTaxDocument(await pdfLines(await f.arrayBuffer()));
           if (doc) loaded.push({ name: f.name, doc });
           else unknown.push(f.name);
-        } catch {
-          unknown.push(f.name);
+        } catch (e) {
+          if (isReaderFailure(e)) readerFailed = true;
+          else unreadable.push(f.name);
         }
       }
+    } catch {
+      readerFailed = true;
     } finally {
       setReading(false);
+    }
+    if (readerFailed) {
+      setError('O leitor de PDF não carregou, então os arquivos não foram lidos. Feche e abra o app (ou recarregue a página) e tente de novo.');
+      playSound('warning');
+      return;
     }
     if (loaded.length > 0) {
       // O mesmo arquivo de novo substitui o anterior
       setFiles((prev) => [...prev.filter((p) => !loaded.some((l) => l.name === p.name)), ...loaded]);
       playSound('success');
     }
-    if (unknown.length > 0) {
-      setError(
-        `Não reconheci ${unknown.length === 1 ? 'o arquivo' : 'os arquivos'} ${unknown.join(', ')}. O app lê a declaração do PGDAS-D e o relatório de pagamentos da Receita.`
-      );
+    const problems = [
+      unknown.length > 0 &&
+        `Não reconheci ${unknown.length === 1 ? 'o arquivo' : 'os arquivos'} ${unknown.join(', ')}. O app lê a declaração do PGDAS-D e o relatório de pagamentos da Receita.`,
+      unreadable.length > 0 &&
+        `Não consegui abrir ${unreadable.length === 1 ? 'o arquivo' : 'os arquivos'} ${unreadable.join(', ')}: o PDF pode estar protegido por senha ou corrompido. Baixe de novo e tente outra vez.`,
+    ].filter(Boolean);
+    if (problems.length > 0) {
+      setError(problems.join(' '));
       playSound('warning');
     }
   };
