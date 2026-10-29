@@ -23,6 +23,7 @@
     "electron:dev": "electron electron/main.cjs",
     "clean": "rm -rf dist release .electron-dist",
     "lint": "tsc --noEmit",
+    "splash": "electron scripts/splash/render.cjs",
     "postinstall": "electron-builder install-app-deps",
     "dist:portable": "vite build && node scripts/prepare-electron-dist.mjs && electron-builder --win portable -c.electronDist=.electron-dist",
     "dist:win": "vite build && node scripts/prepare-electron-dist.mjs && electron-builder --win -c.electronDist=.electron-dist",
@@ -73,6 +74,7 @@
       "pt-BR",
       "en-US"
     ],
+    "afterPack": "scripts/after-pack.cjs",
     "win": {
       "target": [
         {
