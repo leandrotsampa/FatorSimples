@@ -33,6 +33,7 @@ import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
 import { clamp } from '../utils/chartGeometry';
 import { DURATION, EASE_OUT } from '../utils/motion';
 import { isPayrollEstimated } from '../utils/documentImport';
+import { MONTH_SHORT_NAMES } from '../utils/monthPicker';
 
 const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MONTH_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -150,7 +151,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   return (
     <div className="page-stagger space-y-5">
       <PageHeader
-        eyebrow="Meses anteriores"
+        eyebrow={`${history.length} ${history.length === 1 ? 'mês salvo' : 'meses salvos'}`}
         title="Histórico de faturamento e folha"
         description="A alíquota de cada mês depende do faturamento dos 12 meses anteriores. Cadastre aqui os meses que faltam ou corrija algum valor."
         actions={
@@ -347,21 +348,21 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-num uppercase text-[11px]">
+              <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 border-b border-slate-900/[0.06] dark:border-white/[0.06] text-xs whitespace-nowrap">
                 <tr>
-                  <th className="py-3 px-4 font-bold">Competência</th>
-                  <th className="py-3 px-4 font-bold text-right">Receita Bruta</th>
-                  <th className="py-3 px-4 font-bold text-right">Folha / Pró-labore</th>
+                  <th className="py-3 px-3 font-medium">Competência</th>
+                  <th className="py-3 px-3 font-medium text-right">Receita bruta</th>
+                  <th className="py-3 px-3 font-medium text-right">Folha / pró-labore</th>
                   <th
-                    className="py-3 px-4 font-bold text-center"
+                    className="py-3 px-3 font-medium text-center"
                     title="Fator R usado na apuração da competência: folha ÷ receita dos 12 meses anteriores"
                   >
-                    Fator R (apuração)
+                    Fator R da apuração
                   </th>
-                  <th className="py-3 px-4 font-bold text-right">INSS Retido</th>
-                  <th className="py-3 px-4 font-bold text-right">IRRF Retido</th>
-                  <th className="py-3 px-4 font-bold text-right">Guia DAS</th>
-                  <th className="py-3 px-4 font-bold text-center">Ações</th>
+                  <th className="py-3 px-3 font-medium text-right">INSS</th>
+                  <th className="py-3 px-3 font-medium text-right">IRRF</th>
+                  <th className="py-3 px-3 font-medium text-right">DAS</th>
+                  <th className="py-3 px-3 font-medium text-center"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-num">
@@ -391,37 +392,43 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                         idx < 12 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50/50 dark:bg-slate-950/30'
                       } ${item.id === highlightId ? 'row-flash' : ''}`}
                     >
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                        <span>{item.yearMonth}</span>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
+                          {MONTH_SHORT_NAMES[Number(item.yearMonth.slice(5, 7)) - 1]}/{item.yearMonth.slice(0, 4)}
+                        </span>
                         {idx === 0 && (
-                          <span className="text-[11px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 rounded font-sans font-semibold">
-                            Mais Recente
+                          <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 font-sans font-semibold">
+                            mais recente
                           </span>
                         )}
                         {idx >= 12 && (
-                          <span className="text-[11px] px-1 py-0.2 text-slate-500 font-sans">
-                            (Fora 12m)
+                          <span
+                            className="ml-2 text-[11px] text-slate-500 dark:text-slate-400 font-sans"
+                            title="Fora dos 12 meses que entram no RBT12 e no Fator R do mês atual"
+                          >
+                            fora dos 12m
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 text-right text-slate-900 dark:text-slate-100 font-bold tabular-nums">
+                      <td className="py-3 px-3 text-right text-slate-900 dark:text-slate-100 font-bold tabular-nums">
                         {formatCurrency(item.revenue)}
                       </td>
 
-                      <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-300 font-semibold tabular-nums">
+                      <td className="py-3 px-3 text-right text-amber-700 dark:text-amber-300 font-semibold tabular-nums">
                         {isPayrollEstimated(item) && (
                           <span
-                            className="mr-1 text-[11px] font-sans font-semibold text-slate-500 dark:text-slate-400 cursor-help"
+                            className="mr-1 font-sans font-semibold text-slate-500 dark:text-slate-400 cursor-help"
                             title="Folha estimada pelo DARF pago (a declaração importada não trazia a deste mês). A declaração do PGDAS-D que cobre este mês traz a folha real."
                           >
-                            estimada
+                            <span aria-hidden="true">≈</span>
+                            <span className="sr-only">estimada:</span>
                           </span>
                         )}
                         {formatCurrency(item.payroll)}
                       </td>
 
-                      <td className="py-3 px-4 text-center tabular-nums">
+                      <td className="py-3 px-3 text-center tabular-nums">
                         <span
                           className={`inline-flex items-center gap-1 font-bold ${
                             isOk
@@ -451,19 +458,19 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                      <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300 tabular-nums">
                         {formatCurrency(item.inss)}
                       </td>
 
-                      <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                      <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300 tabular-nums">
                         {formatCurrency(item.irrf)}
                       </td>
 
-                      <td className="py-3 px-4 text-right text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
+                      <td className="py-3 px-3 text-right text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                         {formatCurrency(item.dasPaid)}
                       </td>
 
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 text-center">
                         <div className="flex items-center justify-center gap-2 font-sans">
                           <button
                             onClick={() => onEditMonth(item)}

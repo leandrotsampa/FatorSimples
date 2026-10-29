@@ -425,10 +425,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
       {/* Abertura: a competência e o resumo do que importa no mês */}
       <PageHeader
         eyebrow={
-          <span className="flex items-center gap-2">
-            <span>Apuração do mês</span>
+          <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${isReadOnly ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <span>{isReadOnly ? 'salva no histórico' : 'em andamento'}</span>
+            <span>{isReadOnly ? 'Salvo no Histórico' : 'Em apuração'}</span>
           </span>
         }
         title={formatCompetenceLong(selectedMonth)}

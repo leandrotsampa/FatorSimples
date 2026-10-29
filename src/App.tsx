@@ -147,8 +147,8 @@ export default function App() {
 
   // Modais
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>('tables');
-  const openSettings = (tab: SettingsTab = 'tables') => {
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('company');
+  const openSettings = (tab: SettingsTab = 'company') => {
     setSettingsTab(tab);
     setIsSettingsOpen(true);
   };
@@ -835,6 +835,8 @@ export default function App() {
         onSave={setSettings}
         onCheckUpdates={runUpdateCheck}
         newVersion={newVersion}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
       </Suspense>
       )}
@@ -849,6 +851,10 @@ export default function App() {
         history={history}
         onExportData={handleExportData}
         onImportData={handleImportData}
+        onImportDocuments={() => {
+          setIsSqliteManagerOpen(false);
+          setIsImportOpen(true);
+        }}
       />
       </Suspense>
       )}

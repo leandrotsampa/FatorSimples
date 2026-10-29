@@ -9,12 +9,15 @@
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono/600.css";
 @import "@fontsource/ibm-plex-mono/700.css";
+/* Títulos: a mesma voz do Até Quitar, irmão do FatorSimples */
+@import "@fontsource-variable/bricolage-grotesque";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: 'Bricolage Grotesque Variable', 'IBM Plex Sans', system-ui, sans-serif;
   /* Valores e números: a sans do app com algarismos tabulares (alinhados, sem "pular" na contagem) */
   --font-num: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
@@ -34,22 +37,24 @@
   --canvas-glow: rgb(16 185 129 / 0.13);
 }
 
-/* Escuro: neutros com um toque de verde no lugar do cinza-azulado padrão.
+/* Escuro: noite "petróleo", azul-esverdeada, nunca preto puro. O verde da marca acende sobre ela
+   em vez de se perder num fundo oliva. Fundo, cartão e bloco interno ficam em degraus visíveis.
    Redefinir a escala muda de uma vez todos os dark:bg-slate-*, bordas e textos */
 .dark {
-  --canvas: #080b0a;
-  --canvas-glow: rgb(16 185 129 / 0.09);
-  --color-slate-50: #f3f6f4;
-  --color-slate-100: #e7ece9;
-  --color-slate-200: #d1d9d4;
-  --color-slate-300: #aeb9b2;
-  --color-slate-400: #85928a;
-  --color-slate-500: #64706a;
-  --color-slate-600: #4a544f;
-  --color-slate-700: #323a36;
-  --color-slate-800: #212825;
-  --color-slate-900: #141916;
-  --color-slate-950: #0c100e;
+  color-scheme: dark;
+  --canvas: #0a1216;
+  --canvas-glow: rgb(45 212 191 / 0.10);
+  --color-slate-50: #f2f6f7;
+  --color-slate-100: #e3eaec;
+  --color-slate-200: #c9d4d8;
+  --color-slate-300: #a6b4ba;
+  --color-slate-400: #82929a;
+  --color-slate-500: #63737b;
+  --color-slate-600: #4a5960;
+  --color-slate-700: #334148;
+  --color-slate-800: #223037;
+  --color-slate-900: #152127;
+  --color-slate-950: #0e181d;
 }
 
 .app-canvas {
@@ -72,6 +77,22 @@
 @layer base {
   :root {
     font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+  }
+
+  /* Texto selecionado e cursor no verde da marca, nos dois temas */
+  ::selection {
+    background: rgb(16 185 129 / 0.25);
+  }
+  input, textarea {
+    caret-color: var(--color-emerald-600);
+  }
+  .dark input, .dark textarea {
+    caret-color: var(--color-emerald-400);
   }
 
   code, pre, .font-mono {
@@ -158,10 +179,10 @@
   animation: skeleton-shimmer 1.4s linear infinite;
 }
 
-/* Custom scrollbars for native desktop feel */
+/* Barras de rolagem finas, no tom do tema, com folga em volta do polegar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -169,12 +190,25 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.4);
-  border-radius: 4px;
+  background: rgb(15 40 30 / 0.22);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: rgb(15 40 30 / 0.38);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(166 180 186 / 0.22);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(166 180 186 / 0.4);
+  background-clip: padding-box;
 }
 
 /* Print styling for formal tax apuração report */

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Calculator, Sparkles } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { MonthRecord, TaxSettings } from '../types/tax';
 import {
   formatCurrency,
@@ -11,6 +11,7 @@ import { CurrencyInput } from './CurrencyInput';
 import { HelpTip } from './ui/HelpTip';
 import { HELP } from './help';
 import { ModalShell } from './ui/ModalShell';
+import { btnGhost, btnPrimary, inputBase, modalPanel, tile } from './ui/card';
 import { currentYearMonth, isFutureMonth } from '../utils/monthPicker';
 
 interface AddMonthModalProps {
@@ -104,37 +105,40 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
   };
 
   return (
-    <ModalShell ariaLabel={recordToEdit ? 'Editar competência no histórico' : 'Adicionar nova competência'} panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden text-xs text-slate-800 dark:text-slate-100">
+    <ModalShell ariaLabel={recordToEdit ? 'Editar competência no histórico' : 'Adicionar nova competência'} panelClassName={`${modalPanel} max-w-lg w-full overflow-hidden text-sm`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
-              {recordToEdit ? 'Editar Competência no Histórico' : 'Adicionar Nova Competência'}
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-2">
+          <div>
+            <h2 className="text-2xl font-bold tracking-[-0.015em] text-slate-900 dark:text-white">
+              {recordToEdit ? 'Editar mês' : 'Novo mês no Histórico'}
             </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Faturamento e pró-labore de um mês já fechado.</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Fechar"
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white cursor-pointer transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 pt-4 pb-6 space-y-5">
           <div>
-            <div className="flex items-center gap-1 mb-1">
-              <label className="text-slate-700 dark:text-slate-300 font-semibold">Competência (Mês / Ano):</label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label htmlFor="add-month-ym" className="text-sm font-semibold text-slate-800 dark:text-slate-100">Competência</label>
               <HelpTip help={HELP.competence} />
             </div>
             <input
+              id="add-month-ym"
               type="month"
               required
               max={currentYearMonth()}
               value={yearMonth}
               onChange={(e) => setYearMonth(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-semibold"
+              className={`${inputBase} font-num font-semibold cursor-pointer dark:[color-scheme:dark]`}
             />
             {isFutureMonth(yearMonth) && (
               <p role="alert" className="mt-1.5 text-xs text-rose-700 dark:text-rose-300">
@@ -150,85 +154,80 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
-                <span className="flex items-center gap-1">Receita Bruta (R$): <HelpTip help={HELP.revenue} /></span>
-              </label>
+              <div className="flex items-center gap-1.5 mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Faturamento <HelpTip help={HELP.revenue} />
+              </div>
               <CurrencyInput ariaLabel="Receita bruta" required value={revenue} onChange={handleRevenueChange} />
             </div>
 
             <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
-                <span className="flex items-center gap-1">Folha / Pró-labore: <HelpTip help={HELP.payroll} /></span>
-                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-num font-bold">
-                  {revenue > 0 ? `${((payroll / revenue) * 100).toFixed(1)}%` : ''}
+              <div className="flex items-center justify-between gap-1.5 mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                <span className="flex items-center gap-1.5">Pró-labore <HelpTip help={HELP.payroll} /></span>
+                <span className="text-xs text-emerald-700 dark:text-emerald-400 font-num">
+                  {revenue > 0 ? `${((payroll / revenue) * 100).toFixed(1).replace('.', ',')}% da receita` : ''}
                 </span>
-              </label>
+              </div>
               <CurrencyInput ariaLabel="Folha / pró-labore" required value={payroll} onChange={handlePayrollChange} />
             </div>
           </div>
 
           {/* Quick Auto-calc banner */}
-          <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 pb-1 border-b border-slate-200 dark:border-slate-800">
-              <span className="flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-200">
-                <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                Impostos Calculados Automaticamente:
+          <div className={`${tile} p-4`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Impostos do mês, calculados
                 <HelpTip help={HELP.monthTaxes} />
               </span>
               <button
                 type="button"
                 onClick={() => recalculateTaxes(revenue, payroll, yearMonth)}
-                className="text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer font-bold"
+                className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer"
               >
                 Recalcular
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-[11px] font-num">
-              <div>
-                <span className="text-slate-500 block">INSS (11%):</span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold">{formatCurrency(inss)}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">IRRF Retido:</span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold">{formatCurrency(irrf)}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Guia DAS:</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold">{formatCurrency(dasPaid)}</span>
-              </div>
+            <div className="mt-3 grid grid-cols-3 gap-3 font-num tabular-nums">
+              {[
+                { label: 'INSS (11%)', value: inss },
+                { label: 'IRRF', value: irrf },
+                { label: 'DAS', value: dasPaid },
+              ].map((t) => (
+                <div key={t.label}>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-sans">{t.label}</div>
+                  <div className="text-[15px] font-semibold text-slate-900 dark:text-white">{formatCurrency(t.value)}</div>
+                </div>
+              ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-              Observações (Opcional):
+            <label htmlFor="add-month-notes" className="flex items-center gap-1.5 mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Anotações <span className="text-xs font-normal text-slate-500 dark:text-slate-400">opcional</span>
             </label>
             <input
+              id="add-month-notes"
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Mês com faturamento extra de projeto..."
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-800 dark:text-slate-300 text-xs focus:outline-none focus:border-emerald-500 shadow-2xs"
+              placeholder="Ex.: mês com faturamento extra de projeto"
+              className={inputBase}
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-semibold transition-colors cursor-pointer"
-            >
+          <div className="pt-4 border-t border-slate-900/[0.06] dark:border-white/[0.06] flex items-center justify-end gap-2">
+            <button type="button" onClick={onClose} className={btnGhost}>
               Cancelar
             </button>
             <button
               type="submit"
               disabled={!yearMonth || isFutureMonth(yearMonth) || revenue <= 0}
               title={revenue <= 0 ? 'Informe o faturamento do mês' : undefined}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors shadow-2xs cursor-pointer"
+              className={btnPrimary}
             >
-              {recordToEdit ? 'Salvar Modificações' : 'Adicionar ao Histórico'}
+              {recordToEdit ? 'Salvar mês' : 'Adicionar ao Histórico'}
             </button>
           </div>
         </form>

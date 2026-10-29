@@ -156,23 +156,31 @@ const SETTINGS_STEPS: TourStep[] = [
     title: 'Empresa e contabilidade',
     description: () =>
       'Razão social, CNPJ e cidade aparecem no topo e no Resumo. Aqui também ficam os <b>honorários da contabilidade</b>, que entram no que fica na conta da empresa.',
-    side: 'bottom',
-    align: 'center',
+    side: 'right',
+    align: 'start',
+  },
+  {
+    id: 'cfg-prolabore',
+    title: 'Pró-labore',
+    description: () =>
+      'A regra com que cada mês começa (<b>28% do mês</b>, <b>sem folga</b> ou <b>valor fixo</b>) e os dependentes que reduzem o IRRF.',
+    side: 'right',
+    align: 'start',
   },
   {
     id: 'cfg-tabelas',
     title: 'Tabelas fiscais',
     description: () =>
       'INSS, IR e salário mínimo de cada ano. O app procura tabelas novas sozinho; o botão de verificar faz isso na hora.',
-    side: 'bottom',
+    side: 'right',
     align: 'start',
   },
   {
     id: 'cfg-interface',
     title: 'Do seu jeito',
-    description: () => 'Sons, animações e o comportamento do menu lateral.',
-    side: 'bottom',
-    align: 'end',
+    description: () => 'Tema claro ou escuro e os sons do app.',
+    side: 'right',
+    align: 'start',
   },
 ];
 

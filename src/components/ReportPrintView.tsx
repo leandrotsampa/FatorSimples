@@ -57,7 +57,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
           eyebrow={
             <span className="flex items-center gap-1.5">
               <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Resumo do mês para guardar ou enviar à contabilidade
+              Para guardar ou enviar
             </span>
           }
           title="Resumo do mês"

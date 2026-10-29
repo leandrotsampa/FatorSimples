@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { AlertTriangle, Info } from 'lucide-react';
 import { ModalShell } from './ModalShell';
+import { modalPanel } from './card';
 
 // Confirmação e aviso no tema do app, no lugar do window.confirm/alert nativos do sistema
 interface DialogRequest {
@@ -57,7 +58,7 @@ export function useAppDialog(): {
         <ModalShell
           key="app-dialog"
           ariaLabel={request.title}
-          panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl p-6 text-slate-800 dark:text-slate-100"
+          panelClassName={`${modalPanel} max-w-md w-full p-6`}
         >
           <div>
             <div className="flex items-start gap-3">

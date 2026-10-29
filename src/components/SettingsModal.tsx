@@ -1,27 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
-  X,
-  Settings,
-  Sparkles,
-  CheckCircle2,
-  RefreshCw,
-  Building,
-  ShieldCheck,
-  Scale,
-  DollarSign,
-  FileText,
-  Calendar,
   AlertTriangle,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  HandCoins,
+  Minus,
+  Moon,
+  Palette,
+  Plus,
+  RefreshCw,
+  Scale,
+  ShieldCheck,
+  Sun,
+  Volume2,
+  X,
+  type LucideIcon,
 } from 'lucide-react';
 import { TaxSettings } from '../types/tax';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
-import { formatCurrency, formatPercent, ANEXO_III_TABLE, ANEXO_V_TABLE } from '../utils/taxCalculations';
+import { formatCurrency, formatPercent } from '../utils/taxCalculations';
 import { ModalShell } from './ui/ModalShell';
 import { useUiPrefs } from '../hooks/useUiPrefs';
 import { playSound } from '../hooks/useSound';
 import { CurrencyInput } from './CurrencyInput';
-import { HelpTip } from './ui/HelpTip';
+import { HelpTip, type HelpContent } from './ui/HelpTip';
 import { HELP } from './help';
+import { btnGhost, btnPrimary, chip, inputBase, modalPanel, tile } from './ui/card';
+import { EASE_OUT } from '../utils/motion';
 import {
   loadStoredRemoteTables,
   openReleasesPage,
@@ -30,7 +38,7 @@ import {
   type VersionCheckResult,
 } from '../utils/remoteTables';
 
-export type SettingsTab = 'tables' | 'parameters' | 'company' | 'auto_explain' | 'interface';
+export type SettingsTab = 'company' | 'prolabore' | 'tables' | 'interface';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -40,6 +48,8 @@ interface SettingsModalProps {
   // Busca real: arquivo de tabelas no GitHub e última versão publicada do app
   onCheckUpdates: () => Promise<{ tables: TablesCheckResult; version: VersionCheckResult }>;
   newVersion: string | null;
+  theme: 'dark' | 'light';
+  toggleTheme: (origin?: HTMLElement | null) => void;
 }
 
 const formatDateBR = (iso: string) => {
@@ -47,25 +57,150 @@ const formatDateBR = (iso: string) => {
   return Number.isFinite(d.getTime()) ? d.toLocaleDateString('pt-BR') : iso;
 };
 
+// Seções na ordem de quem usa: primeiro a empresa e o pró-labore, depois as regras do cálculo
+const SECTIONS: { id: SettingsTab; title: string; hint: string; icon: LucideIcon; tour?: string }[] = [
+  { id: 'company', title: 'Empresa', hint: 'Nome, CNPJ e contabilidade', icon: Building2, tour: 'cfg-empresa' },
+  { id: 'prolabore', title: 'Pró-labore', hint: 'Regra e dependentes', icon: HandCoins, tour: 'cfg-prolabore' },
+  { id: 'tables', title: 'Tabelas fiscais', hint: 'Mínimo, INSS e IRRF', icon: Scale, tour: 'cfg-tabelas' },
+  { id: 'interface', title: 'Aparência e sons', hint: 'Tema e sons', icon: Palette, tour: 'cfg-interface' },
+];
+
+const RULES: { rule: TaxSettings['prolaboreRule']; label: string; text: string; tag?: string }[] = [
+  {
+    rule: 'auto_28_month',
+    label: '28% do faturamento do mês',
+    text: 'O jeito mais simples: o pró-labore é 28% do que a empresa faturou no mês, e o Fator R fica sempre em 28% ou mais.',
+    tag: 'Recomendado',
+  },
+  {
+    rule: 'exact_rbt12',
+    label: 'Sem folga',
+    text: 'O menor pró-labore que ainda mantém o Fator R em 28%, compensando os 11 meses anteriores. Paga menos INSS e IRRF, mas precisa do Histórico completo.',
+  },
+  { rule: 'manual', label: 'Valor fixo', text: 'Você define um valor e o app avisa quando ele deixa o Fator R abaixo de 28%.' },
+];
+
+const DEPENDENT_HELP: HelpContent = {
+  title: 'Dependentes no IRRF',
+  body: 'Filhos, cônjuge ou outras pessoas que você declara como dependentes no Imposto de Renda. Cada um reduz a base do IRRF retido no pró-labore.',
+  where: 'Na sua declaração do Imposto de Renda, em "Dependentes". Combine com a contabilidade, que informa o mesmo número na DCTFWeb.',
+};
+
+const TABLE_HELP: HelpContent = {
+  title: 'Tabela fiscal',
+  body: 'O salário mínimo, o teto do INSS e as faixas do IRRF mudam por lei, em geral uma vez por ano. Com a atualização automática, o app usa em cada mês a tabela que valia naquele mês.',
+};
+
+// Rótulo + ajuda + campo
+const Field: React.FC<{
+  label: string;
+  htmlFor?: string;
+  help?: HelpContent;
+  hint?: React.ReactNode;
+  optional?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}> = ({ label, htmlFor, help, hint, optional, className = '', children }) => (
+  <div className={className}>
+    <div className="flex items-center gap-1.5 mb-1.5">
+      <label htmlFor={htmlFor} className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+        {label}
+      </label>
+      {optional && <span className="text-xs text-slate-500 dark:text-slate-400">opcional</span>}
+      {help && <HelpTip help={help} />}
+    </div>
+    {children}
+    {hint && <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-snug">{hint}</div>}
+  </div>
+);
+
+// Interruptor liga/desliga
+const Switch: React.FC<{ checked: boolean; onChange: (v: boolean) => void; labelledBy: string; disabled?: boolean }> = ({
+  checked,
+  onChange,
+  labelledBy,
+  disabled,
+}) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-labelledby={labelledBy}
+    disabled={disabled}
+    onClick={() => onChange(!checked)}
+    className={`relative shrink-0 w-11 h-6 rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+      checked ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+    }`}
+  >
+    <span
+      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-[var(--duration-base)] ${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      }`}
+    />
+  </button>
+);
+
+// Bloco de uma seção: título pequeno e conteúdo
+const Group: React.FC<{ title?: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
+  <section className={className}>
+    {title && <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-3">{title}</h3>}
+    {children}
+  </section>
+);
+
+// Aviso dentro da seção (sincronização, versão nova)
+const Notice: React.FC<{ tone: 'ok' | 'warn' | 'info'; children: React.ReactNode; action?: React.ReactNode }> = ({ tone, children, action }) => (
+  <div
+    role="status"
+    className={`flex flex-wrap items-center gap-x-3 gap-y-2 p-3 rounded-xl text-sm ${
+      tone === 'ok'
+        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-100'
+        : tone === 'warn'
+          ? 'bg-amber-50 text-amber-950 dark:bg-amber-400/10 dark:text-amber-100'
+          : 'bg-sky-50 text-sky-950 dark:bg-sky-400/10 dark:text-sky-100'
+    }`}
+  >
+    {tone === 'ok' ? (
+      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+    ) : (
+      <AlertTriangle className={`w-4 h-4 shrink-0 ${tone === 'warn' ? 'text-amber-600 dark:text-amber-400' : 'text-sky-600 dark:text-sky-400'}`} />
+    )}
+    <span className="flex-1 min-w-[12rem]">{children}</span>
+    {action}
+  </div>
+);
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
-  initialTab = 'tables',
+  initialTab = 'company',
   settings,
   onSave,
   onCheckUpdates,
   newVersion,
+  theme,
+  toggleTheme,
 }) => {
+  const reduce = Boolean(useReducedMotion());
   const [formData, setFormData] = useState<TaxSettings>({ ...settings });
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [uiPrefs, setUiPrefs] = useUiPrefs();
   const [syncStatus, setSyncStatus] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [stored, setStored] = useState<StoredRemoteTables>({ doc: null, checkedAt: null });
+  const [manualValues, setManualValues] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     loadStoredRemoteTables().then(setStored);
   }, []);
   const [latestVersion, setLatestVersion] = useState<string | null>(newVersion);
+  const set = (patch: Partial<TaxSettings>) => setFormData((prev) => ({ ...prev, ...patch }));
 
+  const goTo = (tab: SettingsTab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    bodyRef.current?.scrollTo({ top: 0 });
+    playSound('tick');
+  };
 
   // Verificação real: baixa o arquivo de tabelas publicado no GitHub e confere a última versão do app
   const handleSyncTables = async () => {
@@ -144,579 +279,539 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     OFFICIAL_TAX_TABLES[formData.taxVersionId] ||
     OFFICIAL_TAX_TABLES['2026_oficial'] ||
     Object.values(OFFICIAL_TAX_TABLES)[0];
+  const section = SECTIONS.find((s) => s.id === activeTab) ?? SECTIONS[0];
 
   return (
-    <ModalShell ariaLabel="Parâmetros fiscais e tabelas de cálculo" panelClassName="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800 dark:text-slate-100">
-        
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Parâmetros Fiscais & Tabelas de Cálculo
-            </h2>
+    <ModalShell ariaLabel="Configurações" panelClassName={`${modalPanel} w-full max-w-4xl h-[min(44rem,calc(100vh-3rem))] flex overflow-hidden`}>
+      {/* Menu das seções */}
+      <nav
+        aria-label="Seções das configurações"
+        className="hidden sm:flex w-60 shrink-0 flex-col gap-1 p-4 bg-slate-50/80 dark:bg-slate-950/50 border-r border-slate-900/[0.06] dark:border-white/[0.05]"
+      >
+        <div className="px-2 pt-1 pb-4">
+          <h2 className="text-xl font-bold tracking-[-0.01em] text-slate-900 dark:text-white">Configurações</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mudanças valem ao salvar</p>
+        </div>
+        {SECTIONS.map((s) => {
+          const active = s.id === activeTab;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goTo(s.id)}
+              data-tour={s.tour}
+              aria-current={active ? 'page' : undefined}
+              className={`relative w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors cursor-pointer ${
+                active ? 'text-slate-900 dark:text-white' : 'text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.04]'
+              }`}
+            >
+              {active && (
+                <motion.span
+                  layoutId="settings-nav-active"
+                  className="absolute inset-0 rounded-2xl bg-white shadow-[0_1px_2px_rgba(16,40,28,0.06),0_8px_20px_-12px_rgba(16,60,40,0.3)] ring-1 ring-slate-900/[0.05] dark:bg-slate-800 dark:ring-white/[0.06] dark:shadow-none"
+                  transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              )}
+              <span
+                className={`relative w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
+                  active
+                    ? 'bg-emerald-600 text-white shadow-[0_6px_14px_-8px_rgba(5,150,105,0.9)]'
+                    : 'bg-white text-slate-500 ring-1 ring-slate-900/[0.06] dark:bg-slate-900 dark:text-slate-400 dark:ring-white/[0.06]'
+                }`}
+              >
+                <s.icon className="w-[18px] h-[18px]" />
+              </span>
+              <span className="relative min-w-0">
+                <span className="block text-sm font-semibold">{s.title}</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{s.hint}</span>
+              </span>
+            </button>
+          );
+        })}
+        <div className="mt-auto px-2 text-[11px] text-slate-500 dark:text-slate-500 font-num">FatorSimples {__APP_VERSION__}</div>
+      </nav>
+
+      <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex flex-col">
+        {/* Título da seção */}
+        <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-6 pb-4">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold tracking-[-0.015em] text-slate-900 dark:text-white">{section.title}</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{section.hint}</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Fechar configurações"
             title="Fechar"
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white cursor-pointer transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Subnavigation inside modal */}
-        <div className="flex items-center gap-2 px-6 pt-3 pb-2 border-b border-slate-200 dark:border-slate-800/80 bg-slate-100/50 dark:bg-slate-950/30 text-xs flex-wrap">
-          <button
-            type="button"
-            onClick={() => setActiveTab('tables')}
-            data-tour="cfg-tabelas"
-            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-              activeTab === 'tables'
-                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            Tabelas
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('auto_explain')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-              activeTab === 'auto_explain'
-                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Como atualiza</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('parameters')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-              activeTab === 'parameters'
-                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            INSS e deduções
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('company')}
-            data-tour="cfg-empresa"
-            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-              activeTab === 'company'
-                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            Empresa
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('interface')}
-            data-tour="cfg-interface"
-            className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-              activeTab === 'interface'
-                ? 'bg-white text-emerald-700 border border-slate-300 shadow-2xs dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            Interface
-          </button>
+        {/* Seções em abas no celular (o menu lateral some em telas estreitas) */}
+        <div className="sm:hidden flex gap-1.5 px-6 pb-3 overflow-x-auto">
+          {SECTIONS.map((s) => (
+            <button key={s.id} type="button" onClick={() => goTo(s.id)} className={`${chip(s.id === activeTab)} shrink-0 h-8 px-3 text-xs`}>
+              {s.title}
+            </button>
+          ))}
         </div>
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
-          
-          {/* TAB: Como Atualiza em 2026 / 2027 */}
-          {activeTab === 'auto_explain' && (
-            <div className="space-y-4">
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 rounded-lg space-y-3">
-                <div className="font-bold text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Como as tabelas se atualizam</span>
-                </div>
-
-                <div className="space-y-2.5 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">1. A tabela de cada mês</strong>
-                    Cada tabela (salário mínimo, teto do INSS, faixas do IRRF) tem um período de vigência. Ao trocar de
-                    competência, o app usa a que vale naquele mês.
+        <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 sm:px-8 pb-6">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+              className="space-y-8 pt-1"
+            >
+              {activeTab === 'company' && (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-x-4 gap-y-5">
+                    <Field label="Razão social" htmlFor="cfg-name" help={HELP.companyName} className="sm:col-span-2">
+                      <input
+                        id="cfg-name"
+                        value={formData.companyName}
+                        onChange={(e) => set({ companyName: e.target.value })}
+                        className={inputBase}
+                        placeholder="Ex.: Minha Empresa de Tecnologia LTDA"
+                      />
+                    </Field>
+                    <Field label="CNPJ" htmlFor="cfg-cnpj" help={HELP.cnpj}>
+                      <input
+                        id="cfg-cnpj"
+                        value={formData.cnpj}
+                        onChange={(e) => set({ cnpj: e.target.value })}
+                        className={`${inputBase} font-num`}
+                        placeholder="00.000.000/0001-00"
+                      />
+                    </Field>
+                    <Field label="Cidade / UF" htmlFor="cfg-city" help={HELP.cityState}>
+                      <input
+                        id="cfg-city"
+                        value={formData.cityState}
+                        onChange={(e) => set({ cityState: e.target.value })}
+                        className={inputBase}
+                        placeholder="Ex.: Brusque - SC"
+                      />
+                    </Field>
+                    <Field
+                      label="CNAE principal"
+                      htmlFor="cfg-cnae"
+                      help={HELP.cnae}
+                      className="sm:col-span-2"
+                      hint="A atividade define o anexo do Simples. Software, consultoria e engenharia vão para o Anexo III, mais barato, com o Fator R em 28%."
+                    >
+                      <input id="cfg-cnae" value={formData.cnae} onChange={(e) => set({ cnae: e.target.value })} className={inputBase} />
+                    </Field>
                   </div>
 
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">2. Atualização pelo GitHub do FatorSimples</strong>
-                    Quando sai uma lei ou portaria nova, o FatorSimples publica um arquivo de tabelas no GitHub. O app
-                    confere esse arquivo ao abrir (no máximo uma vez por dia) e quando você clica em "Verificar
-                    atualizações". Só aplica se o arquivo estiver completo; sem internet, segue com as tabelas que já
-                    tem. O app não consulta a Receita Federal diretamente: ela não oferece esse serviço.
-                  </div>
+                  <Group title="Contabilidade">
+                    <Field
+                      label="Honorários mensais"
+                      htmlFor="accounting-fee"
+                      help={HELP.accountingFee}
+                      optional
+                      hint="Na tela do mês, esse valor fica na conta da empresa junto com os impostos e sai do lucro que você transfere."
+                    >
+                      <CurrencyInput
+                        id="accounting-fee"
+                        value={formData.accountingFee ?? 0}
+                        onChange={(v) => set({ accountingFee: v })}
+                        className="sm:max-w-xs"
+                      />
+                    </Field>
+                  </Group>
+                </>
+              )}
 
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">3. Versão nova do app</strong>
-                    Mudanças de regra, como faixas e alíquotas do Simples Nacional ou um imposto novo, exigem uma versão
-                    nova. O app avisa quando houver uma e leva à página de download.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 1: Tabelas de IRPF / IRRF Atualizadas */}
-          {activeTab === 'tables' && (
-            <div className="space-y-4">
-              {/* Sincronização e Versão */}
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Origem das tabelas</span>
+              {activeTab === 'prolabore' && (
+                <>
+                  <Group title="Como o mês começa">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 -mt-1.5 mb-3">
+                      A regra que a tela do mês usa ao abrir uma competência nova. Dá para trocar em cada mês.
+                    </p>
+                    <div role="radiogroup" aria-label="Regra do pró-labore" className="space-y-2.5">
+                      {RULES.map((r) => {
+                        const active = formData.prolaboreRule === r.rule;
+                        return (
+                          <button
+                            key={r.rule}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => set({ prolaboreRule: r.rule })}
+                            className={`w-full text-left flex gap-3 p-4 rounded-2xl ring-1 ring-inset transition-colors cursor-pointer ${
+                              active
+                                ? 'bg-emerald-50 ring-emerald-500 dark:bg-emerald-500/10 dark:ring-emerald-400/50'
+                                : 'bg-white ring-slate-200 hover:ring-emerald-300 dark:bg-slate-950/40 dark:ring-white/[0.07] dark:hover:ring-emerald-400/40'
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 w-5 h-5 shrink-0 rounded-full flex items-center justify-center ring-2 transition-colors ${
+                                active ? 'bg-emerald-600 ring-emerald-600 text-white' : 'ring-slate-300 dark:ring-slate-600'
+                              }`}
+                            >
+                              {active && <Check className="w-3 h-3" strokeWidth={3} />}
+                            </span>
+                            <span>
+                              <span className="flex flex-wrap items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                {r.label}
+                                {r.tag && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-semibold">{r.tag}</span>}
+                              </span>
+                              <span className="block mt-0.5 text-sm text-slate-600 dark:text-slate-400 leading-snug">{r.text}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                      {stored.doc
-                        ? `Arquivo do GitHub do FatorSimples, publicado em ${formatDateBR(stored.doc.publishedAt)}`
-                        : `Tabelas embutidas na versão ${__APP_VERSION__} do app`}
-                      {' · '}
-                      {stored.checkedAt ? `verificado em ${new Date(stored.checkedAt).toLocaleString('pt-BR')}` : 'ainda não verificado'}
-                    </div>
-                  </div>
+                    <AnimatePresence initial={false}>
+                      {formData.prolaboreRule === 'manual' && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: EASE_OUT }}
+                          className="overflow-hidden"
+                        >
+                          <Field label="Valor do pró-labore" htmlFor="cfg-manual" help={HELP.prolabore} className="pt-4">
+                            <CurrencyInput
+                              id="cfg-manual"
+                              value={formData.manualProlaboreAmount}
+                              onChange={(v) => set({ manualProlaboreAmount: v })}
+                              className="sm:max-w-xs"
+                            />
+                          </Field>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Group>
 
-                  <button
-                    type="button"
-                    onClick={handleSyncTables}
-                    disabled={isSyncing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? 'Verificando…' : 'Verificar atualizações'}</span>
-                  </button>
-                </div>
+                  <Group title="Imposto de Renda">
+                    <Field
+                      label="Dependentes"
+                      help={DEPENDENT_HELP}
+                      hint={`Cada dependente reduz a base do IRRF em ${formatCurrency(formData.dependentDeduction)}.`}
+                    >
+                      <div className="inline-flex items-center gap-1 p-1 rounded-full bg-slate-100 dark:bg-slate-950 ring-1 ring-inset ring-slate-900/[0.05] dark:ring-white/[0.06]">
+                        <button
+                          type="button"
+                          aria-label="Menos um dependente"
+                          disabled={formData.dependentsCount <= 0}
+                          onClick={() => set({ dependentsCount: Math.max(0, formData.dependentsCount - 1) })}
+                          className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-slate-700 shadow-sm hover:text-emerald-700 dark:bg-slate-800 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-12 text-center text-lg font-semibold font-num tabular-nums text-slate-900 dark:text-white" aria-live="polite">
+                          {formData.dependentsCount}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Mais um dependente"
+                          disabled={formData.dependentsCount >= 15}
+                          onClick={() => set({ dependentsCount: Math.min(15, formData.dependentsCount + 1) })}
+                          className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-slate-700 shadow-sm hover:text-emerald-700 dark:bg-slate-800 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </Field>
+                  </Group>
 
-                {syncStatus && (
-                  <div
-                    role="status"
-                    className={`p-2 rounded-lg text-xs flex items-center gap-1.5 font-medium border ${
-                      syncStatus.tone === 'ok'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300'
-                        : 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-200'
-                    }`}
-                  >
-                    {syncStatus.tone === 'ok' ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                    ) : (
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    )}
-                    <span>{syncStatus.text}</span>
-                  </div>
-                )}
-
-                {latestVersion && (
-                  <div className="p-2 rounded-lg text-xs flex items-center justify-between gap-2 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/50 text-sky-900 dark:text-sky-200">
+                  <div className={`${tile} flex gap-3 p-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed`}>
+                    <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span>
-                      A versão <b className="font-num">{latestVersion}</b> do app está disponível (você usa a {__APP_VERSION__}).
-                      Mudanças de regra, como faixas do Simples, chegam por versão nova.
+                      <b className="text-slate-900 dark:text-white">Sem INSS patronal à parte.</b> No Simples, os 20% de contribuição da
+                      empresa sobre o pró-labore já estão dentro do DAS. Do pró-labore saem só o INSS de 11% e o IRRF.
                     </span>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'tables' && (
+                <>
+                  <div className={`${tile} p-5 space-y-4`}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div id="cfg-auto-label" className="font-semibold text-slate-900 dark:text-white">
+                          Atualizar sozinho
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5 max-w-md">
+                          Usa em cada mês a tabela que valia naquele mês e procura tabelas novas ao abrir o app, no máximo uma vez por dia.
+                        </p>
+                      </div>
+                      <Switch checked={formData.autoUpdateTables} onChange={(v) => set({ autoUpdateTables: v })} labelledBy="cfg-auto-label" />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-900/[0.06] dark:border-white/[0.06]">
+                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                        {stored.doc
+                          ? `Tabelas do GitHub do FatorSimples, publicadas em ${formatDateBR(stored.doc.publishedAt)}`
+                          : `Tabelas que vieram com a versão ${__APP_VERSION__}`}
+                        <span className="block text-xs text-slate-500 dark:text-slate-500">
+                          {stored.checkedAt ? `Verificado em ${new Date(stored.checkedAt).toLocaleString('pt-BR')}` : 'Ainda não verificado'}
+                        </span>
+                      </div>
+                      <button type="button" onClick={handleSyncTables} disabled={isSyncing} className={btnGhost}>
+                        <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Verificando…' : 'Verificar agora'}
+                      </button>
+                    </div>
+                    {syncStatus && <Notice tone={syncStatus.tone}>{syncStatus.text}</Notice>}
+                    {latestVersion && (
+                      <Notice
+                        tone="info"
+                        action={
+                          <button type="button" onClick={openReleasesPage} className={`${btnPrimary} h-8 px-3.5 text-xs`}>
+                            Baixar
+                          </button>
+                        }
+                      >
+                        A versão <b className="font-num">{latestVersion}</b> está disponível (você usa a {__APP_VERSION__}). Mudanças nas
+                        faixas do Simples chegam por versão nova.
+                      </Notice>
+                    )}
+                  </div>
+
+                  <Group>
+                    <Field label="Tabela usada" htmlFor="cfg-table" help={TABLE_HELP} hint={`Base legal: ${activeVersion.legalBasis}`}>
+                      <div className="relative">
+                        <select
+                          id="cfg-table"
+                          value={formData.taxVersionId}
+                          onChange={(e) => handleTableVersionChange(e.target.value)}
+                          className={`${inputBase} appearance-none pr-10 cursor-pointer font-medium`}
+                        >
+                          {Object.values(OFFICIAL_TAX_TABLES).map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({t.effectiveDate})
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      </div>
+                    </Field>
+                  </Group>
+
+                  <Group title={`Valores de ${activeVersion.year}`}>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      {[
+                        { label: 'Salário mínimo', value: formData.minimumWage },
+                        { label: 'Teto do INSS', value: formData.inssCeiling },
+                        { label: 'Desconto simplificado do IR', value: formData.simplifiedIrDeduction },
+                      ].map((v) => (
+                        <div key={v.label} className={`${tile} px-4 py-3`}>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{v.label}</div>
+                          <div className="text-lg font-semibold font-num tabular-nums text-slate-900 dark:text-white">{formatCurrency(v.value)}</div>
+                        </div>
+                      ))}
+                    </div>
                     <button
                       type="button"
-                      onClick={openReleasesPage}
-                      className="shrink-0 px-3 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold cursor-pointer"
+                      onClick={() => setManualValues((v) => !v)}
+                      aria-expanded={manualValues}
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer"
                     >
-                      Baixar
+                      Ajustar à mão
+                      <ChevronDown className={`w-4 h-4 transition-transform ${manualValues ? 'rotate-180' : ''}`} />
                     </button>
-                  </div>
-                )}
+                    <AnimatePresence initial={false}>
+                      {manualValues && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: EASE_OUT }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-3 grid sm:grid-cols-3 gap-3">
+                            <Field label="Salário mínimo" htmlFor="cfg-min">
+                              <CurrencyInput id="cfg-min" value={formData.minimumWage} onChange={(v) => set({ minimumWage: v })} />
+                            </Field>
+                            <Field label="Teto do INSS" htmlFor="cfg-ceiling">
+                              <CurrencyInput id="cfg-ceiling" value={formData.inssCeiling} onChange={(v) => set({ inssCeiling: v })} />
+                            </Field>
+                            <Field label="Desconto simplificado" htmlFor="cfg-simpl">
+                              <CurrencyInput
+                                id="cfg-simpl"
+                                value={formData.simplifiedIrDeduction}
+                                onChange={(v) => set({ simplifiedIrDeduction: v })}
+                              />
+                            </Field>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            Só para casos especiais. Com "Atualizar sozinho" ligado, cada mês volta a usar a tabela oficial dele.
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Group>
 
-                {/* Seletor de versão */}
-                <div className="pt-2">
-                  <label className="block text-slate-600 dark:text-slate-400 text-[11px] font-semibold mb-1">
-                    Selecione a Legislação de Referência:
-                  </label>
-                  <select
-                    value={formData.taxVersionId}
-                    onChange={(e) => handleTableVersionChange(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-slate-200 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs font-medium"
-                  >
-                    {Object.values(OFFICIAL_TAX_TABLES).map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} — {t.effectiveDate}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Base legal: {activeVersion.legalBasis}
-                  </span>
-                </div>
-
-                {/* Toggle de atualização automática */}
-                <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800/80">
-                  <div>
-                    <div className="text-slate-800 dark:text-slate-200 font-bold text-xs">
-                      Atualizar automaticamente
+                  <Group title="Faixas do IRRF mensal">
+                    <div className="rounded-2xl ring-1 ring-slate-900/[0.07] dark:ring-white/[0.06] overflow-hidden">
+                      <table className="w-full text-sm font-num">
+                        <thead className="bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-500 dark:text-slate-400">
+                          <tr>
+                            <th className="px-4 py-2.5 text-left font-medium">Base de cálculo</th>
+                            <th className="px-4 py-2.5 text-right font-medium">Alíquota</th>
+                            <th className="px-4 py-2.5 text-right font-medium">Parcela a deduzir</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-900/[0.05] dark:divide-white/[0.05] text-slate-700 dark:text-slate-300 tabular-nums">
+                          {activeVersion.irrfBrackets.map((b, idx) => (
+                            <tr key={b.faixa}>
+                              <td className="px-4 py-2.5">
+                                {idx === 0
+                                  ? `Até ${formatCurrency(b.limit)}`
+                                  : idx === activeVersion.irrfBrackets.length - 1
+                                    ? `Acima de ${formatCurrency(activeVersion.irrfBrackets[idx - 1].limit)}`
+                                    : `${formatCurrency(activeVersion.irrfBrackets[idx - 1].limit + 0.01)} a ${formatCurrency(b.limit)}`}
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-semibold text-slate-900 dark:text-white">{formatPercent(b.rate * 100, 1)}</td>
+                              <td className="px-4 py-2.5 text-right">{formatCurrency(b.deduction)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    <div className="text-xs text-slate-500">
-                      Usa a tabela vigente em cada mês e confere o GitHub ao abrir o app (no máximo uma vez por dia).
+                    {activeVersion.irrfReduction && (
+                      <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <b className="text-slate-800 dark:text-slate-200">Redução da {activeVersion.irrfReduction.legalBasis}:</b> pró-labore
+                        até {formatCurrency(activeVersion.irrfReduction.fullExemptionLimit)} fica sem IRRF, e até{' '}
+                        {formatCurrency(activeVersion.irrfReduction.phaseOutLimit)} o imposto diminui. O app aplica sozinho.
+                      </p>
+                    )}
+                  </Group>
+
+                  <details className={`${tile} group p-4`}>
+                    <summary className="flex items-center justify-between gap-3 cursor-pointer list-none font-semibold text-slate-900 dark:text-white">
+                      Como as tabelas se atualizam
+                      <ChevronDown className="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <ol className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed list-decimal pl-5 marker:text-slate-400">
+                      <li>
+                        <b className="text-slate-800 dark:text-slate-200">Uma tabela por período.</b> Salário mínimo, teto do INSS e faixas do
+                        IRRF têm vigência; ao trocar de mês, o app usa a que valia naquele mês.
+                      </li>
+                      <li>
+                        <b className="text-slate-800 dark:text-slate-200">Tabelas novas pelo GitHub.</b> Quando sai uma lei ou portaria, o
+                        FatorSimples publica as tabelas no GitHub. O app confere ao abrir e quando você clica em "Verificar agora", e só aplica
+                        um arquivo completo. Sem internet, segue com as tabelas que já tem.
+                      </li>
+                      <li>
+                        <b className="text-slate-800 dark:text-slate-200">Regras novas por versão nova.</b> Mudanças nas faixas do Simples ou
+                        um imposto novo chegam numa versão nova do app, que avisa quando ela sair.
+                      </li>
+                    </ol>
+                  </details>
+                </>
+              )}
+
+              {activeTab === 'interface' && (
+                <>
+                  <Group title="Tema">
+                    <div className="grid grid-cols-2 gap-3 max-w-md">
+                      {(['light', 'dark'] as const).map((t) => {
+                        const active = theme === t;
+                        const Icon = t === 'light' ? Sun : Moon;
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={(e) => !active && toggleTheme(e.currentTarget)}
+                            className={`text-left rounded-2xl p-2 ring-1 ring-inset transition-colors cursor-pointer ${
+                              active ? 'ring-2 ring-emerald-500' : 'ring-slate-200 hover:ring-emerald-300 dark:ring-white/[0.08] dark:hover:ring-emerald-400/40'
+                            }`}
+                          >
+                            {/* Miniatura do tema */}
+                            <span
+                              aria-hidden="true"
+                              className={`block h-20 rounded-xl p-2 ${t === 'light' ? 'bg-[#e7eee9]' : 'bg-[#0a1216]'}`}
+                            >
+                              <span className={`flex h-full gap-1.5`}>
+                                <span className={`w-6 rounded-md ${t === 'light' ? 'bg-white' : 'bg-[#152127]'}`} />
+                                <span className="flex-1 flex flex-col gap-1.5">
+                                  <span className={`h-6 rounded-md ${t === 'light' ? 'bg-white' : 'bg-[#152127]'}`} />
+                                  <span className={`flex-1 rounded-md ${t === 'light' ? 'bg-white' : 'bg-[#152127]'} flex items-end p-1.5`}>
+                                    <span className="h-1.5 w-8 rounded-full bg-emerald-500" />
+                                  </span>
+                                </span>
+                              </span>
+                            </span>
+                            <span className="mt-2 px-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white">
+                              <Icon className={`w-4 h-4 ${t === 'light' ? 'text-amber-500' : 'text-emerald-400'}`} />
+                              {t === 'light' ? 'Claro' : 'Escuro'}
+                              {active && <Check className="w-4 h-4 ml-auto text-emerald-600 dark:text-emerald-400" />}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={formData.autoUpdateTables}
-                    onChange={(e) => setFormData({ ...formData, autoUpdateTables: e.target.checked })}
-                    className="w-4 h-4 accent-emerald-500 cursor-pointer"
-                  />
-                </div>
-              </div>
+                  </Group>
 
-              {/* Tabela Visual do IRPF Vigente */}
-              <div className="space-y-2">
-                <div className="font-bold text-slate-800 dark:text-slate-300 text-xs flex items-center justify-between">
-                  <span>Faixas da Tabela Progressiva Mensal do IRPF:</span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-num">
-                    Desconto Simplificado: {formatCurrency(formData.simplifiedIrDeduction)}
-                  </span>
-                </div>
-
-                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs">
-                  <table className="w-full text-left font-num text-[11px]">
-                    <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-bold">
-                      <tr>
-                        <th className="p-2">Faixa</th>
-                        <th className="p-2">Base de Cálculo Mensal</th>
-                        <th className="p-2 text-center">Alíquota</th>
-                        <th className="p-2 text-right">Parcela a Deduzir</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
-                      {activeVersion.irrfBrackets.map((b, idx) => (
-                        <tr key={b.faixa} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
-                          <td className="p-2 font-bold text-slate-900 dark:text-white">Faixa {b.faixa}</td>
-                          <td className="p-2">
-                            {idx === 0
-                              ? `Até ${formatCurrency(b.limit)}`
-                              : idx === activeVersion.irrfBrackets.length - 1
-                              ? `Acima de ${formatCurrency(activeVersion.irrfBrackets[idx - 1].limit)}`
-                              : `De ${formatCurrency(activeVersion.irrfBrackets[idx - 1].limit + 0.01)} a ${formatCurrency(b.limit)}`}
-                          </td>
-                          <td className="p-2 text-center font-bold text-emerald-700 dark:text-emerald-400">
-                            {formatPercent(b.rate * 100, 1)}
-                          </td>
-                          <td className="p-2 text-right tabular-nums">
-                            {formatCurrency(b.deduction)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {activeVersion.irrfReduction && (
-                  <div className="text-[11px] text-emerald-900 dark:text-emerald-200 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30">
-                    <strong className="text-emerald-900 dark:text-emerald-300">
-                      Redução do IRRF ({activeVersion.irrfReduction.legalBasis}):
-                    </strong>{' '}
-                    rendimento bruto até {formatCurrency(activeVersion.irrfReduction.fullExemptionLimit)} fica isento (redução
-                    de até {formatCurrency(activeVersion.irrfReduction.maxReduction)}); até{' '}
-                    {formatCurrency(activeVersion.irrfReduction.phaseOutLimit)} reduz{' '}
-                    {formatCurrency(activeVersion.irrfReduction.phaseOutBase)} −{' '}
-                    {activeVersion.irrfReduction.phaseOutRate.toLocaleString('pt-BR', { maximumFractionDigits: 6 })} × rendimento.
-                    Aplicada automaticamente após a tabela.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: INSS & Deduções */}
-          {activeTab === 'parameters' && (
-            <div className="space-y-4">
-              {/* Box explicativo de atualização automática */}
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-emerald-900 dark:text-emerald-300 block mb-0.5">
-                    Valores da tabela de {activeVersion.year}
-                  </strong>
-                  <span>
-                    O salário mínimo, o teto do INSS e o desconto simplificado vêm da tabela da competência
-                    ({activeVersion.name}): {formatCurrency(activeVersion.minimumWage)} de salário mínimo e{' '}
-                    {formatCurrency(activeVersion.inssCeiling)} de teto do INSS
-                    {activeVersion.irrfReduction ? `, com a redução do IRRF da ${activeVersion.irrfReduction.legalBasis}` : ''}.
-                    Se precisar, ajuste abaixo.
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Salário Mínimo */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">
-                      Salário Mínimo Nacional (R$):
-                    </label>
-                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
-                      Auto ({activeVersion.year})
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    step="1"
-                    value={formData.minimumWage}
-                    onChange={(e) => setFormData({ ...formData, minimumWage: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Piso legal obrigatório para retirada de pró-labore.
-                  </span>
-                </div>
-
-                {/* Teto do INSS */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">
-                      Teto Máximo do INSS (R$):
-                    </label>
-                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
-                      Auto ({activeVersion.year})
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.inssCeiling}
-                    onChange={(e) => setFormData({ ...formData, inssCeiling: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Limite máximo de contribuição individual (11%).
-                  </span>
-                </div>
-
-                {/* Dependentes */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">
-                      Número de Dependentes (IRRF):
-                    </label>
-                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-num">
-                      R$ 189,59/dep
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    min="0"
-                    max="15"
-                    value={formData.dependentsCount}
-                    onChange={(e) => setFormData({ ...formData, dependentsCount: parseInt(e.target.value, 10) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Dedução legal de R$ 189,59 por dependente cadastrado.
-                  </span>
-                </div>
-
-                {/* Desconto Simplificado Mensal */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">
-                      Desconto Simplificado IRPF (R$):
-                    </label>
-                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold font-num">
-                      Auto ({activeVersion.year})
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.10"
-                    value={formData.simplifiedIrDeduction}
-                    onChange={(e) => setFormData({ ...formData, simplifiedIrDeduction: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-sm focus:outline-none focus:border-emerald-500 shadow-2xs font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Aplicado automaticamente quando for mais vantajoso que as deduções legais.
-                  </span>
-                </div>
-              </div>
-
-              {/* Destaque educativo CPP patronal */}
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong>Nota sobre o Anexo III:</strong> Empresas enquadradas no Anexo III através do Fator R são isentas da Contribuição Patronal Previdenciária de 20% sobre o pró-labore, pois a CPP já se encontra unificada dentro da guia do Simples Nacional (DAS).
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: Dados da Empresa (Brusque - SC) */}
-          {activeTab === 'company' && (
-            <div className="space-y-4">
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
-                <div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">Razão Social da Empresa:</label>
-                    <HelpTip help={HELP.companyName} />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
-                    placeholder="Minha Empresa de Tecnologia LTDA"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-slate-700 dark:text-slate-300 font-semibold">CNPJ:</label>
-                      <HelpTip help={HELP.cnpj} />
+                  <Group title="Sons">
+                    <div className={`${tile} p-5 space-y-5`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div id="ui-sound-label" className="font-semibold text-slate-900 dark:text-white">
+                            Sons da interface
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                            Cliques, confirmação ao salvar e aviso quando o Fator R cai abaixo de 28%.
+                          </p>
+                        </div>
+                        <Switch checked={uiPrefs.soundEnabled} onChange={(v) => setUiPrefs({ soundEnabled: v })} labelledBy="ui-sound-label" />
+                      </div>
+                      <div className={`flex flex-wrap items-center gap-4 ${uiPrefs.soundEnabled ? '' : 'opacity-50'}`}>
+                        <Volume2 className="w-4 h-4 text-slate-500" />
+                        <label htmlFor="ui-sound-volume" className="sr-only">
+                          Volume
+                        </label>
+                        <input
+                          id="ui-sound-volume"
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={Math.round(uiPrefs.soundVolume * 100)}
+                          disabled={!uiPrefs.soundEnabled}
+                          onChange={(e) => setUiPrefs({ soundVolume: Number(e.target.value) / 100 })}
+                          className="flex-1 min-w-[10rem] accent-emerald-600 cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <span className="w-10 text-right text-sm font-num tabular-nums text-slate-700 dark:text-slate-300">
+                          {Math.round(uiPrefs.soundVolume * 100)}%
+                        </span>
+                        <button type="button" disabled={!uiPrefs.soundEnabled} onClick={() => playSound('success')} className={`${btnGhost} h-9`}>
+                          Testar
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      type="text"
-                      value={formData.cnpj}
-                      onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white font-num text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
-                      placeholder="00.000.000/0001-00"
-                    />
-                  </div>
+                  </Group>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-slate-700 dark:text-slate-300 font-semibold">Cidade / UF:</label>
-                      <HelpTip help={HELP.cityState} />
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.cityState}
-                      onChange={(e) => setFormData({ ...formData, cityState: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
-                      placeholder="Brusque - SC"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-semibold">CNAE Principal:</label>
-                    <HelpTip help={HELP.cnae} />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.cnae}
-                    onChange={(e) => setFormData({ ...formData, cnae: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-2xs font-medium"
-                    placeholder="6201-5/01 - Desenvolvimento de Programas de Computador"
-                  />
-                </div>
-              </div>
-
-              {/* Honorários: ficam na conta junto com os impostos e saem do lucro a transferir */}
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1 mb-1">
-                  <label htmlFor="accounting-fee" className="text-slate-700 dark:text-slate-300 font-semibold">Honorários mensais da contabilidade</label>
-                  <HelpTip help={HELP.accountingFee} />
-                </div>
-                <CurrencyInput
-                  id="accounting-fee"
-                  value={formData.accountingFee ?? 0}
-                  onChange={(v) => setFormData({ ...formData, accountingFee: v })}
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                  Na Apuração, esse valor fica na conta junto com os impostos e sai do lucro que você transfere.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: Interface (preferências locais, salvas na hora e fora das configurações fiscais) */}
-          {activeTab === 'interface' && (
-            <div className="space-y-4">
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div id="ui-sound-label" className="text-slate-900 dark:text-slate-100 font-semibold text-sm">
-                      Sons da interface
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-400 mt-0.5">
-                      Cliques, confirmação ao salvar e aviso quando o Fator R cai abaixo de 28%.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={uiPrefs.soundEnabled}
-                    aria-labelledby="ui-sound-label"
-                    onClick={() => setUiPrefs({ soundEnabled: !uiPrefs.soundEnabled })}
-                    className={`relative shrink-0 w-10 h-6 rounded-full transition-colors cursor-pointer ${
-                      uiPrefs.soundEnabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-[var(--duration-base)] ${
-                        uiPrefs.soundEnabled ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className={uiPrefs.soundEnabled ? '' : 'opacity-50'}>
-                  <label htmlFor="ui-sound-volume" className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    <span>Volume</span>
-                    <span className="font-num tabular-nums">{Math.round(uiPrefs.soundVolume * 100)}%</span>
-                  </label>
-                  <input
-                    id="ui-sound-volume"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={Math.round(uiPrefs.soundVolume * 100)}
-                    disabled={!uiPrefs.soundEnabled}
-                    onChange={(e) => setUiPrefs({ soundVolume: Number(e.target.value) / 100 })}
-                    className="w-full accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  disabled={!uiPrefs.soundEnabled}
-                  onClick={() => playSound('success')}
-                  className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md font-semibold text-slate-700 dark:text-slate-200 hover:border-emerald-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Testar som
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Estas preferências ficam neste computador e são salvas na hora, sem precisar de "Salvar Alterações".
-              </p>
-            </div>
-          )}
-
-          {/* Modal Footer */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs font-semibold transition-colors cursor-pointer"
-            >
+        {/* Rodapé fixo */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 sm:px-8 py-4 border-t border-slate-900/[0.06] dark:border-white/[0.06]">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {activeTab === 'interface' ? 'Tema e sons valem na hora, sem precisar salvar.' : 'Os cálculos usam os novos valores depois de salvar.'}
+          </p>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={onClose} className={btnGhost}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full text-xs transition-colors shadow-2xs cursor-pointer"
-            >
-              Salvar Alterações
+            <button type="submit" className={btnPrimary}>
+              Salvar
             </button>
           </div>
-        </form>
+        </div>
+      </form>
     </ModalShell>
   );
 };

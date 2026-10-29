@@ -178,7 +178,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
   return (
     <div className="page-stagger space-y-5">
       <PageHeader
-        eyebrow="Com e sem o Fator R · com base no seu histórico"
+        eyebrow="Com base no seu Histórico"
         title="O Fator R está valendo a pena para você?"
         description="Comparamos o que está registrado no seu histórico (DAS + INSS + IRRF) com o que pagaria sem o Fator R: Anexo V com pró-labore de 1 salário mínimo, mesmo faturamento e mesmo RBT12, nas tabelas de cada competência."
       />

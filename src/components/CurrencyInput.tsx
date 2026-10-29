@@ -65,7 +65,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
           onChange(parseCurrencyInput(e.target.value));
         }}
         onBlur={() => setDraft(null)}
-        className="w-full h-10 pl-10 pr-3 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-right text-base font-semibold font-num tabular-nums text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 read-only:cursor-not-allowed read-only:text-slate-500 dark:read-only:text-slate-400 read-only:bg-slate-50 dark:read-only:bg-slate-900"
+        className="w-full h-11 pl-10 pr-3 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-right text-base font-semibold font-num tabular-nums text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25 transition-shadow read-only:cursor-not-allowed read-only:text-slate-500 dark:read-only:text-slate-400 read-only:bg-slate-50 dark:read-only:bg-slate-900"
       />
     </div>
   );
