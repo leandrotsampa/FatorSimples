@@ -355,6 +355,7 @@ npm run dev
 | `npm run electron:dev` | Abre o app desktop (usa o build em `dist/` se existir; senão, o servidor em `:3000`) |
 | `npm run lint` | Checagem de tipos com TypeScript |
 | `npm test` | Testes automatizados (Vitest) dos cálculos, das tabelas e da interface |
+| `npm run check:import -- <pdfs>` | Roda a importação de documentos do app em PDFs da Receita (PGDAS-D e pagamentos) e mostra o que seria gravado, sem abrir o app. `--json saida.json` grava o resultado |
 | `npm run build` | Build de produção da interface em `dist/` |
 | `npm run dist:win` | Gera o instalador `release/FatorSimples-<versão>-setup.exe` e o portátil (Windows) |
 | `npm run dist:portable` | Gera só o portátil `release/FatorSimples-<versão>-portable.exe` (Windows) |

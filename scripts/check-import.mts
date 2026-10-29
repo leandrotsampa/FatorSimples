@@ -1,0 +1,50 @@
+// Roda a importação de documentos do app (a mesma da tela) em PDFs da Receita, fora do navegador,
+// e mostra o que seria gravado. Uso: npx tsx scripts/check-import.mts <pdf> [<pdf> ...] [--json saida.json]
+import { readFileSync, writeFileSync } from 'node:fs';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { readTaxDocument, type TaxDocument } from '../src/utils/taxDocuments';
+import { planDocumentImport } from '../src/utils/documentImport';
+import { DEFAULT_SETTINGS } from '../src/utils/taxCalculations';
+
+// Mesma montagem de linhas de src/utils/pdfText.ts (pedaços na mesma altura viram uma linha)
+async function pdfLines(path: string): Promise<string[]> {
+  const doc = await getDocument({ data: new Uint8Array(readFileSync(path)) }).promise;
+  const lines: string[] = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const content = await (await doc.getPage(p)).getTextContent();
+    const rows: { y: number; parts: { x: number; s: string }[] }[] = [];
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str.trim()) continue;
+      const [x, y] = [item.transform[4], item.transform[5]];
+      let row = rows.find((r) => Math.abs(r.y - y) <= 2);
+      if (!row) rows.push((row = { y, parts: [] }));
+      row.parts.push({ x, s: item.str.trim() });
+    }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) lines.push(r.parts.sort((a, b) => a.x - b.x).map((part) => part.s).join(' | '));
+  }
+  return lines;
+}
+
+const args = process.argv.slice(2);
+const jsonAt = args.indexOf('--json');
+const out = jsonAt >= 0 ? args.splice(jsonAt, 2)[1] : null;
+
+const docs: TaxDocument[] = [];
+for (const path of args) {
+  const doc = readTaxDocument(await pdfLines(path));
+  if (!doc) throw new Error(`Documento não reconhecido: ${path}`);
+  console.log(doc.kind === 'pgdas' ? `PGDAS-D ${doc.yearMonth}` : `Pagamentos: ${doc.payments.length} guias`, '←', path.split(/[\\/]/).pop());
+  docs.push(doc);
+}
+
+const plan = planDocumentImport(docs, [], DEFAULT_SETTINGS);
+for (const { record: r } of plan.rows) {
+  const f = (v: number) => v.toFixed(2).padStart(9);
+  console.log(r.yearMonth, 'rec', f(r.revenue), 'folha', f(r.payroll), 'DAS', f(r.dasPaid), 'INSS', f(r.inss), 'IRRF', f(r.irrf), r.notes?.includes('estimada') ? '(folha estimada)' : '');
+}
+console.log(`${plan.rows.length} meses · pagamentos fora: ${plan.paymentsOutside} · RBT12`, plan.rbt12Check);
+if (out) {
+  const competencias = plan.rows.map(({ record: r }) => ({ yearMonth: r.yearMonth, revenue: r.revenue, payroll: r.payroll, inss: r.inss, irrf: r.irrf, dasPaid: r.dasPaid, notes: r.notes }));
+  writeFileSync(out, JSON.stringify({ app: 'FatorSimples', formato: 'dados-competencias', versao: 1, competencias }, null, 2));
+}

@@ -8,6 +8,7 @@ import { DARF_PROLABORE_CODE, DAS_CODE } from './taxDocuments';
 import {
   DEFAULT_SETTINGS,
   calculateProlabore,
+  ceilToCents,
   calculateRBT12,
   fillMissingTaxes,
   settingsForCompetence,
@@ -107,7 +108,7 @@ export function payrollFromDarf(paid: number, yearMonth: string, settings: TaxSe
   const from = firstReaching(darf, true);
   const to = firstReaching(darf, false);
   const fits = (v: number) => v >= from - 0.005 && v <= to + 0.005 && darfFor(v, monthSettings) === darf;
-  const preferred = [Math.ceil(round(revenue * 0.28) * 100 - 1e-6) / 100, Math.ceil(from), Math.floor(to)].filter((v) => v > 0);
+  const preferred = [ceilToCents(revenue * 0.28), Math.ceil(from), Math.floor(to)].filter((v) => v > 0);
   const pick = preferred.find(fits);
   if (pick !== undefined) return pick;
   // A retenção de verdade pode diferir 1 ou 2 centavos da conta do app: 28% da receita ainda vale
@@ -118,6 +119,23 @@ export function payrollFromDarf(paid: number, yearMonth: string, settings: TaxSe
   // O DARF não fecha exatamente (ex.: tabela diferente): o centavo mais próximo
   const near = [Math.floor(from * 100) / 100, Math.ceil(from * 100) / 100];
   return near.reduce((best, c) => (Math.abs(darfFor(c, monthSettings) - darf) < Math.abs(darfFor(best, monthSettings) - darf) ? c : best));
+}
+
+// Diferença entre a folha declarada e o pró-labore da guia que ainda é só tabela ou arredondamento
+// (ex.: janeiro de 2024 com a tabela do IRRF de 2023). Acima disso, a folha inclui outra coisa
+const PAYROLL_TOLERANCE = 0.03;
+
+// INSS contido no DARF 1410. Normalmente é 11% da folha do mês; mas a folha do PGDAS-D pode ser maior
+// que o pró-labore que gerou a guia (ex.: folha com outros valores além do pró-labore). Quando o DARF
+// não fecha com a folha, o INSS sai do pró-labore que gera exatamente esse DARF
+export function inssFromDarf(darf: number, payroll: number, yearMonth: string, settings: TaxSettings, revenue = 0): number {
+  const monthSettings = settingsForCompetence(settings, yearMonth);
+  if (!(payroll > 0)) return round(darf);
+  const fromPayroll = round(calculateProlabore(payroll, monthSettings).inss);
+  if (Math.abs(darfFor(payroll, monthSettings) - round(darf)) <= 0.05) return fromPayroll;
+  const prolabore = payrollFromDarf(darf, yearMonth, settings, revenue);
+  if (!prolabore || Math.abs(prolabore - payroll) / payroll <= PAYROLL_TOLERANCE) return fromPayroll;
+  return round(calculateProlabore(prolabore, monthSettings).inss);
 }
 
 function noteFor(previous: string | undefined, sources: Set<string>): string {
@@ -198,8 +216,7 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
         }
       }
       // O DARF 1410 junta o INSS do pró-labore (11%, até o teto) e o IRRF
-      const inss = d.record.payroll > 0 ? round(calculateProlabore(d.record.payroll, settingsForCompetence(settings, ym)).inss) : sum.darf;
-      d.record.inss = Math.min(inss, sum.darf);
+      d.record.inss = Math.min(inssFromDarf(sum.darf, d.record.payroll, ym, settings, d.record.revenue), sum.darf);
       d.record.irrf = round(sum.darf - d.record.inss);
     }
   }

@@ -29,7 +29,8 @@
     "dist:win": "vite build && node scripts/prepare-electron-dist.mjs && electron-builder --win -c.electronDist=.electron-dist",
     "dist:mac": "vite build && electron-builder --mac",
     "dist:linux": "vite build && electron-builder --linux",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:import": "tsx scripts/check-import.mts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3"

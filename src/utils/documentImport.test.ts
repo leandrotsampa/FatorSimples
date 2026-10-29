@@ -3,7 +3,7 @@ import { applyDocumentImport, planDocumentImport } from './documentImport';
 import { parsePayments, parsePgdas } from './taxDocuments';
 import { PAYMENTS_LINES, PGDAS_LINES } from './taxDocuments.fixtures';
 import { DEFAULT_SETTINGS, calculateProlabore, settingsForCompetence } from './taxCalculations';
-import { isPayrollEstimated, payrollFromDarf } from './documentImport';
+import { inssFromDarf, isPayrollEstimated, payrollFromDarf } from './documentImport';
 import type { MonthRecord } from '../types/tax';
 
 const pgdas = parsePgdas(PGDAS_LINES)!;
@@ -210,3 +210,31 @@ function darfOfFor(payroll: number, ym: string) {
   const p = calculateProlabore(payroll, settingsForCompetence(DEFAULT_SETTINGS, ym));
   return Math.round((Math.round(p.inss * 100) / 100 + Math.round(p.irrf * 100) / 100) * 100) / 100;
 }
+
+describe('inssFromDarf', () => {
+  it('usa 11% da folha quando o DARF fecha com ela', () => {
+    // set/2026: pró-labore de R$ 5.302,00, DARF de R$ 692,87 (INSS 583,22 + IRRF 109,65)
+    expect(inssFromDarf(692.87, 5302, '2026-09', DEFAULT_SETTINGS, 18928.64)).toBe(583.22);
+  });
+
+  it('mantém a folha quando a diferença é só da tabela do IRRF', () => {
+    // jan/2024 ainda usava a tabela de 2023: o DARF passa R$ 19,33 do que o app calcula
+    expect(inssFromDarf(831.11, 4781, '2024-01', DEFAULT_SETTINGS, 17073.75)).toBe(525.91);
+  });
+
+  it('usa o pró-labore da guia quando a folha declarada é maior que ele', () => {
+    // jul/2024: folha de R$ 5.751,65 no PGDAS-D, mas a guia é de um pró-labore de R$ 4.900,00
+    expect(inssFromDarf(851.65, 5751.65, '2024-07', DEFAULT_SETTINGS, 17500)).toBe(539);
+  });
+
+  it('sem folha, o DARF inteiro fica como INSS até haver o pró-labore', () => {
+    expect(inssFromDarf(145.2, 0, '2023-10', DEFAULT_SETTINGS)).toBe(145.2);
+  });
+});
+
+describe('payrollFromDarf com os 28% da receita', () => {
+  it('arredonda os 28% para cima no centavo, como a regra do app', () => {
+    // fev/2025: 28% de R$ 20.803,97 é R$ 5.825,1116; o pró-labore declarado foi R$ 5.825,12
+    expect(payrollFromDarf(1170.46, '2025-02', DEFAULT_SETTINGS, 20803.97)).toBe(5825.12);
+  });
+});
