@@ -273,6 +273,19 @@ describe('payrollFromDarf com os 28% da receita', () => {
   });
 });
 
+describe('sugestão do relatório de pagamentos', () => {
+  it('sem pagamentos, aponta os meses com DAS em branco e os valores calculados pelo app', () => {
+    const plan = planDocumentImport([pgdas], [], DEFAULT_SETTINGS, '2026-10');
+    expect(plan.paymentsSuggestion).toBeDefined();
+    expect(plan.paymentsSuggestion!.blankDas).toContain('2025-01');
+    expect(plan.paymentsSuggestion!.calculatedTaxes).toContain('2026-08');
+  });
+
+  it('com o relatório de pagamentos, não sugere de novo', () => {
+    expect(planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS, '2026-10').paymentsSuggestion).toBeUndefined();
+  });
+});
+
 describe('hasFullWindow', () => {
   const months = (from: string, count: number) =>
     Array.from({ length: count }, (_, k) => rec(shiftYearMonth(from, k)));

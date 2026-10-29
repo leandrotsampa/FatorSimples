@@ -521,6 +521,29 @@ export const ImportDocumentModal: React.FC<{
                         </Section>
                       )}
 
+                      {plan.paymentsSuggestion && (
+                        <Section icon={Receipt} title="Opcional: relatório de pagamentos">
+                          <p>
+                            O Fator R e a alíquota já estão completos. O relatório de pagamentos da Receita traz os valores{' '}
+                            <b className="text-slate-900 dark:text-white">pagos</b>, que o Histórico e o comparativo usam como realizado:
+                          </p>
+                          <ul className="list-disc pl-5 mt-1.5 space-y-0.5">
+                            {plan.paymentsSuggestion.blankDas.length > 0 && (
+                              <li>o DAS de {monthRanges(plan.paymentsSuggestion.blankDas)}, que fica em branco</li>
+                            )}
+                            {plan.paymentsSuggestion.calculatedDas.length > 0 && (
+                              <li>o DAS de {monthRanges(plan.paymentsSuggestion.calculatedDas)}, que o app calculou</li>
+                            )}
+                            {plan.paymentsSuggestion.calculatedTaxes.length > 0 && (
+                              <li>o INSS e o IRRF de {monthRanges(plan.paymentsSuggestion.calculatedTaxes)}, que o app calculou pela folha</li>
+                            )}
+                          </ul>
+                          <button type="button" onClick={() => setStep('files')} className={`${btnGhost} mt-3`}>
+                            <Receipt className="w-4 h-4" /> Adicionar pagamentos
+                          </button>
+                        </Section>
+                      )}
+
                       {(plan.paymentsOutside > 0 || plan.removedSamples > 0) && (
                         <Section icon={AlertTriangle} title="Bom saber" tone="warn">
                           <ul className="list-disc pl-5 space-y-1">

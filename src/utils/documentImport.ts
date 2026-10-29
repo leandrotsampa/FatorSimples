@@ -48,6 +48,9 @@ export interface DocumentImportPlan {
   // (e dos meses que ficaram sem folha)
   estimatedPayroll: string[];
   missingDeclarations: MissingDeclaration[];
+  // Sem o relatório de pagamentos: meses com o DAS em branco e meses com DAS, INSS ou IRRF calculados
+  // pelo app, que o relatório traria com os valores pagos
+  paymentsSuggestion?: { blankDas: string[]; calculatedDas: string[]; calculatedTaxes: string[] };
 }
 
 export interface MissingDeclaration {
@@ -321,6 +324,18 @@ export function planDocumentImport(
 
   const estimatedPayroll = rows.filter((r) => isPayrollEstimated(r.record)).map((r) => r.record.yearMonth);
 
+  // Sem o relatório de pagamentos, o "realizado" fica incompleto: DAS em branco ou valores calculados
+  let paymentsSuggestion: DocumentImportPlan['paymentsSuggestion'];
+  if (!docs.some((d) => d.kind === 'payments')) {
+    const blankDas = rows.filter((r) => r.record.revenue > 0 && r.record.dasPaid === 0).map((r) => r.record.yearMonth);
+    const noted = (text: string) => rows.filter((r) => r.record.notes?.includes(text)).map((r) => r.record.yearMonth);
+    const calculatedDas = noted('DAS calculado');
+    const calculatedTaxes = noted('INSS e IRRF calculados');
+    if (blankDas.length || calculatedDas.length || calculatedTaxes.length) {
+      paymentsSuggestion = { blankDas, calculatedDas, calculatedTaxes };
+    }
+  }
+
   return {
     company,
     companyChanges,
@@ -336,6 +351,7 @@ export function planDocumentImport(
       // A folha de um mês entra no Fator R dos 12 meses seguintes
       (ym) => shiftYearMonth(ym, 12) >= today
     ),
+    ...(paymentsSuggestion ? { paymentsSuggestion } : {}),
     otherCompany,
     ...(rbt12Check ? { rbt12Check } : {}),
     ...(anexoCheck ? { anexoCheck } : {}),

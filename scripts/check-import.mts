@@ -32,6 +32,7 @@ for (const { record: r } of plan.rows) {
   console.log(r.yearMonth, 'rec', f(r.revenue), 'folha', f(r.payroll), 'DAS', f(r.dasPaid), 'INSS', f(r.inss), 'IRRF', f(r.irrf), r.notes?.includes('estimada') ? '(folha estimada)' : '');
 }
 console.log(`${plan.rows.length} meses · pagamentos fora: ${plan.paymentsOutside} · RBT12`, plan.rbt12Check, '· anexo', plan.anexoCheck);
+if (plan.paymentsSuggestion) console.log('sugere pagamentos:', JSON.stringify(plan.paymentsSuggestion));
 for (const d of plan.missingDeclarations) console.log(`falta PGDAS-D ${d.yearMonth} (${d.available ? 'disponível' : 'ainda não existe'}${d.affectsCurrent ? ', muda a apuração atual' : ', corrige o Histórico'}): folha de ${d.months.join(', ')}`);
 if (out) {
   const competencias = plan.rows.map(({ record: r }) => ({ yearMonth: r.yearMonth, revenue: r.revenue, payroll: r.payroll, inss: r.inss, irrf: r.irrf, dasPaid: r.dasPaid, notes: r.notes }));
