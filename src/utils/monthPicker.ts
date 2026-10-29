@@ -52,3 +52,17 @@ function stepByKey(yearMonth: string, key: string): string | null {
       return null;
   }
 }
+
+// Grade de anos do seletor: 12 por página, a mais recente terminando no ano atual
+export const YEARS_PER_PAGE = 12;
+
+export function yearPage(pageEnd: number): number[] {
+  return Array.from({ length: YEARS_PER_PAGE }, (_, k) => pageEnd - YEARS_PER_PAGE + 1 + k);
+}
+
+// Último ano da página que mostra `year`: o ano atual ou de 12 em 12 antes dele
+export function pageEndFor(year: number, currentYear: number): number {
+  if (year >= currentYear - YEARS_PER_PAGE + 1) return currentYear;
+  const pagesBack = Math.ceil((currentYear - YEARS_PER_PAGE + 1 - year) / YEARS_PER_PAGE);
+  return currentYear - pagesBack * YEARS_PER_PAGE;
+}

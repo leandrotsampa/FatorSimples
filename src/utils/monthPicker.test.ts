@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentYearMonth, isFutureMonth, monthLongName, navigateMonth } from './monthPicker';
+import { currentYearMonth, isFutureMonth, monthLongName, navigateMonth, pageEndFor, yearPage } from './monthPicker';
 
 describe('navigateMonth', () => {
   it('setas laterais andam um mês, atravessando o ano', () => {
@@ -54,5 +54,18 @@ describe('competência futura bloqueada', () => {
     expect(navigateMonth('2026-03', 'End', '2026-10')).toBe('2026-10');
     expect(navigateMonth('2025-11', 'PageDown', '2026-10')).toBe('2026-10');
     expect(navigateMonth('2026-10', 'ArrowLeft', '2026-10')).toBe('2026-09');
+  });
+});
+
+describe('yearPage', () => {
+  it('mostra 12 anos terminando no último ano da página', () => {
+    expect(yearPage(2026)).toEqual([2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]);
+  });
+
+  it('a página que contém o ano escolhido termina no ano atual ou 12 em 12 antes dele', () => {
+    expect(pageEndFor(2024, 2026)).toBe(2026);
+    expect(pageEndFor(2015, 2026)).toBe(2026);
+    expect(pageEndFor(2014, 2026)).toBe(2014);
+    expect(pageEndFor(2003, 2026)).toBe(2014);
   });
 });
