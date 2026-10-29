@@ -1,6 +1,7 @@
 import { MonthRecord, TaxSettings } from './tax';
 
 export type StorageMode = 'portable' | 'system';
+export type AppStateKey = 'tour' | 'theme' | 'uiPrefs' | 'ignoredVersion';
 
 export interface ElectronAPI {
   isElectron: boolean;
@@ -13,8 +14,12 @@ export interface ElectronAPI {
   // Abre a página de versões do FatorSimples no navegador do sistema
   openReleasesPage?: () => Promise<void>;
   // Estado do app guardado junto com os dados (ex.: 'tour', o que o tutorial já mostrou)
-  getAppState?: (key: 'tour') => Promise<string | null>;
-  setAppState?: (key: 'tour', value: string) => Promise<boolean>;
+  getAppState?: (key: AppStateKey) => Promise<string | null>;
+  setAppState?: (key: AppStateKey, value: string) => Promise<boolean>;
+  // Valores do banco entregues ao abrir a janela (o tema entra antes do primeiro desenho)
+  initialAppState?: Partial<Record<AppStateKey, string | null>>;
+  // Problema ao abrir o banco: o app mostra uma tela de erro em vez de gravar em outro lugar
+  storageError?: { message: string; dbPath: string } | null;
   // Tabelas fiscais baixadas do GitHub, guardadas no banco
   getRemoteTables?: () => Promise<unknown>;
   saveRemoteTables?: (stored: { doc: unknown; checkedAt: string | null }) => Promise<boolean>;
@@ -28,6 +33,8 @@ export interface ElectronAPI {
   getSettings: () => Promise<TaxSettings | null>;
   saveSettings: (settings: TaxSettings) => Promise<boolean>;
   openDbFolder?: () => Promise<boolean>;
+  // Reinicia o app (botão "Tentar de novo" da tela de erro do banco)
+  relaunchApp?: () => Promise<void>;
 }
 
 declare global {

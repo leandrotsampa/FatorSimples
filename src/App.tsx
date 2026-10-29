@@ -32,6 +32,7 @@ import { competenceInputs } from './utils/competenceInputs';
 import { PageSkeleton } from './components/ui/Skeleton';
 import { useAppDialog } from './components/ui/AppDialog';
 import { resolveInitialTheme } from './utils/initialTheme';
+import { getPref, setPref } from './utils/appPrefs';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, instantIf } from './utils/motion';
 import { useUiPrefs } from './hooks/useUiPrefs';
@@ -59,16 +60,10 @@ const preloadDeferredChunks = () => {
   for (const load of [loadHistory, loadComparison, loadReport, loadSettings, loadAddMonth, loadSqlite]) void load();
 };
 
-const THEME_STORAGE_KEY = 'fatorsimples_theme_v2';
-
 export default function App() {
   // Tema visual (dark ou light)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try {
-      return resolveInitialTheme(localStorage.getItem(THEME_STORAGE_KEY));
-    } catch {
-      return resolveInitialTheme(null);
-    }
+    return resolveInitialTheme(getPref('theme'));
   });
 
   // Troca o tema com o círculo saindo do botão clicado; o DOM é a fonte da verdade
@@ -80,11 +75,7 @@ export default function App() {
       pendingThemeRef.current ?? (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     const next = current === 'dark' ? 'light' : 'dark';
     pendingThemeRef.current = next;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      // Fallback
-    }
+    setPref('theme', next);
     playSound('whoosh');
     runThemeWipe(origin ?? null, () => {
       document.documentElement.classList.toggle('dark', next === 'dark');

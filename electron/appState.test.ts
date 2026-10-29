@@ -16,3 +16,21 @@ describe('estado do app guardado no banco', () => {
     expect(appStateEntryFor('tour', 'x'.repeat(70_000))).toBeNull();
   });
 });
+
+describe('preferências do app guardadas no banco', () => {
+  it('tema: só claro ou escuro', () => {
+    expect(appStateEntryFor('theme', 'dark')).toEqual({ key: 'theme', value: 'dark' });
+    expect(appStateEntryFor('theme', 'light')).toEqual({ key: 'theme', value: 'light' });
+    expect(appStateEntryFor('theme', 'roxo')).toBeNull();
+  });
+
+  it('sons e menu: texto curto', () => {
+    expect(appStateEntryFor('uiPrefs', '{"soundEnabled":true}')).toEqual({ key: 'uiPrefs', value: '{"soundEnabled":true}' });
+    expect(appStateEntryFor('uiPrefs', 'x'.repeat(5000))).toBeNull();
+  });
+
+  it('versão ignorada: só número de versão', () => {
+    expect(appStateEntryFor('ignoredVersion', '1.4.1')).toEqual({ key: 'ignoredVersion', value: '1.4.1' });
+    expect(appStateEntryFor('ignoredVersion', '<script>')).toBeNull();
+  });
+});

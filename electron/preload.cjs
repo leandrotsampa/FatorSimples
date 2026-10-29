@@ -1,7 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Tema, preferências e tutorial do banco entregues ao abrir a janela (o tema entra antes do primeiro
+// desenho), e o problema ao abrir o banco, se houver
+let initial = { state: {}, storageError: null };
+try {
+  initial = ipcRenderer.sendSync('app-state:initial') || initial;
+} catch (e) {}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
+  initialAppState: initial.state,
+  storageError: initial.storageError,
   platform: process.platform,
   windowControl: (action) => ipcRenderer.invoke('window:control', action),
   isWindowMaximized: () => ipcRenderer.invoke('window:is-maximized'),
@@ -11,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('window:maximized', listener);
   },
   openReleasesPage: () => ipcRenderer.invoke('app:open-releases'),
+  relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
   getAppState: (key) => ipcRenderer.invoke('sqlite:get-app-state', key),
   setAppState: (key, value) => ipcRenderer.invoke('sqlite:set-app-state', key, value),
   getRemoteTables: () => ipcRenderer.invoke('sqlite:get-remote-tables'),

@@ -11,9 +11,12 @@ const { windowChromeOptions, windowControlFor, shortcutFor } = require('./window
 const { ensureSettingsColumns } = require('./settingsSchema.cjs');
 const { portableDirectoryFor } = require('./dataDirectory.cjs');
 const { APP_STATE_KEYS, appStateEntryFor } = require('./appState.cjs');
+const { importLegacyData } = require('./legacyJson.cjs');
 
 let mainWindow = null;
 let db = null;
+// Problema ao abrir o banco: a interface mostra a tela de erro (não existe banco paralelo)
+let storageError = null;
 let dbPath = '';
 // 'portable' = banco ao lado do app; 'system' = pasta de dados do sistema (userData)
 let storageMode = 'portable';
@@ -127,12 +130,18 @@ function initDatabase() {
     try {
       ensureSettingsColumns(db);
     } catch (migrationErr) {
-      console.error('[FatorSimples] Falha ao atualizar a estrutura do banco; usando o arquivo JSON de fallback.', migrationErr);
+      console.error('[FatorSimples] Falha ao atualizar a estrutura do banco.', migrationErr);
       try { db.close(); } catch (e) {}
       db = null;
+      storageError = { message: `Não foi possível atualizar a estrutura do banco: ${migrationErr.message}`, dbPath };
+      return;
     }
+    importLegacyJson();
   } catch (err) {
-    console.warn('[FatorSimples] better-sqlite3 não encontrado ou pendente de build nativo. Usando fallback de persistência em arquivo estruturado JSON/SQLite no disco.');
+    console.error('[FatorSimples] Não foi possível abrir o banco SQLite.', err);
+    try { if (db) db.close(); } catch (e) {}
+    db = null;
+    storageError = { message: err && err.message ? err.message : String(err), dbPath };
   }
 }
 
@@ -213,14 +222,133 @@ function setupApplicationMenu() {
   }
 }
 
-// Arquivo JSON de fallback, na mesma pasta do banco
-function getFallbackFilePath() {
-  return path.join(getDataDirectory(), 'fatorsimples_data.json');
+// Operações do banco, usadas pelos canais IPC e pela importação do JSON antigo
+const dataOps = {
+  getHistory() {
+    return db.prepare('SELECT * FROM monthly_history ORDER BY year_month DESC').all().map((r) => ({
+      id: r.id,
+      yearMonth: r.year_month,
+      revenue: r.revenue,
+      payroll: r.payroll,
+      inss: r.inss,
+      irrf: r.irrf,
+      dasPaid: r.das_paid,
+      notes: r.notes || undefined,
+    }));
+  },
+  hasMonth(yearMonth) {
+    return Boolean(db.prepare('SELECT 1 FROM monthly_history WHERE year_month = ?').get(yearMonth));
+  },
+  saveMonth(record) {
+    db.prepare(`
+      INSERT OR REPLACE INTO monthly_history (id, year_month, revenue, payroll, inss, irrf, das_paid, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(record.id, record.yearMonth, record.revenue, record.payroll, record.inss, record.irrf, record.dasPaid, record.notes || null);
+  },
+  getSettings() {
+    const row = db.prepare('SELECT * FROM tax_settings WHERE id = 1').get();
+    if (!row) return null;
+    return {
+      companyName: row.company_name,
+      cnpj: row.cnpj,
+      cityState: row.city_state,
+      cnae: row.cnae,
+      taxVersionId: row.tax_version_id,
+      minimumWage: row.minimum_wage,
+      inssCeiling: row.inss_ceiling,
+      inssRate: row.inss_rate,
+      dependentsCount: row.dependents_count,
+      simplifiedIrDeduction: row.simplified_ir_deduction,
+      dependentDeduction: row.dependent_deduction,
+      prolaboreRule: row.prolabore_rule,
+      manualProlaboreAmount: row.manual_prolabore_amount || 2500,
+      accountingFee: row.accounting_fee || 0,
+      autoUpdateTables: Boolean(row.auto_update_tables),
+      lastTableUpdateDate: row.last_table_update_date,
+    };
+  },
+  hasSettings() {
+    return Boolean(db.prepare('SELECT 1 FROM tax_settings WHERE id = 1').get());
+  },
+  saveSettings(settings) {
+    db.prepare(`
+      INSERT OR REPLACE INTO tax_settings (
+        id, company_name, cnpj, city_state, cnae, tax_version_id, minimum_wage,
+        inss_ceiling, inss_rate, dependents_count, simplified_ir_deduction,
+        dependent_deduction, prolabore_rule, manual_prolabore_amount, auto_update_tables,
+        last_table_update_date, accounting_fee, updated_at
+      ) VALUES (
+        1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+      )
+    `).run(
+      settings.companyName || '',
+      settings.cnpj || '',
+      settings.cityState || '',
+      settings.cnae || '',
+      settings.taxVersionId || '2026_oficial',
+      settings.minimumWage,
+      settings.inssCeiling,
+      settings.inssRate,
+      settings.dependentsCount,
+      settings.simplifiedIrDeduction,
+      settings.dependentDeduction,
+      settings.prolaboreRule,
+      settings.manualProlaboreAmount || 2500,
+      settings.autoUpdateTables ? 1 : 0,
+      settings.lastTableUpdateDate || '',
+      Number(settings.accountingFee) || 0
+    );
+  },
+  getRemoteTables() {
+    const row = db.prepare('SELECT doc, checked_at FROM remote_tax_tables WHERE id = 1').get();
+    if (!row) return null;
+    let doc = null;
+    try { doc = row.doc ? JSON.parse(row.doc) : null; } catch (e) {}
+    return { doc, checkedAt: row.checked_at || null };
+  },
+  hasRemoteTables() {
+    return Boolean(db.prepare('SELECT 1 FROM remote_tax_tables WHERE id = 1').get());
+  },
+  saveRemoteTables(stored) {
+    const doc = stored && stored.doc ? JSON.stringify(stored.doc) : null;
+    const checkedAt = stored && typeof stored.checkedAt === 'string' ? stored.checkedAt : null;
+    db.prepare(
+      'INSERT OR REPLACE INTO remote_tax_tables (id, doc, checked_at, updated_at) VALUES (1, ?, ?, CURRENT_TIMESTAMP)'
+    ).run(doc, checkedAt);
+  },
+  getAppState(key) {
+    const row = db.prepare('SELECT value FROM app_state WHERE key = ?').get(key);
+    return row ? row.value : null;
+  },
+  setAppState(key, value) {
+    db.prepare('INSERT OR REPLACE INTO app_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run(key, value);
+  },
+};
+
+// JSON de reserva das versões até a 1.4.0 (fazia o papel de banco quando o SQLite não carregava):
+// importado uma vez para o banco e renomeado para .importado. Não é mais gravado
+function importLegacyJson() {
+  const file = path.join(path.dirname(dbPath), 'fatorsimples_data.json');
+  if (!db || !fs.existsSync(file)) return;
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const result = db.transaction(() => importLegacyData(data, dataOps))();
+    fs.renameSync(file, `${file}.importado`);
+    console.log('[FatorSimples] JSON de reserva antigo importado para o banco:', result);
+  } catch (e) {
+    console.error('[FatorSimples] Não foi possível importar o JSON de reserva antigo:', e);
+  }
 }
 
 // Configuração dos canais IPC do SQLite para o Renderer (React)
 function setupIpcHandlers() {
   // Página de versões do FatorSimples no navegador (endereço fixo: o renderer não escolhe a URL)
+  // Tentar de novo depois de um erro ao abrir o banco
+  ipcMain.handle('app:relaunch', () => {
+    app.relaunch();
+    app.exit(0);
+  });
+
   ipcMain.handle('app:open-releases', () => {
     shell.openExternal('https://github.com/leandrotsampa/FatorSimples/releases/latest');
   });
@@ -257,241 +385,60 @@ function setupIpcHandlers() {
     return true;
   });
 
-  ipcMain.handle('sqlite:get-history', () => {
-    if (db) {
-      const rows = db.prepare('SELECT * FROM monthly_history ORDER BY year_month DESC').all();
-      return rows.map((r) => ({
-        id: r.id,
-        yearMonth: r.year_month,
-        revenue: r.revenue,
-        payroll: r.payroll,
-        inss: r.inss,
-        irrf: r.irrf,
-        dasPaid: r.das_paid,
-        notes: r.notes || undefined,
-      }));
-    }
-    // Fallback de arquivo caso o driver nativo esteja sendo compilado
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8'));
-        return data.history || [];
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
+  // Dados: o SQLite é a única fonte. Sem banco (o módulo não carregou), a interface mostra a tela
+  // de erro; os canais devolvem vazio e não gravam em lugar nenhum
+  ipcMain.on('app-state:initial', (event) => {
+    const state = {};
+    for (const key of APP_STATE_KEYS) state[key] = db ? dataOps.getAppState(key) : null;
+    event.returnValue = { state, storageError };
   });
 
+  ipcMain.handle('sqlite:get-history', () => (db ? dataOps.getHistory() : []));
+
   ipcMain.handle('sqlite:save-month', (event, record) => {
-    if (db) {
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO monthly_history (id, year_month, revenue, payroll, inss, irrf, das_paid, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      stmt.run(
-        record.id,
-        record.yearMonth,
-        record.revenue,
-        record.payroll,
-        record.inss,
-        record.irrf,
-        record.dasPaid,
-        record.notes || null
-      );
-      return true;
-    }
-    // Fallback de persistência no disco
-    const fallbackFile = getFallbackFilePath();
-    let data = { history: [], settings: null };
-    if (fs.existsSync(fallbackFile)) {
-      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
-    }
-    data.history = [record, ...(data.history || []).filter((h) => h.yearMonth !== record.yearMonth)];
-    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
+    if (!db) return false;
+    dataOps.saveMonth(record);
     return true;
   });
 
   ipcMain.handle('sqlite:delete-month', (event, id) => {
-    if (db) {
-      db.prepare('DELETE FROM monthly_history WHERE id = ?').run(id);
-      return true;
-    }
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8'));
-        data.history = (data.history || []).filter((h) => h.id !== id);
-        fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
-      } catch (e) {}
-    }
+    if (!db) return false;
+    db.prepare('DELETE FROM monthly_history WHERE id = ?').run(id);
     return true;
   });
 
   ipcMain.handle('sqlite:clear-history', () => {
-    if (db) {
-      db.prepare('DELETE FROM monthly_history').run();
-      return true;
-    }
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8'));
-        data.history = [];
-        fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
-      } catch (e) {}
-    }
+    if (!db) return false;
+    db.prepare('DELETE FROM monthly_history').run();
     return true;
   });
 
-  // Tabelas fiscais baixadas do GitHub: ficam no banco (ou no JSON de fallback)
-  // Estado do app guardado junto com os dados (no banco; sem SQLite, no arquivo JSON de fallback)
+  // Estado do app guardado junto com os dados: tutorial, tema, preferências e versão ignorada
   ipcMain.handle('sqlite:get-app-state', (event, key) => {
-    if (!APP_STATE_KEYS.includes(key)) return null;
-    if (db) {
-      const row = db.prepare('SELECT value FROM app_state WHERE key = ?').get(key);
-      return row ? row.value : null;
-    }
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try {
-        const value = (JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')).appState || {})[key];
-        return typeof value === 'string' ? value : null;
-      } catch (e) {}
-    }
-    return null;
+    if (!db || !APP_STATE_KEYS.includes(key)) return null;
+    return dataOps.getAppState(key);
   });
 
   ipcMain.handle('sqlite:set-app-state', (event, key, value) => {
     const entry = appStateEntryFor(key, value);
-    if (!entry) return false;
-    if (db) {
-      db.prepare('INSERT OR REPLACE INTO app_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run(
-        entry.key,
-        entry.value
-      );
-      return true;
-    }
-    const fallbackFile = getFallbackFilePath();
-    let data = { history: [], settings: null };
-    if (fs.existsSync(fallbackFile)) {
-      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
-    }
-    data.appState = { ...(data.appState || {}), [entry.key]: entry.value };
-    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
+    if (!db || !entry) return false;
+    dataOps.setAppState(entry.key, entry.value);
     return true;
   });
 
-  ipcMain.handle('sqlite:get-remote-tables', () => {
-    if (db) {
-      const row = db.prepare('SELECT doc, checked_at FROM remote_tax_tables WHERE id = 1').get();
-      if (!row) return null;
-      let doc = null;
-      try { doc = row.doc ? JSON.parse(row.doc) : null; } catch (e) {}
-      return { doc, checkedAt: row.checked_at || null };
-    }
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try { return JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')).remoteTables || null; } catch (e) {}
-    }
-    return null;
-  });
+  ipcMain.handle('sqlite:get-remote-tables', () => (db ? dataOps.getRemoteTables() : null));
 
   ipcMain.handle('sqlite:save-remote-tables', (event, stored) => {
-    const doc = stored && stored.doc ? JSON.stringify(stored.doc) : null;
-    const checkedAt = stored && typeof stored.checkedAt === 'string' ? stored.checkedAt : null;
-    if (db) {
-      db.prepare(
-        'INSERT OR REPLACE INTO remote_tax_tables (id, doc, checked_at, updated_at) VALUES (1, ?, ?, CURRENT_TIMESTAMP)'
-      ).run(doc, checkedAt);
-      return true;
-    }
-    const fallbackFile = getFallbackFilePath();
-    let data = { history: [], settings: null };
-    if (fs.existsSync(fallbackFile)) {
-      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
-    }
-    data.remoteTables = { doc: stored && stored.doc ? stored.doc : null, checkedAt };
-    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
+    if (!db) return false;
+    dataOps.saveRemoteTables(stored);
     return true;
   });
 
-  ipcMain.handle('sqlite:get-settings', () => {
-    if (db) {
-      const row = db.prepare('SELECT * FROM tax_settings WHERE id = 1').get();
-      if (row) {
-        return {
-          companyName: row.company_name,
-          cnpj: row.cnpj,
-          cityState: row.city_state,
-          cnae: row.cnae,
-          taxVersionId: row.tax_version_id,
-          minimumWage: row.minimum_wage,
-          inssCeiling: row.inss_ceiling,
-          inssRate: row.inss_rate,
-          dependentsCount: row.dependents_count,
-          simplifiedIrDeduction: row.simplified_ir_deduction,
-          dependentDeduction: row.dependent_deduction,
-          prolaboreRule: row.prolabore_rule,
-          manualProlaboreAmount: row.manual_prolabore_amount || 2500,
-          accountingFee: row.accounting_fee || 0,
-          autoUpdateTables: Boolean(row.auto_update_tables),
-          lastTableUpdateDate: row.last_table_update_date,
-        };
-      }
-    }
-    const fallbackFile = getFallbackFilePath();
-    if (fs.existsSync(fallbackFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8'));
-        return data.settings || null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  ipcMain.handle('sqlite:get-settings', () => (db ? dataOps.getSettings() : null));
 
   ipcMain.handle('sqlite:save-settings', (event, settings) => {
-    if (db) {
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO tax_settings (
-          id, company_name, cnpj, city_state, cnae, tax_version_id, minimum_wage,
-          inss_ceiling, inss_rate, dependents_count, simplified_ir_deduction,
-          dependent_deduction, prolabore_rule, manual_prolabore_amount, auto_update_tables,
-          last_table_update_date, accounting_fee, updated_at
-        ) VALUES (
-          1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
-        )
-      `);
-      stmt.run(
-        settings.companyName || '',
-        settings.cnpj || '',
-        settings.cityState || '',
-        settings.cnae || '',
-        settings.taxVersionId || '2026_oficial',
-        settings.minimumWage,
-        settings.inssCeiling,
-        settings.inssRate,
-        settings.dependentsCount,
-        settings.simplifiedIrDeduction,
-        settings.dependentDeduction,
-        settings.prolaboreRule,
-        settings.manualProlaboreAmount || 2500,
-        settings.autoUpdateTables ? 1 : 0,
-        settings.lastTableUpdateDate || '',
-        Number(settings.accountingFee) || 0
-      );
-      return true;
-    }
-    const fallbackFile = getFallbackFilePath();
-    let data = { history: [], settings: null };
-    if (fs.existsSync(fallbackFile)) {
-      try { data = JSON.parse(fs.readFileSync(fallbackFile, 'utf-8')); } catch (e) {}
-    }
-    data.settings = settings;
-    fs.writeFileSync(fallbackFile, JSON.stringify(data, null, 2), 'utf-8');
+    if (!db) return false;
+    dataOps.saveSettings(settings);
     return true;
   });
 }

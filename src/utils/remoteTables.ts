@@ -1,4 +1,5 @@
 import { BUILTIN_TABLES_DATE, OFFICIAL_TAX_TABLES, selectTableForCompetence, type TaxTableVersion } from './taxTablesRegistry';
+import { getPref, setPref } from './appPrefs';
 
 /**
  * Atualização real das tabelas fiscais: o app baixa o arquivo tax-tables/tabelas.json publicado no
@@ -257,21 +258,12 @@ export function shouldShowUpdateNotice(opts: { latest: string | null; ignored: s
   return !ignoredIsValid || isNewerVersion(opts.latest, opts.ignored as string);
 }
 
-// Versão ignorada: fica neste computador (é sobre o app instalado, não sobre os dados)
-const IGNORED_VERSION_KEY = 'fatorsimples_ignored_version';
+// Versão ignorada: no desktop fica no banco, junto com os dados (appPrefs)
 export function loadIgnoredVersion(): string | null {
-  try {
-    return localStorage.getItem(IGNORED_VERSION_KEY);
-  } catch {
-    return null;
-  }
+  return getPref('ignoredVersion');
 }
 export function saveIgnoredVersion(version: string) {
-  try {
-    localStorage.setItem(IGNORED_VERSION_KEY, version);
-  } catch {
-    // sem armazenamento: o aviso volta na próxima abertura
-  }
+  setPref('ignoredVersion', version.replace(/^v/i, ''));
 }
 
 // Ao abrir: a versão nova é conferida sempre (aviso de atualização para portátil e instalado);

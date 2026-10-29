@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
+import { getPref, setPref } from '../utils/appPrefs';
 
-// Preferências de interface (não fiscais): ficam no localStorage, como o tema
+// Preferências de interface (não fiscais): no desktop ficam no banco, junto com os dados (appPrefs)
 export interface UiPrefs {
   soundEnabled: boolean;
   soundVolume: number; // 0 a 1
@@ -8,8 +9,6 @@ export interface UiPrefs {
 }
 
 export const DEFAULT_UI_PREFS: UiPrefs = { soundEnabled: true, soundVolume: 0.4, sidebar: 'expanded' };
-
-const UI_PREFS_STORAGE_KEY = 'fatorsimples_ui_v1';
 
 // Lê o que foi salvo; campo ausente ou fora do formato usa o padrão
 export function parseUiPrefs(raw: string | null): UiPrefs {
@@ -34,25 +33,13 @@ let current: UiPrefs | null = null;
 const listeners = new Set<() => void>();
 
 export function getUiPrefs(): UiPrefs {
-  if (!current) {
-    let raw: string | null = null;
-    try {
-      raw = localStorage.getItem(UI_PREFS_STORAGE_KEY);
-    } catch {
-      // Fallback
-    }
-    current = parseUiPrefs(raw);
-  }
+  if (!current) current = parseUiPrefs(getPref('uiPrefs'));
   return current;
 }
 
 export function setUiPrefs(patch: Partial<UiPrefs>): void {
   current = { ...getUiPrefs(), ...patch };
-  try {
-    localStorage.setItem(UI_PREFS_STORAGE_KEY, JSON.stringify(current));
-  } catch {
-    // Fallback
-  }
+  setPref('uiPrefs', JSON.stringify(current));
   listeners.forEach((l) => l());
 }
 
