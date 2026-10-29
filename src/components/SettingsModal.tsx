@@ -20,6 +20,8 @@ import { ModalShell } from './ui/ModalShell';
 import { useUiPrefs } from '../hooks/useUiPrefs';
 import { playSound } from '../hooks/useSound';
 import { CurrencyInput } from './CurrencyInput';
+import { HelpTip } from './ui/HelpTip';
+import { HELP } from './help';
 import {
   loadStoredRemoteTables,
   openReleasesPage,
@@ -558,9 +560,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="space-y-4">
               <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Razão Social da Empresa:
-                  </label>
+                  <div className="flex items-center gap-1 mb-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold">Razão Social da Empresa:</label>
+                    <HelpTip help={HELP.companyName} />
+                  </div>
                   <input
                     type="text"
                     value={formData.companyName}
@@ -572,9 +575,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      CNPJ:
-                    </label>
+                    <div className="flex items-center gap-1 mb-1">
+                      <label className="text-slate-700 dark:text-slate-300 font-semibold">CNPJ:</label>
+                      <HelpTip help={HELP.cnpj} />
+                    </div>
                     <input
                       type="text"
                       value={formData.cnpj}
@@ -585,9 +589,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Cidade / UF:
-                    </label>
+                    <div className="flex items-center gap-1 mb-1">
+                      <label className="text-slate-700 dark:text-slate-300 font-semibold">Cidade / UF:</label>
+                      <HelpTip help={HELP.cityState} />
+                    </div>
                     <input
                       type="text"
                       value={formData.cityState}
@@ -599,9 +604,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    CNAE Principal:
-                  </label>
+                  <div className="flex items-center gap-1 mb-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold">CNAE Principal:</label>
+                    <HelpTip help={HELP.cnae} />
+                  </div>
                   <input
                     type="text"
                     value={formData.cnae}
@@ -614,9 +620,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Honorários: ficam na conta junto com os impostos e saem do lucro a transferir */}
               <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                <label htmlFor="accounting-fee" className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Honorários mensais da contabilidade
-                </label>
+                <div className="flex items-center gap-1 mb-1">
+                  <label htmlFor="accounting-fee" className="text-slate-700 dark:text-slate-300 font-semibold">Honorários mensais da contabilidade</label>
+                  <HelpTip help={HELP.accountingFee} />
+                </div>
                 <CurrencyInput
                   id="accounting-fee"
                   value={formData.accountingFee ?? 0}

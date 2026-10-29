@@ -8,6 +8,8 @@ import {
   settingsForCompetence,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
+import { HelpTip } from './ui/HelpTip';
+import { HELP } from './help';
 import { ModalShell } from './ui/ModalShell';
 import { currentYearMonth, isFutureMonth } from '../utils/monthPicker';
 
@@ -122,9 +124,10 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-              Competência (Mês / Ano):
-            </label>
+            <div className="flex items-center gap-1 mb-1">
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Competência (Mês / Ano):</label>
+              <HelpTip help={HELP.competence} />
+            </div>
             <input
               type="month"
               required
@@ -148,14 +151,14 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
-                <span>Receita Bruta (R$):</span>
+                <span className="flex items-center gap-1">Receita Bruta (R$): <HelpTip help={HELP.revenue} /></span>
               </label>
               <CurrencyInput ariaLabel="Receita bruta" required value={revenue} onChange={handleRevenueChange} />
             </div>
 
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 flex items-center justify-between">
-                <span>Folha / Pró-labore:</span>
+                <span className="flex items-center gap-1">Folha / Pró-labore: <HelpTip help={HELP.payroll} /></span>
                 <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-num font-bold">
                   {revenue > 0 ? `${((payroll / revenue) * 100).toFixed(1)}%` : ''}
                 </span>
@@ -170,6 +173,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               <span className="flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-200">
                 <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                 Impostos Calculados Automaticamente:
+                <HelpTip help={HELP.monthTaxes} />
               </span>
               <button
                 type="button"

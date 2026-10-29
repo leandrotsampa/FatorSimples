@@ -26,6 +26,8 @@ import {
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
+import { HelpTip, type HelpContent } from './ui/HelpTip';
+import { HELP } from './help';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
@@ -157,6 +159,7 @@ const Indicator: React.FC<{
   // Tendência dos meses anteriores (mini gráfico no canto, sem mudar a altura do bloco)
   trend?: number[];
   trendTone?: ChartTone;
+  help?: HelpContent;
 }> = ({
   label,
   value,
@@ -165,6 +168,7 @@ const Indicator: React.FC<{
   valueClass = 'text-slate-900 dark:text-white',
   trend,
   trendTone = 'emerald',
+  help,
 }) => (
   <div
     className={`${tile} relative px-3 py-2.5 min-w-0 ring-1 ring-transparent hover:ring-emerald-500/30 hover:-translate-y-px transition-[box-shadow,translate,color] duration-[var(--duration-micro)]`}
@@ -174,7 +178,10 @@ const Indicator: React.FC<{
         <Sparkline values={trend} tone={trendTone} width={44} height={18} />
       </div>
     )}
-    <div className="text-xs text-slate-600 dark:text-slate-400">{label}</div>
+    <div className="flex items-center gap-0.5 h-5 text-xs text-slate-600 dark:text-slate-400">
+      {label}
+      {help && <HelpTip help={help} />}
+    </div>
     <div className={`text-base font-bold font-num tabular-nums mt-0.5 truncate transition-colors ${valueClass}`}>
       <ValueText value={value} format={format} />
     </div>
@@ -490,9 +497,12 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
       <section className={`${card} p-5`}>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-5 gap-y-4 lg:items-start">
           <div className="min-w-0" data-tour="faturamento">
-            <label htmlFor="apuration-revenue" className="block h-5 text-sm text-slate-600 dark:text-slate-400 mb-1.5">
-              Faturamento de {formatCompetence(selectedMonth)}
-            </label>
+            <div className="flex items-center gap-1 h-5 mb-1.5">
+              <label htmlFor="apuration-revenue" className="text-sm text-slate-600 dark:text-slate-400">
+                Faturamento de {formatCompetence(selectedMonth)}
+              </label>
+              <HelpTip help={HELP.revenue} />
+            </div>
             <CurrencyInput
               id="apuration-revenue"
               value={currentRevenue}
@@ -526,7 +536,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
           </div>
 
           <div className="min-w-0">
-            <div className="h-5 text-sm text-slate-600 dark:text-slate-400 mb-1.5">Pró-labore</div>
+            <div className="flex items-center gap-1 h-5 text-sm text-slate-600 dark:text-slate-400 mb-1.5">
+              Pró-labore <HelpTip help={HELP.prolabore} />
+            </div>
             <SegmentedControl
               options={STRATEGIES.map((s) => ({ value: s.rule, label: s.label, title: s.title }))}
               value={prolaboreRule}
@@ -782,6 +794,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label="Fator R do mês"
+                help={HELP.factorR}
                 trend={trendFactorR}
                 trendTone={simples.isQualifiedForAnexo3 ? 'emerald' : 'rose'}
                 value={simples.factorRPercentage}
@@ -795,6 +808,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
               <Indicator
                 label="RBT12"
+                help={HELP.rbt12}
                 trend={trendRevenue}
                 trendTone="sky"
                 value={simples.rbt12}
