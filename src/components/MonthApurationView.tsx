@@ -171,7 +171,7 @@ const Indicator: React.FC<{
   help,
 }) => (
   <div
-    className={`${tile} relative px-3 py-2.5 min-w-0 ring-1 ring-transparent hover:ring-emerald-500/30 hover:-translate-y-px transition-[box-shadow,translate,color] duration-[var(--duration-micro)]`}
+    className={`${tile} relative px-3 py-2.5 min-w-0 hover:ring-emerald-500/40 hover:-translate-y-px transition-[box-shadow,translate,color] duration-[var(--duration-micro)]`}
   >
     {trend && (
       <div className="absolute right-2.5 bottom-2.5 opacity-80" title="Tendência mês a mês">
@@ -199,7 +199,7 @@ const TransferRow: React.FC<{
   value: number;
   detail: React.ReactNode;
 }> = ({ step, title, hint, value, detail }) => (
-  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+  <div className={`${tile} flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5`}>
     <span
       className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10"
       aria-hidden="true"

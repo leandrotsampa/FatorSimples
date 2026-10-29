@@ -22,7 +22,7 @@ import {
   shiftYearMonth,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
-import { card } from './ui/card';
+import { card, tile } from './ui/card';
 import { PageHeader } from './ui/PageHeader';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatedNumber } from './ui/AnimatedNumber';
@@ -56,7 +56,7 @@ const Metric: React.FC<{
   tone: ChartTone;
   valueClass?: string;
 }> = ({ label, value, format, detail, trend, tone, valueClass = 'text-slate-900 dark:text-white' }) => (
-  <div className="bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl">
+  <div className={`${tile} p-3.5`}>
     <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{label}</div>
     <div className="flex items-end justify-between gap-2 mt-0.5">
       <AnimatedNumber value={value} format={format} className={`text-lg font-bold font-num tabular-nums ${valueClass}`} />
