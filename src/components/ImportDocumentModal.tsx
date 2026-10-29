@@ -137,6 +137,8 @@ export const ImportDocumentModal: React.FC<{
   const nothingToDo = plan ? plan.rows.length === 0 && plan.companyChanges.length === 0 && plan.removedSamples === 0 : true;
   const missingPayroll = plan?.rows.filter((r) => r.payrollMissing) ?? [];
   const rbt12Ok = plan?.rbt12Check ? Math.abs(plan.rbt12Check.app - plan.rbt12Check.declared) < 0.01 : null;
+  const anexoOk = plan?.anexoCheck ? plan.anexoCheck.app === plan.anexoCheck.declared : null;
+  const declarationOk = rbt12Ok !== false && anexoOk !== false;
 
   const [saving, setSaving] = useState(false);
   const confirmImport = async () => {
@@ -339,7 +341,11 @@ export const ImportDocumentModal: React.FC<{
                             {plan.companyChanges.map((c) => (
                               <li key={c.label} className="flex flex-wrap items-baseline justify-between gap-x-4">
                                 <span className="text-slate-500 dark:text-slate-400">{c.label}</span>
-                                <span className="font-semibold text-slate-900 dark:text-white text-right">{c.to}</span>
+                                <span className="text-right">
+                                  {c.from && <span className="text-slate-500 dark:text-slate-400 line-through decoration-slate-400/60">{c.from}</span>}
+                                  {c.from && <span className="text-slate-400 dark:text-slate-500"> → </span>}
+                                  <span className="font-semibold text-slate-900 dark:text-white">{c.to}</span>
+                                </span>
                               </li>
                             ))}
                           </ul>
@@ -394,21 +400,46 @@ export const ImportDocumentModal: React.FC<{
                         </Section>
                       )}
 
-                      {plan.rbt12Check && (
-                        <Section icon={rbt12Ok ? CircleCheck : AlertTriangle} title="Conferência do RBT12" tone={rbt12Ok ? 'ok' : 'warn'}>
-                          {rbt12Ok ? (
-                            <>
-                              Com os meses importados, o app chega ao mesmo RBT12 da declaração de {brMonth(plan.rbt12Check.yearMonth)}:{' '}
-                              <b className="font-num">{formatCurrency(plan.rbt12Check.declared)}</b>.
-                            </>
-                          ) : (
-                            <>
-                              A declaração de {brMonth(plan.rbt12Check.yearMonth)} tem RBT12 de{' '}
-                              <b className="font-num">{formatCurrency(plan.rbt12Check.declared)}</b>, e o app chega a{' '}
-                              <b className="font-num">{formatCurrency(plan.rbt12Check.app)}</b>. Algum mês do Histórico está diferente do que
-                              foi declarado.
-                            </>
-                          )}
+                      {(plan.rbt12Check || plan.anexoCheck) && (
+                        <Section
+                          icon={declarationOk ? CircleCheck : AlertTriangle}
+                          title="Conferência com a declaração"
+                          tone={declarationOk ? 'ok' : 'warn'}
+                        >
+                          <ul className="space-y-1">
+                            {plan.rbt12Check && (
+                              <li>
+                                {rbt12Ok ? (
+                                  <>
+                                    Com os meses importados, o app chega ao mesmo RBT12 da declaração de {brMonth(plan.rbt12Check.yearMonth)}:{' '}
+                                    <b className="font-num">{formatCurrency(plan.rbt12Check.declared)}</b>.
+                                  </>
+                                ) : (
+                                  <>
+                                    A declaração de {brMonth(plan.rbt12Check.yearMonth)} tem RBT12 de{' '}
+                                    <b className="font-num">{formatCurrency(plan.rbt12Check.declared)}</b>, e o app chega a{' '}
+                                    <b className="font-num">{formatCurrency(plan.rbt12Check.app)}</b>. Algum mês do Histórico está diferente do
+                                    que foi declarado.
+                                  </>
+                                )}
+                              </li>
+                            )}
+                            {plan.anexoCheck && (
+                              <li>
+                                {anexoOk ? (
+                                  <>
+                                    O app também enquadra {brMonth(plan.anexoCheck.yearMonth)} no <b>Anexo {plan.anexoCheck.declared}</b>, como a
+                                    declaração.
+                                  </>
+                                ) : (
+                                  <>
+                                    A declaração enquadra {brMonth(plan.anexoCheck.yearMonth)} no <b>Anexo {plan.anexoCheck.declared}</b>, e o app
+                                    calcula <b>Anexo {plan.anexoCheck.app}</b>: confira a folha dos 12 meses anteriores no Histórico.
+                                  </>
+                                )}
+                              </li>
+                            )}
+                          </ul>
                         </Section>
                       )}
 

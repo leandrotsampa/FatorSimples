@@ -582,16 +582,39 @@ export function generateSampleHistory(
   return months;
 }
 
+export interface DasWindowOptions {
+  // Primeiro mês de atividade (AAAA-MM): meses antes dele não precisam estar no histórico
+  start?: string;
+  // Mês do histórico cuja folha ainda não é conhecida (ex.: veio só a receita na declaração)
+  isPayrollUnknown?: (yearMonth: string) => boolean;
+}
+
+/**
+ * O DAS de um mês só pode ser calculado com os 12 meses anteriores no histórico, com receita e folha:
+ * com algum faltando, o RBT12 e o Fator R saem errados (e o mês pode cair no Anexo V à toa).
+ * Sem a data de início da atividade, exige os 12 meses.
+ */
+export function hasFullWindow(history: MonthRecord[], yearMonth: string, options: DasWindowOptions = {}): boolean {
+  const months = new Set(history.map((r) => r.yearMonth));
+  for (let k = 1; k <= 12; k++) {
+    const ym = shiftYearMonth(yearMonth, -k);
+    if (options.start && ym < options.start) continue;
+    if (!months.has(ym) || options.isPayrollUnknown?.(ym)) return false;
+  }
+  return true;
+}
+
 /**
  * Preenche INSS, IRRF e DAS zerados de competências importadas quando dá para calcular
  * (INSS/IRRF pelo pró-labore; DAS pela receita). O DAS usa o histórico já mesclado, pois o
- * RBT12 depende dos meses anteriores. Esses campos são só informativos: Fator R e RBT12
- * usam apenas receita e folha.
+ * RBT12 depende dos meses anteriores, e fica em branco se faltar algum deles (ver hasFullWindow).
+ * Esses campos são só informativos: Fator R e RBT12 usam apenas receita e folha.
  */
 export function fillMissingTaxes(
   records: MonthRecord[],
   mergedHistory: MonthRecord[],
-  settings: TaxSettings
+  settings: TaxSettings,
+  window: DasWindowOptions = {}
 ): { records: MonthRecord[]; filledFields: number } {
   let filledFields = 0;
   const round = (v: number) => Math.round(v * 100) / 100;
@@ -612,7 +635,7 @@ export function fillMissingTaxes(
         names.push('IRRF');
       }
     }
-    if (rec.revenue > 0 && rec.dasPaid === 0) {
+    if (rec.revenue > 0 && rec.dasPaid === 0 && hasFullWindow(mergedHistory, rec.yearMonth, window)) {
       const das = calculateSimplesNacional(rec.revenue, rec.payroll, mergedHistory, rec.yearMonth).dasAmount;
       if (das > 0) {
         updates.dasPaid = round(das);

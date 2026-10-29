@@ -2,27 +2,15 @@
 // e mostra o que seria gravado. Uso: npx tsx scripts/check-import.mts <pdf> [<pdf> ...] [--json saida.json]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { groupTextLines } from '../src/utils/pdfText';
 import { readTaxDocument, type TaxDocument } from '../src/utils/taxDocuments';
 import { planDocumentImport } from '../src/utils/documentImport';
 import { DEFAULT_SETTINGS } from '../src/utils/taxCalculations';
 
-// Mesma montagem de linhas de src/utils/pdfText.ts (pedaços na mesma altura viram uma linha)
 async function pdfLines(path: string): Promise<string[]> {
   const doc = await getDocument({ data: new Uint8Array(readFileSync(path)) }).promise;
   const lines: string[] = [];
-  for (let p = 1; p <= doc.numPages; p++) {
-    const content = await (await doc.getPage(p)).getTextContent();
-    const rows: { y: number; parts: { x: number; s: string }[] }[] = [];
-    for (const item of content.items) {
-      if (!('str' in item) || !item.str.trim()) continue;
-      const [x, y] = [item.transform[4], item.transform[5]];
-      let row = rows.find((r) => Math.abs(r.y - y) <= 2);
-      if (!row) rows.push((row = { y, parts: [] }));
-      row.parts.push({ x, s: item.str.trim() });
-    }
-    rows.sort((a, b) => b.y - a.y);
-    for (const r of rows) lines.push(r.parts.sort((a, b) => a.x - b.x).map((part) => part.s).join(' | '));
-  }
+  for (let p = 1; p <= doc.numPages; p++) lines.push(...groupTextLines((await (await doc.getPage(p)).getTextContent()).items));
   return lines;
 }
 
@@ -43,7 +31,7 @@ for (const { record: r } of plan.rows) {
   const f = (v: number) => v.toFixed(2).padStart(9);
   console.log(r.yearMonth, 'rec', f(r.revenue), 'folha', f(r.payroll), 'DAS', f(r.dasPaid), 'INSS', f(r.inss), 'IRRF', f(r.irrf), r.notes?.includes('estimada') ? '(folha estimada)' : '');
 }
-console.log(`${plan.rows.length} meses · pagamentos fora: ${plan.paymentsOutside} · RBT12`, plan.rbt12Check);
+console.log(`${plan.rows.length} meses · pagamentos fora: ${plan.paymentsOutside} · RBT12`, plan.rbt12Check, '· anexo', plan.anexoCheck);
 if (out) {
   const competencias = plan.rows.map(({ record: r }) => ({ yearMonth: r.yearMonth, revenue: r.revenue, payroll: r.payroll, inss: r.inss, irrf: r.irrf, dasPaid: r.dasPaid, notes: r.notes }));
   writeFileSync(out, JSON.stringify({ app: 'FatorSimples', formato: 'dados-competencias', versao: 1, competencias }, null, 2));

@@ -13,11 +13,10 @@ describe('parsePgdas', () => {
     expect(doc.cityState).toBe('São José dos Pinhais - PR');
   });
 
-  it('lê a receita do mês (interno + externo), o RBT12 e o DAS declarado', () => {
+  it('lê a receita do mês (interno + externo), o RBT12, o DAS declarado e o anexo', () => {
     expect(doc.revenue).toBe(20500);
     expect(doc.rbt12).toBe(244000);
     expect(doc.dasDeclared).toBe(1500);
-    expect(doc.factorR).toBe(0.28);
     expect(doc.anexo).toBe('III');
   });
 
@@ -47,10 +46,10 @@ describe('parsePayments', () => {
     expect(doc.payments).toHaveLength(7);
   });
 
-  it('usa o mês do período de apuração (fim de mês ou dia 1) e guarda principal e total', () => {
-    expect(doc.payments[0]).toEqual({ paidOn: '2026-10-15', code: '1410', yearMonth: '2026-09', principal: 700, total: 700 });
+  it('usa o mês do período de apuração (fim de mês ou dia 1) e guarda o principal (sem multa e juros)', () => {
+    expect(doc.payments[0]).toEqual({ code: '1410', yearMonth: '2026-09', principal: 700 });
     expect(doc.payments[1]).toMatchObject({ code: '3333', yearMonth: '2026-09', principal: 1500 });
-    expect(doc.payments[3]).toMatchObject({ yearMonth: '2026-08', principal: 2300, total: 2315.9 });
+    expect(doc.payments[3]).toEqual({ code: '3333', yearMonth: '2026-08', principal: 2300 });
     expect(doc.payments[6]).toMatchObject({ code: '1410', yearMonth: '2023-10', principal: 145.2 });
   });
 

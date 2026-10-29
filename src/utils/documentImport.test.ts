@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyDocumentImport, planDocumentImport } from './documentImport';
 import { parsePayments, parsePgdas } from './taxDocuments';
 import { PAYMENTS_LINES, PGDAS_LINES } from './taxDocuments.fixtures';
-import { DEFAULT_SETTINGS, calculateProlabore, settingsForCompetence } from './taxCalculations';
+import { DEFAULT_SETTINGS, calculateProlabore, hasFullWindow, settingsForCompetence, shiftYearMonth } from './taxCalculations';
 import { inssFromDarf, isPayrollEstimated, payrollFromDarf } from './documentImport';
 import type { MonthRecord } from '../types/tax';
 
@@ -49,6 +49,24 @@ describe('planDocumentImport com o PGDAS-D', () => {
 
   it('confere o RBT12 do app com o da declaração', () => {
     expect(plan.rbt12Check).toEqual({ yearMonth: '2026-09', declared: 244000, app: 244000 });
+  });
+
+  it('confere o anexo do app com o da declaração', () => {
+    expect(plan.anexoCheck).toMatchObject({ yearMonth: '2026-09', declared: 'III' });
+  });
+
+  it('não inventa DAS sem os 12 meses anteriores completos no histórico', () => {
+    // Só a declaração: os meses de 2025 não têm o ano anterior, e a folha de antes de set/2025 não vem
+    expect(byMonth(plan, '2025-01').record.dasPaid).toBe(0);
+    expect(byMonth(plan, '2026-08').record.dasPaid).toBe(0);
+    // O mês declarado mantém o DAS da declaração
+    expect(byMonth(plan, '2026-09').record.dasPaid).toBe(1500);
+  });
+
+  it('mostra só o valor novo da empresa quando o app ainda está com os dados de exemplo', () => {
+    expect(plan.companyChanges.every((c) => c.from === '')).toBe(true);
+    const named = planDocumentImport([pgdas], [], { ...DEFAULT_SETTINGS, companyName: 'Nome antigo' });
+    expect(named.companyChanges.find((c) => c.label === 'Razão social')).toMatchObject({ from: 'Nome antigo' });
   });
 
   it('avisa quando a declaração é de outra empresa já cadastrada', () => {
@@ -191,8 +209,8 @@ describe('folhas estimadas pelo DARF', () => {
   it('meses antigos estimados pedem a declaração de 12 meses depois', () => {
     const old = { ...pgdas, previousRevenue: { '2025-01': 20000, '2025-02': 20000 }, previousPayroll: {} };
     const pays = { kind: 'payments' as const, payments: [
-      { paidOn: '2025-02-14', code: '1410', yearMonth: '2025-01', principal: 1000, total: 1000 },
-      { paidOn: '2025-03-14', code: '1410', yearMonth: '2025-02', principal: 1000, total: 1000 },
+      { code: '1410', yearMonth: '2025-01', principal: 1000 },
+      { code: '1410', yearMonth: '2025-02', principal: 1000 },
     ] };
     const plan = planDocumentImport([old, pays], [], DEFAULT_SETTINGS);
     expect(plan.estimatedPayroll).toEqual(['2025-01', '2025-02']);
@@ -236,5 +254,23 @@ describe('payrollFromDarf com os 28% da receita', () => {
   it('arredonda os 28% para cima no centavo, como a regra do app', () => {
     // fev/2025: 28% de R$ 20.803,97 é R$ 5.825,1116; o pró-labore declarado foi R$ 5.825,12
     expect(payrollFromDarf(1170.46, '2025-02', DEFAULT_SETTINGS, 20803.97)).toBe(5825.12);
+  });
+});
+
+describe('hasFullWindow', () => {
+  const months = (from: string, count: number) =>
+    Array.from({ length: count }, (_, k) => rec(shiftYearMonth(from, k)));
+
+  it('exige os 12 meses anteriores no histórico', () => {
+    expect(hasFullWindow(months('2025-01', 12), '2026-01')).toBe(true);
+    expect(hasFullWindow(months('2025-02', 11), '2026-01')).toBe(false);
+  });
+
+  it('não exige meses antes do início da atividade', () => {
+    expect(hasFullWindow(months('2025-06', 7), '2026-01', { start: '2025-06' })).toBe(true);
+  });
+
+  it('não serve mês com a folha ainda desconhecida', () => {
+    expect(hasFullWindow(months('2025-01', 12), '2026-01', { isPayrollUnknown: (ym) => ym === '2025-05' })).toBe(false);
   });
 });

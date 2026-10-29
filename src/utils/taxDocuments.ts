@@ -12,19 +12,16 @@ export interface PgdasDeclaration {
   revenue: number; // receita do mês (interno + externo)
   rbt12?: number;
   dasDeclared: number;
-  factorR?: number;
-  anexo?: 'III' | 'V';
+  anexo?: 'III' | 'V'; // conferido com o anexo que o app calcula
   // Receita e folha dos meses anteriores, por AAAA-MM
   previousRevenue: Record<string, number>;
   previousPayroll: Record<string, number>;
 }
 
 export interface TaxPayment {
-  paidOn: string; // AAAA-MM-DD
   code: string; // 3333 = DAS do Simples; 1410 = DARF da DCTFWeb (INSS + IRRF)
   yearMonth: string; // competência paga
-  principal: number;
-  total: number; // com multa e juros
+  principal: number; // o imposto, sem multa e juros de atraso
 }
 
 export interface PaymentsReport {
@@ -89,7 +86,8 @@ export function parsePgdas(raw: string[]): PgdasDeclaration | null {
   const rbt12Values = rbt12Label > 0 ? (lines[rbt12Label - 1].match(new RegExp(MONEY, 'g')) ?? []) : [];
   const totalLabel = lines.findIndex((l) => /Valor Total do Débito Declarado/.test(l));
   const totalValues = totalLabel >= 0 ? (lines[totalLabel + 1]?.match(new RegExp(MONEY, 'g')) ?? []) : [];
-  const factor = text.match(/Fator r = (\d+,\d+) ?- Anexo (III|V)\b/);
+  // O Fator r vem cortado em duas casas (0,28): só o anexo serve para conferir
+  const anexo = text.match(/Fator r = \d+,\d+ ?- Anexo (III|V)\b/);
 
   const internal = monthValues(lines, /^2\.2\.1\)/, /^2\.2\.2\)|^2\.3\)/);
   const external = monthValues(lines, /^2\.2\.2\)/, /^2\.3\)/);
@@ -106,14 +104,15 @@ export function parsePgdas(raw: string[]): PgdasDeclaration | null {
     revenue: money(rpaValues[rpaValues.length - 1] ?? '0'),
     ...(rbt12Values.length ? { rbt12: money(rbt12Values[rbt12Values.length - 1]) } : {}),
     dasDeclared: money(totalValues[totalValues.length - 1] ?? '0'),
-    ...(factor ? { factorR: money(factor[1]), anexo: factor[2] as 'III' | 'V' } : {}),
+    ...(anexo ? { anexo: anexo[1] as 'III' | 'V' } : {}),
     previousRevenue,
     previousPayroll: monthValues(lines, /^2\.3\)/, /^2\.3\.1\)|^2\.4\)/),
   };
 }
 
+// Data de arrecadação, código, nº do documento, período de apuração, principal, multa, juros e total
 const PAYMENT_ROW = new RegExp(
-  String.raw`^(\d{2})\/(\d{2})\/(\d{4}) (\d{4}) \d+ \d{2}\/(\d{2})\/(\d{4}) (${MONEY}) (${MONEY}) (${MONEY}) (${MONEY})$`
+  String.raw`^\d{2}\/\d{2}\/\d{4} (\d{4}) \d+ \d{2}\/(\d{2})\/(\d{4}) (${MONEY}) ${MONEY} ${MONEY} ${MONEY}$`
 );
 
 export function parsePayments(raw: string[]): PaymentsReport | null {
@@ -124,13 +123,7 @@ export function parsePayments(raw: string[]): PaymentsReport | null {
   for (const line of lines) {
     const m = line.match(PAYMENT_ROW);
     if (!m) continue;
-    payments.push({
-      paidOn: `${m[3]}-${m[2]}-${m[1]}`,
-      code: m[4],
-      yearMonth: ymOf(m[5], m[6]),
-      principal: money(m[7]),
-      total: money(m[10]),
-    });
+    payments.push({ code: m[1], yearMonth: ymOf(m[2], m[3]), principal: money(m[4]) });
   }
   return { kind: 'payments', ...(cnpj ? { cnpj: cnpj[1] } : {}), payments };
 }

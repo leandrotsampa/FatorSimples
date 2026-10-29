@@ -10,6 +10,7 @@ import {
   calculateProlabore,
   ceilToCents,
   calculateRBT12,
+  calculateSimplesNacional,
   fillMissingTaxes,
   settingsForCompetence,
   shiftYearMonth,
@@ -39,8 +40,9 @@ export interface DocumentImportPlan {
   paymentsOutside: number; // meses pagos sem faturamento no app nem na declaração
   // CNPJ dos documentos quando a empresa cadastrada é outra
   otherCompany: string | null;
-  // RBT12 da declaração mais nova contra o que o app calcula com os meses importados
+  // RBT12 e anexo da declaração mais nova contra o que o app calcula com os meses importados
   rbt12Check?: { yearMonth: string; declared: number; app: number };
+  anexoCheck?: { yearMonth: string; declared: 'III' | 'V'; app: 'III' | 'V' };
   // Meses com a folha estimada pelo DARF e as declarações do PGDAS-D que trazem a folha real deles
   estimatedPayroll: string[];
   payrollDeclarations: string[];
@@ -221,14 +223,29 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     }
   }
 
-  // Impostos que nenhum documento trouxe são calculados com o histórico já mesclado
+  // Impostos que nenhum documento trouxe são calculados com o histórico já mesclado. O DAS só com os
+  // 12 meses anteriores completos (desde a abertura) e com a folha deles: senão fica em branco
   const merged = [...base.filter((r) => !drafts.has(r.yearMonth)), ...[...drafts.values()].map((d) => d.record)];
+  const openings = declarations.map((d) => d.openingDate?.slice(0, 7)).filter((v): v is string => Boolean(v));
   const { records: filled } = fillMissingTaxes(
     [...drafts.values()].map((d) => d.record),
     merged,
-    settings
+    settings,
+    {
+      ...(openings.length ? { start: openings.sort()[0] } : {}),
+      isPayrollUnknown: (ym) => {
+        const d = drafts.get(ym);
+        return Boolean(d && !d.payrollKnown && d.record.payroll <= 0);
+      },
+    }
   );
   const filledByMonth = new Map(filled.map((r) => [r.yearMonth, r]));
+  // O que foi calculado, e não veio de documento, fica anotado no mês
+  for (const [ym, d] of drafts) {
+    const r = filledByMonth.get(ym)!;
+    if (r.dasPaid !== d.record.dasPaid) d.sources.add('DAS calculado');
+    if (r.inss !== d.record.inss || r.irrf !== d.record.irrf) d.sources.add('INSS e IRRF calculados');
+  }
 
   // Só a folha dos 12 meses mais recentes ainda entra no Fator R de algum mês
   const months = [...new Set([...drafts.keys(), ...existing.keys()])].sort();
@@ -251,10 +268,12 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     : null;
   const companyChanges: CompanyChange[] = [];
   if (company) {
-    const check = (label: string, from: string, to: string | undefined) => to && from !== to && companyChanges.push({ label, from, to });
-    check('Razão social', settings.companyName, company.companyName);
-    check('CNPJ', settings.cnpj, company.cnpj);
-    check('Cidade / UF', settings.cityState, company.cityState);
+    // "De" vazio quando o app ainda está com os dados de exemplo
+    const check = (label: string, from: string, fallback: string, to: string | undefined) =>
+      to && from !== to && companyChanges.push({ label, from: from === fallback ? '' : from, to });
+    check('Razão social', settings.companyName, DEFAULT_SETTINGS.companyName, company.companyName);
+    check('CNPJ', settings.cnpj, DEFAULT_SETTINGS.cnpj, company.cnpj);
+    check('Cidade / UF', settings.cityState, DEFAULT_SETTINGS.cityState, company.cityState);
   }
 
   const docCnpj = company?.cnpj ?? docs.find((d) => d.kind === 'payments' && d.cnpj)?.cnpj;
@@ -262,11 +281,18 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
   const otherCompany = docCnpj && registered && docCnpj !== registered ? docCnpj : null;
 
   let rbt12Check: DocumentImportPlan['rbt12Check'];
-  if (latest?.rbt12 !== undefined) {
+  let anexoCheck: DocumentImportPlan['anexoCheck'];
+  if (latest) {
     const after = [...merged.filter((r) => !filledByMonth.has(r.yearMonth)), ...filled];
     const current = filledByMonth.get(latest.yearMonth)!;
-    const app = calculateRBT12(after, latest.yearMonth, current.revenue, current.payroll).rbt12;
-    rbt12Check = { yearMonth: latest.yearMonth, declared: latest.rbt12, app: round(app) };
+    if (latest.rbt12 !== undefined) {
+      const app = calculateRBT12(after, latest.yearMonth, current.revenue, current.payroll).rbt12;
+      rbt12Check = { yearMonth: latest.yearMonth, declared: latest.rbt12, app: round(app) };
+    }
+    if (latest.anexo) {
+      const app = calculateSimplesNacional(current.revenue, current.payroll, after, latest.yearMonth).anexoUsed;
+      anexoCheck = { yearMonth: latest.yearMonth, declared: latest.anexo, app };
+    }
   }
 
   const estimatedPayroll = rows.filter((r) => isPayrollEstimated(r.record)).map((r) => r.record.yearMonth);
@@ -282,6 +308,7 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     payrollDeclarations: declarationsFor(estimatedPayroll, latest?.yearMonth),
     otherCompany,
     ...(rbt12Check ? { rbt12Check } : {}),
+    ...(anexoCheck ? { anexoCheck } : {}),
   };
 }
 
