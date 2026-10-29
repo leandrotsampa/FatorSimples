@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { windowChromeOptions, windowControlFor, shortcutFor } = require('./windowChrome.cjs');
 const { ensureSettingsColumns } = require('./settingsSchema.cjs');
+const { SCHEMA_VERSION, schemaCheck } = require('./schemaVersion.cjs');
 const { portableDirectoryFor } = require('./dataDirectory.cjs');
 const { APP_STATE_KEYS, appStateEntryFor } = require('./appState.cjs');
 const { importLegacyData } = require('./legacyJson.cjs');
@@ -127,9 +128,24 @@ function initDatabase() {
         SELECT revenue, payroll FROM monthly_history ORDER BY year_month DESC LIMIT 12
       );
     `);
-    // Colunas novas em bancos de versões anteriores (ex.: honorários da contabilidade)
+    // Banco gravado por uma versão mais nova do app: não mexe nele
+    const schema = schemaCheck(db.pragma('user_version', { simple: true }));
+    if (schema === 'newer') {
+      try { db.close(); } catch (e) {}
+      db = null;
+      storageError = {
+        message: 'Este banco foi gravado por uma versão mais nova do FatorSimples. Atualize o app para abri-lo; nada foi alterado.',
+        dbPath,
+      };
+      return;
+    }
+    // Colunas novas em bancos de versões anteriores (ex.: honorários da contabilidade), numa
+    // transação só: ou a estrutura nova entra inteira, ou o banco fica como estava
     try {
-      ensureSettingsColumns(db);
+      db.transaction(() => {
+        ensureSettingsColumns(db);
+        if (schema === 'upgrade') db.pragma(`user_version = ${SCHEMA_VERSION}`);
+      })();
     } catch (migrationErr) {
       console.error('[FatorSimples] Falha ao atualizar a estrutura do banco.', migrationErr);
       try { db.close(); } catch (e) {}
@@ -411,6 +427,20 @@ function setupIpcHandlers() {
   ipcMain.handle('sqlite:delete-month', (event, id) => {
     if (!db) return false;
     db.prepare('DELETE FROM monthly_history WHERE id = ?').run(id);
+    return true;
+  });
+
+  // Vários meses de uma vez (importação, exemplo): numa transação só, ou entra tudo ou nada
+  ipcMain.handle('sqlite:replace-months', (event, changes) => {
+    if (!db || !changes || typeof changes !== 'object') return false;
+    const save = Array.isArray(changes.save) ? changes.save : [];
+    const remove = Array.isArray(changes.remove) ? changes.remove.filter((id) => typeof id === 'string') : [];
+    db.transaction(() => {
+      if (changes.clear === true) db.prepare('DELETE FROM monthly_history').run();
+      const del = db.prepare('DELETE FROM monthly_history WHERE id = ?');
+      for (const id of remove) del.run(id);
+      for (const record of save) dataOps.saveMonth(record);
+    })();
     return true;
   });
 

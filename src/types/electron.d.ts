@@ -30,6 +30,8 @@ export interface ElectronAPI {
   saveMonth: (record: MonthRecord) => Promise<boolean>;
   deleteMonth: (id: string) => Promise<boolean>;
   clearHistory: () => Promise<boolean>;
+  // Vários meses numa transação: apaga tudo (clear), tira os ids de remove e grava os de save
+  replaceMonths?: (changes: { clear?: boolean; remove?: string[]; save?: MonthRecord[] }) => Promise<boolean>;
   getSettings: () => Promise<TaxSettings | null>;
   saveSettings: (settings: TaxSettings) => Promise<boolean>;
   openDbFolder?: () => Promise<boolean>;

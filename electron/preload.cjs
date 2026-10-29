@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveMonth: (record) => ipcRenderer.invoke('sqlite:save-month', record),
   deleteMonth: (id) => ipcRenderer.invoke('sqlite:delete-month', id),
   clearHistory: () => ipcRenderer.invoke('sqlite:clear-history'),
+  replaceMonths: (changes) => ipcRenderer.invoke('sqlite:replace-months', changes),
   getSettings: () => ipcRenderer.invoke('sqlite:get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('sqlite:save-settings', settings),
   openDbFolder: () => ipcRenderer.invoke('sqlite:open-db-folder'),

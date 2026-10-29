@@ -159,6 +159,22 @@ export const storageAdapter = {
   },
 
   /**
+   * Vários meses de uma vez (importação, exemplo), numa transação só no SQLite: ou entra tudo ou
+   * nada. Na web o histórico é gravado inteiro pelo App, então não há o que fazer aqui
+   */
+  async replaceMonths(changes: { clear?: boolean; remove?: string[]; save?: MonthRecord[] }): Promise<boolean> {
+    if (typeof window !== 'undefined' && window.electronAPI?.replaceMonths) {
+      try {
+        return await window.electronAPI.replaceMonths(changes);
+      } catch (e) {
+        console.error('Erro ao gravar as competências via SQLite:', e);
+        return false;
+      }
+    }
+    return true;
+  },
+
+  /**
    * Limpa o histórico no banco
    */
   async clearHistory(): Promise<void> {

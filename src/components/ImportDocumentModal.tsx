@@ -77,7 +77,8 @@ const SourceLink: React.FC<{ href: string; children: React.ReactNode }> = ({ hre
 export const ImportDocumentModal: React.FC<{
   history: MonthRecord[];
   settings: TaxSettings;
-  onApply: (result: DocumentImportResult) => void;
+  // Grava; devolve false se o banco recusou (a janela continua na conferência)
+  onApply: (result: DocumentImportResult) => Promise<boolean>;
   onClose: () => void;
 }> = ({ history, settings, onApply, onClose }) => {
   const reduce = Boolean(useReducedMotion());
@@ -137,10 +138,15 @@ export const ImportDocumentModal: React.FC<{
   const missingPayroll = plan?.rows.filter((r) => r.payrollMissing) ?? [];
   const rbt12Ok = plan?.rbt12Check ? Math.abs(plan.rbt12Check.app - plan.rbt12Check.declared) < 0.01 : null;
 
-  const confirmImport = () => {
-    if (!plan) return;
-    setImported({ months: plan.rows.length, company: Boolean(plan.company && plan.companyChanges.length) });
-    onApply(applyDocumentImport(plan, history, settings));
+  const [saving, setSaving] = useState(false);
+  const confirmImport = async () => {
+    if (!plan || saving) return;
+    const summary = { months: plan.rows.length, company: Boolean(plan.company && plan.companyChanges.length) };
+    setSaving(true);
+    const ok = await onApply(applyDocumentImport(plan, history, settings));
+    setSaving(false);
+    if (!ok) return;
+    setImported(summary);
     playSound('success');
     setStep('done');
   };
@@ -445,7 +451,8 @@ export const ImportDocumentModal: React.FC<{
                   Conferir
                 </button>
               ) : (
-                <button type="button" disabled={nothingToDo} onClick={confirmImport} className={btnPrimary}>
+                <button type="button" disabled={nothingToDo || saving} onClick={() => void confirmImport()} className={btnPrimary}>
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   Importar
                 </button>
               )}

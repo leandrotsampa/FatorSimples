@@ -446,7 +446,7 @@ export default function App() {
   const startDemo = () => {
     const sample = generateSampleHistory(25000, 0.285);
     setHistory(sample);
-    sample.forEach((rec) => storageAdapter.saveMonth(rec));
+    void storageAdapter.replaceMonths({ clear: true, save: sample });
     setSettings({ ...DEFAULT_SETTINGS, companyName: DEMO_COMPANY });
     setWelcome('demo');
     setActiveTab('apuration');
@@ -460,8 +460,8 @@ export default function App() {
       confirmLabel: 'Começar',
     });
     if (!ok) return;
+    await storageAdapter.replaceMonths({ clear: true });
     setHistory([]);
-    await storageAdapter.clearHistory();
     setSettings(DEFAULT_SETTINGS);
     setWelcomeStage('setup');
     setWelcome('new');
@@ -480,13 +480,20 @@ export default function App() {
 
   // Importação da declaração do PGDAS-D e dos pagamentos. No exemplo, os documentos partem do zero
   const importBase = isDemo ? { history: [] as MonthRecord[], settings: DEFAULT_SETTINGS } : { history, settings };
-  const handleApplyDocuments = async (result: DocumentImportResult) => {
-    if (isDemo) await storageAdapter.clearHistory();
-    else result.removed.forEach((rec) => storageAdapter.deleteMonth(rec.id));
-    result.saved.forEach((rec) => storageAdapter.saveMonth(rec));
+  const handleApplyDocuments = async (result: DocumentImportResult): Promise<boolean> => {
+    const ok = await storageAdapter.replaceMonths({
+      clear: isDemo,
+      remove: result.removed.map((rec) => rec.id),
+      save: result.saved,
+    });
+    if (!ok) {
+      void notify({ title: 'Não deu para importar', message: 'O banco de dados não aceitou a gravação. Nada foi alterado; tente de novo.' });
+      return false;
+    }
     setHistory(result.history);
     setSettings(result.settings);
     if (welcomePref !== 'done') setWelcome('done');
+    return true;
   };
 
   const handleClearHistory = async () => {
@@ -573,7 +580,7 @@ export default function App() {
           <ImportDocumentModal
             history={importBase.history}
             settings={importBase.settings}
-            onApply={(result) => void handleApplyDocuments(result)}
+            onApply={handleApplyDocuments}
             onClose={() => setIsImportOpen(false)}
           />
         </Suspense>
