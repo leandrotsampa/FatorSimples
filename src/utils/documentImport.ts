@@ -20,7 +20,7 @@ import { currentYearMonth } from './monthPicker';
 export interface ImportRow {
   record: MonthRecord;
   isNew: boolean;
-  // Mês recente sem folha no app nem na declaração: o Fator R dos meses seguintes depende dela
+  // Mês sem folha no app, na declaração ou no DARF: o Fator R dos 12 meses seguintes depende dela
   payrollMissing: boolean;
 }
 
@@ -275,10 +275,6 @@ export function planDocumentImport(
     if (r.inss !== d.record.inss || r.irrf !== d.record.irrf) d.sources.add('INSS e IRRF calculados');
   }
 
-  // Só a folha dos 12 meses mais recentes ainda entra no Fator R de algum mês
-  const months = [...new Set([...drafts.keys(), ...existing.keys()])].sort();
-  const latest12 = new Set(months.slice(-12));
-
   const rows: ImportRow[] = [];
   for (const [ym, d] of [...drafts].sort(([a], [b]) => a.localeCompare(b))) {
     const record = { ...filledByMonth.get(ym)!, notes: undefined as string | undefined };
@@ -286,7 +282,7 @@ export function planDocumentImport(
     if (old && sameRecord(old, record)) continue;
     record.notes = noteFor(old?.notes, d.sources);
     if (!record.notes) delete record.notes;
-    rows.push({ record, isNew: !old, payrollMissing: latest12.has(ym) && !d.payrollKnown && record.payroll <= 0 });
+    rows.push({ record, isNew: !old, payrollMissing: !d.payrollKnown && record.payroll <= 0 });
   }
 
   // Empresa: da declaração mais nova

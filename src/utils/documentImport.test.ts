@@ -35,10 +35,17 @@ describe('planDocumentImport com o PGDAS-D', () => {
     expect(byMonth(plan, '2026-09').record).toMatchObject({ revenue: 20500, dasPaid: 1500 });
   });
 
-  it('avisa só os meses sem folha que ainda entram no Fator R (os 12 últimos)', () => {
+  it('marca todo mês sem folha (a declaração só traz a dos 12 meses anteriores)', () => {
     expect(byMonth(plan, '2026-09').payrollMissing).toBe(true);
-    expect(byMonth(plan, '2025-01').payrollMissing).toBe(false);
+    expect(byMonth(plan, '2025-01').payrollMissing).toBe(true);
     expect(byMonth(plan, '2026-08').payrollMissing).toBe(false);
+  });
+
+  it('pede também a declaração que traz a folha dos meses sem folha antigos', () => {
+    const fromDeclarations = planDocumentImport([pgdas], [], DEFAULT_SETTINGS, '2026-10').missingDeclarations;
+    expect(fromDeclarations.map((d) => d.yearMonth)).toEqual(['2026-10', '2026-01']);
+    expect(fromDeclarations[1]).toMatchObject({ available: true, affectsCurrent: false });
+    expect(fromDeclarations[1].months[0]).toBe('2025-01');
   });
 
   it('traz os dados da empresa e mostra o que muda', () => {
@@ -203,8 +210,10 @@ describe('folhas estimadas pelo DARF', () => {
   it('lista os meses estimados e pede a declaração que traz a folha real deles', () => {
     const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS, '2026-10');
     expect(plan.estimatedPayroll).toEqual(['2026-09']);
-    // A de 10/2026 só existe depois que outubro acaba
-    expect(plan.missingDeclarations).toEqual([{ yearMonth: '2026-10', months: ['2026-09'], available: false, affectsCurrent: true }]);
+    // A de 10/2026 só existe depois que outubro acaba; a de 01/2026 traz a folha dos meses de 2025
+    // que ficaram sem folha (sem DARF nos pagamentos do exemplo)
+    expect(plan.missingDeclarations[0]).toEqual({ yearMonth: '2026-10', months: ['2026-09'], available: false, affectsCurrent: true });
+    expect(plan.missingDeclarations[1]).toMatchObject({ yearMonth: '2026-01', available: true, affectsCurrent: false });
     expect(planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS, '2026-11').missingDeclarations[0].available).toBe(true);
   });
 
