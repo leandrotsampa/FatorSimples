@@ -109,7 +109,9 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 <td valign="top">
 
 ### 🎨 Interface
-- Tema **claro** por padrão e **escuro** a um clique, com a troca animada a partir do botão
+- Tema **claro** por padrão e **escuro** (tom petróleo) a um clique no menu ou em **Configurações → Aparência e sons**, com a troca animada a partir do botão
+- **Configurações** em seções com menu lateral: **Empresa**, **Pró-labore** (regra com que cada mês começa e dependentes do IR), **Tabelas fiscais** e **Aparência e sons**
+- Seletor de competência com a grade de meses e, ao clicar no ano, a **grade de anos**, com um ponto nos meses e anos já salvos
 - Menu lateral recolhível pelo botão redondo na borda, e que lembra a sua escolha
 - Animações suaves e sons sutis (ligados por padrão), que podem ser desligados nas Configurações
 - Barra de título própria, com os dados da empresa a um clique e os botões de minimizar, maximizar e fechar no visual do app
@@ -132,6 +134,11 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 <img src="docs/screenshots/comparador.png" alt="Vale a pena?" width="100%" />
 <sub><b>Vale a pena?:</b> economia real com o Fator R, folga do mês e o realizado mês a mês</sub>
 
+<br /><br />
+
+<img src="docs/screenshots/tela-inicial.png" alt="Tela inicial: explorar com um exemplo, cadastrar a empresa ou importar a declaração do PGDAS-D" width="100%" />
+<sub><b>Tela inicial:</b> na primeira abertura, um exemplo, o cadastro em etapas ou a importação da declaração do PGDAS-D</sub>
+
 </div>
 
 <details>
@@ -145,6 +152,8 @@ Na prática, isso vira uma conta que precisa ser feita todo mês: qual alíquota
 | <img src="docs/screenshots/historico.png" alt="Histórico" /> | <img src="docs/screenshots/relatorio.png" alt="Resumo do mês" /> |
 | **Tema escuro** | **Tutorial guiado** |
 | <img src="docs/screenshots/apuracao-escuro.png" alt="Tema escuro" /> | <img src="docs/screenshots/tutorial.png" alt="Tutorial guiado" /> |
+| **Configurações** | **Dados e backup** |
+| <img src="docs/screenshots/configuracoes.png" alt="Configurações: pró-labore" /> | <img src="docs/screenshots/dados.png" alt="Dados e backup" /> |
 
 </details>
 
@@ -244,7 +253,7 @@ Baixe o arquivo do seu sistema em [**Releases**](https://github.com/leandrotsamp
 1. Coloque o `.exe` numa pasta sua, por exemplo `Documentos\FatorSimples`, e abra
 2. Para atualizar, troque só o `.exe` e mantenha o `fatorsimples.sqlite` ao lado
 
-**Do portátil para o instalador.** Com o app fechado, copie o `fatorsimples.sqlite` da pasta do portátil para `%APPDATA%\FatorSimples` (cole o endereço na barra do Explorador de Arquivos). Outra forma é usar **Dados e backup → Exportar Dados** no portátil e **Importar Dados** no instalado.
+**Do portátil para o instalador.** Com o app fechado, copie o `fatorsimples.sqlite` da pasta do portátil para `%APPDATA%\FatorSimples` (cole o endereço na barra do Explorador de Arquivos). Outra forma é usar **Dados e backup → Exportar os meses** no portátil e **Importar de um .json** no instalado.
 
 O SmartScreen pode avisar na primeira execução, porque o executável não tem assinatura de código comercial. Clique em **Mais informações → Executar assim mesmo**.
 
@@ -280,7 +289,7 @@ chmod +x FatorSimples-*.AppImage
 
 </details>
 
-Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Dados e backup** do app mostra onde ele está e abre a pasta.
+Para fazer backup, copie o `fatorsimples.sqlite`. O menu **Dados e backup** do app mostra onde ele está, copia o caminho e abre a pasta.
 
 ## 💾 Seus dados
 
@@ -304,7 +313,7 @@ Tudo fica num único arquivo SQLite, o `fatorsimples.sqlite` (veja onde na tabel
 
 ### Pelos PDFs da Receita (recomendado)
 
-Em **Histórico → Importar PGDAS-D** (ou na tela inicial), arraste os PDFs. Dá para trazer os dois juntos ou um de cada vez. Os arquivos são lidos só no seu computador, e o app guarda os valores de cada mês, nunca o PDF.
+Em **Histórico → Importar PGDAS-D** (ou em **Dados e backup**, ou na tela inicial), arraste os PDFs. Dá para trazer os dois juntos ou um de cada vez. Os arquivos são lidos só no seu computador, e o app guarda os valores de cada mês, nunca o PDF.
 
 | Documento | Onde conseguir | O que o app tira dele |
 |---|---|---|
@@ -324,7 +333,7 @@ Por enquanto o app lê o modelo de declaração gerado pelo PGDAS-D e o relatór
 
 ### Por um arquivo JSON
 
-Pelo menu **Dados e backup → Importar Dados**, o app aceita um JSON no formato abaixo (o mesmo do **Exportar Dados**). As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
+Pelo menu **Dados e backup → Importar de um .json**, o app aceita um JSON no formato abaixo (o mesmo do **Exportar os meses**). As competências são mescladas por mês, e o resumo mostra o que será incluído ou substituído antes de gravar. INSS, IRRF e DAS zerados são calculados na importação.
 
 ```json
 {
