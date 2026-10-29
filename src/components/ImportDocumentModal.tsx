@@ -412,7 +412,7 @@ export const ImportDocumentModal: React.FC<{
                         </Section>
                       )}
 
-                      {(missingPayroll.length > 0 || plan.paymentsOutside > 0 || plan.removedSamples > 0) && (
+                      {(missingPayroll.length > 0 || plan.paymentsOutside > 0 || plan.removedSamples > 0 || plan.estimatedPayroll.length > 0) && (
                         <Section icon={AlertTriangle} title="Bom saber" tone="warn">
                           <ul className="list-disc pl-5 space-y-1">
                             {missingPayroll.length > 0 && (
@@ -429,6 +429,13 @@ export const ImportDocumentModal: React.FC<{
                               </li>
                             )}
                             {plan.removedSamples > 0 && <li>Os {plan.removedSamples} meses de exemplo saem do Histórico.</li>}
+                            {plan.estimatedPayroll.length > 0 && (
+                              <li>
+                                A folha de {plan.estimatedPayroll.map(brMonth).join(', ')} foi estimada pelo DARF pago, porque a declaração não
+                                a traz. Se o pró-labore real foi diferente, o Fator R desses períodos também muda. A declaração do PGDAS-D de{' '}
+                                {plan.payrollDeclarations.map(brMonth).join(' e de ')} traz a folha real.
+                              </li>
+                            )}
                           </ul>
                         </Section>
                       )}

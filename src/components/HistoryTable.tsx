@@ -32,6 +32,7 @@ import type { ChartTone } from './charts/tones';
 import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
 import { clamp } from '../utils/chartGeometry';
 import { DURATION, EASE_OUT } from '../utils/motion';
+import { isPayrollEstimated } from '../utils/documentImport';
 
 const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MONTH_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -135,6 +136,11 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   const apurationByMonth = new Map(
     history.map((m) => [m.yearMonth, calculateSimplesNacional(m.revenue, m.payroll, history, m.yearMonth)])
   );
+
+  // Folhas estimadas pelo DARF na importação: o Fator R dos meses que dependem delas é estimado
+  const estimatedMonths = new Set(history.filter(isPayrollEstimated).map((m) => m.yearMonth));
+  const estimatedInWindow = (ym: string) =>
+    Array.from({ length: 12 }, (_, k) => shiftYearMonth(ym, -(k + 1))).filter((m) => estimatedMonths.has(m));
 
   // Últimos 12 meses em ordem cronológica (tendências) e meses do gráfico conforme o intervalo
   const last12Asc = [...last12].reverse();
@@ -365,6 +371,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   const factorR = apuration?.factorRPercentage ?? 0;
                   const isOk = apuration?.isQualifiedForAnexo3 ?? false;
                   const monthRatio = item.revenue > 0 ? (item.payroll / item.revenue) * 100 : 0;
+                  // Abaixo de 28% com folha estimada na janela: aviso em âmbar, não o alerta do Anexo V
+                  const estimatedWindow = estimatedInWindow(item.yearMonth);
+                  const isEstimated = !isOk && estimatedWindow.length > 0;
 
                   return (
                     <motion.tr
@@ -401,21 +410,37 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                       </td>
 
                       <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-300 font-semibold tabular-nums">
+                        {isPayrollEstimated(item) && (
+                          <span
+                            className="mr-1 text-[11px] font-sans font-semibold text-slate-500 dark:text-slate-400 cursor-help"
+                            title="Folha estimada pelo DARF pago (a declaração importada não trazia a deste mês). A declaração do PGDAS-D que cobre este mês traz a folha real."
+                          >
+                            estimada
+                          </span>
+                        )}
                         {formatCurrency(item.payroll)}
                       </td>
 
                       <td className="py-3 px-4 text-center tabular-nums">
                         <span
                           className={`inline-flex items-center gap-1 font-bold ${
-                            isOk ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                            isOk
+                              ? 'text-emerald-700 dark:text-emerald-400'
+                              : isEstimated
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-rose-600 dark:text-rose-400'
                           }`}
-                          title={`Folha ÷ receita só deste mês: ${formatPercent(monthRatio, 1)}`}
+                          title={
+                            isEstimated
+                              ? `Estimado: usa folha estimada pelo DARF em ${estimatedWindow.map((m) => `${m.slice(5)}/${m.slice(0, 4)}`).join(', ')}. Importe a declaração do PGDAS-D que traz a folha real desses meses.`
+                              : `Folha ÷ receita só deste mês: ${formatPercent(monthRatio, 1)}`
+                          }
                         >
                           {formatPercent(factorR, 1)}
                           <span className="text-[11px] font-normal text-slate-500">
-                            {apuration && `Anexo ${apuration.anexoUsed}${apuration.monthsCount === 0 ? ' · 1º mês' : ''}`}
+                            {apuration && (isEstimated ? 'estimado' : `Anexo ${apuration.anexoUsed}${apuration.monthsCount === 0 ? ' · 1º mês' : ''}`)}
                           </span>
-                          {apuration && apuration.factorRShortfall > 0 && apuration.factorRShortfall <= FACTOR_R_NEAR_MISS && (
+                          {!isEstimated && apuration && apuration.factorRShortfall > 0 && apuration.factorRShortfall <= FACTOR_R_NEAR_MISS && (
                             <span
                               className="text-amber-600 dark:text-amber-400"
                               title={`Abaixo de 28% por ${formatCurrency(Math.max(0.01, apuration.factorRShortfall))} de folha (${formatPercent(Math.floor(factorR * 10000) / 10000, 4)}). Provável arredondamento de centavos: confira como o mês foi apurado no PGDAS.`}

@@ -3,7 +3,7 @@ import { applyDocumentImport, planDocumentImport } from './documentImport';
 import { parsePayments, parsePgdas } from './taxDocuments';
 import { PAYMENTS_LINES, PGDAS_LINES } from './taxDocuments.fixtures';
 import { DEFAULT_SETTINGS, calculateProlabore, settingsForCompetence } from './taxCalculations';
-import { payrollFromDarf } from './documentImport';
+import { isPayrollEstimated, payrollFromDarf } from './documentImport';
 import type { MonthRecord } from '../types/tax';
 
 const pgdas = parsePgdas(PGDAS_LINES)!;
@@ -148,6 +148,14 @@ describe('payrollFromDarf', () => {
     expect(Math.abs(p - 5980.45)).toBeLessThan(0.05);
   });
 
+  it('prefere 28% da receita do mês, depois reais inteiros, dentro da faixa que dá o DARF', () => {
+    // 28% de R$ 21.800 = R$ 6.104,00: o meio da faixa ficaria centavos abaixo e o Fator R, em 27,99%
+    expect(payrollFromDarf(darfOf(6104, '2025-06'), '2025-06', DEFAULT_SETTINGS, 21800)).toBe(6104);
+    expect(payrollFromDarf(darfOf(5980.45, '2025-01'), '2025-01', DEFAULT_SETTINGS, 21358.75)).toBe(5980.45);
+    expect(payrollFromDarf(darfOf(5302, '2026-09'), '2026-09', DEFAULT_SETTINGS, 18928.64)).toBe(5302);
+    expect(payrollFromDarf(darfOf(5544, '2025-04'), '2025-04', DEFAULT_SETTINGS)).toBe(5544);
+  });
+
   it('não estima sem DARF', () => {
     expect(payrollFromDarf(0, '2025-01', DEFAULT_SETTINGS)).toBeNull();
   });
@@ -167,3 +175,38 @@ describe('planDocumentImport estimando a folha pelo DARF', () => {
     expect(byMonth(plan, '2026-08').record.payroll).toBe(9000);
   });
 });
+
+describe('folhas estimadas pelo DARF', () => {
+  it('aceita 28% da receita mesmo com o DARF 1 ou 2 centavos diferente (arredondamento da retenção)', () => {
+    const paid = darfOfFor(5980.45, '2025-01') - 0.01;
+    expect(payrollFromDarf(paid, '2025-01', DEFAULT_SETTINGS, 21358.75)).toBe(5980.45);
+  });
+
+  it('lista os meses estimados e sugere a declaração que traz a folha real deles', () => {
+    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
+    expect(plan.estimatedPayroll).toEqual(['2026-09']);
+    expect(plan.payrollDeclarations).toEqual(['2026-10']);
+  });
+
+  it('meses antigos estimados pedem a declaração de 12 meses depois', () => {
+    const old = { ...pgdas, previousRevenue: { '2025-01': 20000, '2025-02': 20000 }, previousPayroll: {} };
+    const pays = { kind: 'payments' as const, payments: [
+      { paidOn: '2025-02-14', code: '1410', yearMonth: '2025-01', principal: 1000, total: 1000 },
+      { paidOn: '2025-03-14', code: '1410', yearMonth: '2025-02', principal: 1000, total: 1000 },
+    ] };
+    const plan = planDocumentImport([old, pays], [], DEFAULT_SETTINGS);
+    expect(plan.estimatedPayroll).toEqual(['2025-01', '2025-02']);
+    expect(plan.payrollDeclarations).toEqual(['2026-01']);
+  });
+
+  it('o mês importado guarda que a folha é estimada', () => {
+    const plan = planDocumentImport([pgdas, payments], [], DEFAULT_SETTINGS);
+    expect(isPayrollEstimated(byMonth(plan, '2026-09').record)).toBe(true);
+    expect(isPayrollEstimated(byMonth(plan, '2026-08').record)).toBe(false);
+  });
+});
+
+function darfOfFor(payroll: number, ym: string) {
+  const p = calculateProlabore(payroll, settingsForCompetence(DEFAULT_SETTINGS, ym));
+  return Math.round((Math.round(p.inss * 100) / 100 + Math.round(p.irrf * 100) / 100) * 100) / 100;
+}

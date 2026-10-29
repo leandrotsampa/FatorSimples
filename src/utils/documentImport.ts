@@ -5,7 +5,14 @@
 import type { MonthRecord, TaxSettings } from '../types/tax';
 import type { PgdasDeclaration, TaxDocument, TaxPayment } from './taxDocuments';
 import { DARF_PROLABORE_CODE, DAS_CODE } from './taxDocuments';
-import { DEFAULT_SETTINGS, calculateProlabore, calculateRBT12, fillMissingTaxes, settingsForCompetence } from './taxCalculations';
+import {
+  DEFAULT_SETTINGS,
+  calculateProlabore,
+  calculateRBT12,
+  fillMissingTaxes,
+  settingsForCompetence,
+  shiftYearMonth,
+} from './taxCalculations';
 
 export interface ImportRow {
   record: MonthRecord;
@@ -33,12 +40,34 @@ export interface DocumentImportPlan {
   otherCompany: string | null;
   // RBT12 da declaração mais nova contra o que o app calcula com os meses importados
   rbt12Check?: { yearMonth: string; declared: number; app: number };
+  // Meses com a folha estimada pelo DARF e as declarações do PGDAS-D que trazem a folha real deles
+  estimatedPayroll: string[];
+  payrollDeclarations: string[];
 }
 
 const round = (v: number) => Math.round(v * 100) / 100;
 const isSample = (r: MonthRecord) => r.id.startsWith('sample-');
 const fmtYm = (ym: string) => `${ym.slice(5)}/${ym.slice(0, 4)}`;
 const IMPORT_NOTE = 'Importado';
+
+export const ESTIMATED_PAYROLL_NOTE = 'folha estimada pelo DARF';
+export const isPayrollEstimated = (r: MonthRecord) => Boolean(r.notes?.includes(ESTIMATED_PAYROLL_NOTE));
+
+// Cada declaração traz a folha dos 12 meses anteriores ao mês declarado: as declarações que cobrem
+// os meses estimados, sem passar da seguinte à mais nova já importada (a que ainda nem existe)
+function declarationsFor(months: string[], latestDeclared?: string): string[] {
+  const limit = latestDeclared ? shiftYearMonth(latestDeclared, 1) : undefined;
+  const out: string[] = [];
+  let coveredUntil = '';
+  for (const m of [...months].sort()) {
+    if (m <= coveredUntil) continue;
+    let period = shiftYearMonth(m, 12);
+    if (limit && period > limit) period = limit;
+    out.push(period);
+    coveredUntil = shiftYearMonth(period, -1);
+  }
+  return out;
+}
 
 interface Draft {
   record: MonthRecord;
@@ -54,9 +83,12 @@ const darfFor = (payroll: number, settings: TaxSettings) => {
 
 // Pró-labore cujo INSS (11%) + IRRF dá o DARF 1410 pago: a folha do mês quando nenhum documento a
 // traz. O total cresce com o pró-labore, então uma busca binária acha a faixa de valores que dão
-// exatamente o DARF (o arredondamento junta alguns centavos) e fica com o meio dela
-export function payrollFromDarf(darf: number, yearMonth: string, settings: TaxSettings): number | null {
-  if (!(darf > 0)) return null;
+// exatamente o DARF (o arredondamento junta alguns centavos). Nela, prefere 28% da receita do mês
+// (a regra do app), depois reais inteiros e só então o meio da faixa: um valor centavos abaixo do
+// real deixaria o Fator R em 27,99%
+export function payrollFromDarf(paid: number, yearMonth: string, settings: TaxSettings, revenue = 0): number | null {
+  if (!(paid > 0)) return null;
+  const darf = round(paid);
   const monthSettings = settingsForCompetence(settings, yearMonth);
   const MAX = 1_000_000;
   if (darfFor(MAX, monthSettings) < darf) return null;
@@ -74,6 +106,13 @@ export function payrollFromDarf(darf: number, yearMonth: string, settings: TaxSe
   };
   const from = firstReaching(darf, true);
   const to = firstReaching(darf, false);
+  const fits = (v: number) => v >= from - 0.005 && v <= to + 0.005 && darfFor(v, monthSettings) === darf;
+  const preferred = [Math.ceil(round(revenue * 0.28) * 100 - 1e-6) / 100, Math.ceil(from), Math.floor(to)].filter((v) => v > 0);
+  const pick = preferred.find(fits);
+  if (pick !== undefined) return pick;
+  // A retenção de verdade pode diferir 1 ou 2 centavos da conta do app: 28% da receita ainda vale
+  const target28 = preferred[0];
+  if (revenue > 0 && Math.abs(darfFor(target28, monthSettings) - darf) <= 0.02) return target28;
   const mid = round((from + to) / 2);
   if (darfFor(mid, monthSettings) === darf) return mid;
   // O DARF não fecha exatamente (ex.: tabela diferente): o centavo mais próximo
@@ -151,11 +190,11 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     if (sum.darf > 0) {
       // Sem folha no app nem na declaração: a do DARF pago
       if (!d.payrollKnown && d.record.payroll <= 0) {
-        const estimated = payrollFromDarf(sum.darf, ym, settings);
+        const estimated = payrollFromDarf(sum.darf, ym, settings, d.record.revenue);
         if (estimated) {
           d.record.payroll = estimated;
           d.payrollKnown = true;
-          d.sources.add('folha estimada pelo DARF');
+          d.sources.add(ESTIMATED_PAYROLL_NOTE);
         }
       }
       // O DARF 1410 junta o INSS do pró-labore (11%, até o teto) e o IRRF
@@ -213,6 +252,8 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     rbt12Check = { yearMonth: latest.yearMonth, declared: latest.rbt12, app: round(app) };
   }
 
+  const estimatedPayroll = rows.filter((r) => isPayrollEstimated(r.record)).map((r) => r.record.yearMonth);
+
   return {
     company,
     companyChanges,
@@ -220,6 +261,8 @@ export function planDocumentImport(docs: TaxDocument[], history: MonthRecord[], 
     replaced: rows.filter((r) => !r.isNew).length,
     removedSamples: history.filter(isSample).length,
     paymentsOutside,
+    estimatedPayroll,
+    payrollDeclarations: declarationsFor(estimatedPayroll, latest?.yearMonth),
     otherCompany,
     ...(rbt12Check ? { rbt12Check } : {}),
   };
