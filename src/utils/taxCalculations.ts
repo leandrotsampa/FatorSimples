@@ -26,6 +26,42 @@ export const ANEXO_V_TABLE: SimplesBracket[] = [
   { faixa: 6, limit: 4800000, nominalRate: 0.305, deduction: 540000 },
 ];
 
+// Partilha do DAS entre os tributos, por faixa (LC 123/2006, Anexos III e V):
+// IRPJ, CSLL, COFINS, PIS/Pasep, CPP e ISS
+// Nas faixas 5 e 6 a lei ainda limita o ISS a 5% da receita e redistribui o excedente: não aplicado
+const DAS_SHARES: Record<'III' | 'V', number[][]> = {
+  III: [
+    [0.04, 0.035, 0.1282, 0.0278, 0.434, 0.335],
+    [0.04, 0.035, 0.1405, 0.0305, 0.434, 0.32],
+    [0.04, 0.035, 0.1364, 0.0296, 0.434, 0.325],
+    [0.04, 0.035, 0.1364, 0.0296, 0.434, 0.325],
+    [0.04, 0.035, 0.1282, 0.0278, 0.434, 0.335],
+    [0.35, 0.15, 0.1603, 0.0347, 0.305, 0],
+  ],
+  V: [
+    [0.25, 0.15, 0.141, 0.0305, 0.2885, 0.14],
+    [0.23, 0.15, 0.141, 0.0305, 0.2785, 0.17],
+    [0.24, 0.15, 0.1492, 0.0323, 0.2385, 0.19],
+    [0.21, 0.15, 0.1574, 0.0341, 0.2385, 0.21],
+    [0.23, 0.125, 0.141, 0.0305, 0.2385, 0.235],
+    [0.35, 0.155, 0.1644, 0.0356, 0.295, 0],
+  ],
+};
+
+// Centavo mais próximo; a folga absorve o erro de ponto flutuante em valores terminados em 5
+const roundCents = (value: number) => Math.round(value * 100 + 1e-6) / 100;
+
+/**
+ * DAS do mês como o PGDAS-D calcula: a receita × alíquota efetiva é repartida entre os tributos,
+ * cada um arredondado ao centavo, e o DAS é a soma. Arredondar só o total pode dar 1 centavo de
+ * diferença da guia (ex.: 09/2026, R$ 1.393,80 na guia contra R$ 1.393,81 no total arredondado).
+ */
+export function calculateDas(revenue: number, effectiveRate: number, anexo: 'III' | 'V', faixa: number): number {
+  const total = revenue * effectiveRate;
+  const shares = DAS_SHARES[anexo][Math.min(Math.max(faixa, 1), 6) - 1];
+  return roundCents(shares.reduce((sum, share) => sum + roundCents(total * share), 0));
+}
+
 import { OFFICIAL_TAX_TABLES, TaxTableVersion, getTaxTableForCompetence } from './taxTablesRegistry';
 
 // Configurações padrão vigentes (Ano 2026)
@@ -348,12 +384,12 @@ export function calculateSimplesNacional(
   const bracket = getBracketForRbt12(rbt12, table);
   const effectiveRate = calculateSimplesEffectiveRate(rbt12, bracket);
   const effectiveRatePercentage = effectiveRate * 100;
-  const dasAmount = currentMonthRevenue * effectiveRate;
+  const dasAmount = calculateDas(currentMonthRevenue, effectiveRate, anexoUsed, bracket.faixa);
 
   // Cálculo comparativo no Anexo V (o que pagaria se NÃO tivesse Fator R >= 28%)
   const anexoVBracket = getBracketForRbt12(rbt12, ANEXO_V_TABLE);
   const anexoVEffectiveRate = calculateSimplesEffectiveRate(rbt12, anexoVBracket);
-  const anexoVDasAmount = currentMonthRevenue * anexoVEffectiveRate;
+  const anexoVDasAmount = calculateDas(currentMonthRevenue, anexoVEffectiveRate, 'V', anexoVBracket.faixa);
   const savingsWithFactorR = Math.max(0, anexoVDasAmount - dasAmount);
 
   return {
@@ -702,8 +738,9 @@ function buildStrategyCost(
   settings: TaxSettings
 ): StrategyCost {
   const table = anexo === 'III' ? ANEXO_III_TABLE : ANEXO_V_TABLE;
-  const rate = calculateSimplesEffectiveRate(rbt12, getBracketForRbt12(rbt12, table));
-  const das = revenue * rate;
+  const bracket = getBracketForRbt12(rbt12, table);
+  const rate = calculateSimplesEffectiveRate(rbt12, bracket);
+  const das = calculateDas(revenue, rate, anexo, bracket.faixa);
   const prolabore = calculateProlabore(prolaboreGross, settings);
   const totalTaxes = das + prolabore.inss + prolabore.irrf;
   // "Vale a pena?" compara só impostos: os honorários da contabilidade ficam de fora
