@@ -361,28 +361,48 @@ caption { caption-side: top; text-align: left; padding: 10px 12px 8px; font-weig
 .history .fields { margin-top: 0; }
 .article .history-note { margin: 12px 0 16px; font-size: 0.86rem; color: var(--text-3); }
 #calc > .results { margin-top: 20px; }
-.forecast { margin-top: 20px; }
-.forecast tr.group th { padding: 16px 18px 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); background: none; border-bottom: 1px solid var(--line); }
-.forecast tbody:first-of-type tr.group th { padding-top: 10px; }
-.forecast th[scope="row"] { min-width: 220px; }
-.forecast th[scope="row"] small { display: block; font-size: 0.78rem; font-weight: 400; color: var(--text-3); }
-.forecast .one-col thead th:nth-child(3) { display: none; }
-.forecast { grid-column: 1 / -1; }
-.forecast-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
-.article .forecast h3 { margin: 0; font-size: 1.2rem; }
-.article .forecast-verdict { margin: 0; font-weight: 600; font-size: 0.97rem; }
+/* Calculadora mais larga que a coluna de texto do guia, para os dois cartões caberem lado a lado */
+@media (min-width: 900px) {
+  .article .calc { width: min(1000px, 100vw - 64px); margin-left: calc(50% - min(500px, 50vw - 32px)); }
+}
+
+/* Previsão: selo de estimativa, mensagem e dois cenários lado a lado */
+.forecast { margin-top: 22px; }
+.selo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 11px 16px; border-radius: 12px; font-size: 0.9rem; color: var(--text-2); }
+.selo.est { background: var(--v-soft); }
+.selo.est b { color: var(--v-tone); }
+.selo.hist { background: var(--brand-soft); }
+.selo.hist b { color: var(--brand); }
+.selo a { font-weight: 600; margin-left: auto; }
+.article .forecast-verdict { margin: 16px 0 0; font-weight: 600; font-size: 1.02rem; }
+.article .forecast-verdict small { display: block; margin-top: 4px; font-weight: 400; font-size: 0.93rem; color: var(--text-2); }
 .forecast-verdict.ok { color: var(--brand); }
 .forecast-verdict.warn { color: var(--v-tone); }
-.article .forecast-verdict { margin-bottom: 12px; }
-.forecast .table-wrap { margin-top: 12px; box-shadow: none; border: 1px solid var(--line); }
-.forecast th[scope="row"] { font-weight: 500; color: var(--text-2); background: none; font-size: 0.92rem; }
-.forecast thead th { text-align: right; }
-.forecast thead th:first-child { text-align: left; }
-.forecast td { text-align: right; white-space: nowrap; }
-.forecast td small { display: block; font-size: 0.78rem; font-weight: 400; color: var(--text-3); }
-.forecast tr.sum th, .forecast tr.sum td { font-weight: 600; color: var(--text); }
-.forecast tr.total th, .forecast tr.total td { color: var(--brand); background: var(--brand-soft); font-size: 1rem; }
-.article .forecast-note { margin-top: 10px; font-size: 0.84rem; color: var(--text-3); }
+.cenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.sc { border-radius: 20px; padding: 22px; background: var(--surface-2); border: 1px solid var(--line); }
+.sc.best { background: var(--surface); border: 2px solid var(--brand); padding: 21px; box-shadow: var(--shadow); }
+.sc-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px; }
+.article .sc-head h3 { margin: 0; font: 600 1rem/1.35 var(--font-sans); letter-spacing: 0; color: var(--text); }
+.sc-badge { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
+.sc-badge.iii { background: var(--brand-soft); color: var(--brand); }
+.sc-badge.v { background: var(--v-soft); color: var(--v-tone); }
+.sc-total { margin-top: 14px; }
+.sc-total small { font-size: 0.86rem; color: var(--text-3); }
+.sc-total b { display: block; font-size: 2rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); }
+.sc.best .sc-total b { color: var(--brand); }
+.sc dl { margin: 16px 0 0; display: grid; grid-template-columns: 1fr auto; row-gap: 9px; column-gap: 14px; font-size: 0.94rem; }
+.sc dt { color: var(--text-2); }
+.sc dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.sc dd small { display: block; font-size: 0.78rem; color: var(--text-3); }
+.sc dt.grp { grid-column: 1 / -1; margin-top: 12px; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--brand); }
+.sc dt.sum, .sc dd.sum { font-weight: 700; padding-top: 9px; border-top: 1px dashed var(--line); }
+.sc dt.sum { color: var(--text); }
+.est-tag { font-size: 0.72rem; font-weight: 600; color: var(--v-tone); }
+.article .forecast-note { margin-top: 12px; font-size: 0.84rem; color: var(--text-3); }
+@media (max-width: 760px) {
+  .cenarios { grid-template-columns: 1fr; }
+  .selo a { margin-left: 0; }
+}
 .article .calc-foot { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.88rem; color: var(--text-3); }
 @media (max-width: 720px) { .fields, .results { grid-template-columns: 1fr; } .calc { padding: 20px; } }
 

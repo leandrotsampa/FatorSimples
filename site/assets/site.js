@@ -178,7 +178,7 @@
   var TABLES_URL = 'https://raw.githubusercontent.com/' + REPO + '/main/tax-tables/tabelas.json';
   var FALLBACK_TABLE = {
     name: 'Vigente Oficial 2026 (Lei 15.191/2025 + redução da Lei 15.270/2025)',
-    validFrom: '2026-01', year: 2026,
+    validFrom: '2026-01', year: 2026, minimumWage: 1621,
     inssCeiling: 8475.55, inssRate: 0.11, simplifiedIrDeduction: 607.2,
     irrfBrackets: [
       { limit: 2428.8, rate: 0, deduction: 0 }, { limit: 2826.65, rate: 0.075, deduction: 182.16 },
@@ -273,21 +273,36 @@
     var tabela = FALLBACK_TABLE;
     var origemTabela = 'tabelas embutidas no site';
 
-    // Um cenário completo do mês: DAS da empresa, impostos do pró-labore e o que vai para o sócio
-    var cenario = function (receita, rbt12, folha12, pl) {
-      var fator = rbt12 > 0 ? folha12 / rbt12 : 0;
-      var anexo = fator >= 0.28 ? 'III' : 'V';
-      var d = das(receita, rbt12, anexo);
-      var p = prolabore(pl, tabela);
-      var lucrosBrutos = Math.max(0, cents(receita - d.valor - pl));
+    // Um cenário completo do mês: DAS da empresa, impostos do pró-labore, o que vai para o sócio
+    // e a alíquota do mês seguinte (o mês mais antigo sai do histórico e este entra)
+    var cenario = function (o) {
+      var fator = o.rbt12 > 0 ? o.folha12 / o.rbt12 : 0;
+      var anexo = o.semFatorR ? 'V' : fator >= 0.28 ? 'III' : 'V';
+      var d = das(o.receita, o.rbt12, anexo);
+      var p = prolabore(o.pl, tabela);
+      var lucrosBrutos = Math.max(0, cents(o.receita - d.valor - o.pl));
       var ret = tabela.dividendWithholding;
       var irLucros = ret && lucrosBrutos > ret.monthlyThreshold ? cents(lucrosBrutos * ret.rate) : 0;
       var lucros = cents(lucrosBrutos - irLucros);
       var impostos = cents(d.valor + p.inss + p.irrf + irLucros);
+      var proxFator = o.historico
+        ? (o.folha12 * 11 / 12 + o.pl) / (o.rbt12 * 11 / 12 + o.receita)
+        : o.pl / o.receita;
+      var proxRbt = o.historico ? o.rbt12 * 11 / 12 + o.receita : o.rbt12;
+      var proxAnexo = o.semFatorR ? 'V' : proxFator >= 0.28 ? 'III' : 'V';
       return {
-        fator: fator, anexo: anexo, das: d, pl: pl, p: p, lucros: lucros, irLucros: irLucros,
-        impostos: impostos, paraVoce: cents(p.liquido + lucros), carga: receita > 0 ? impostos / receita : 0
+        rotulo: o.rotulo, fator: fator, anexo: anexo, das: d, pl: o.pl, p: p, lucros: lucros, irLucros: irLucros,
+        impostos: impostos, paraVoce: cents(p.liquido + lucros), carga: o.receita > 0 ? impostos / o.receita : 0,
+        semFatorR: !!o.semFatorR, proxFator: proxFator, proxAnexo: proxAnexo,
+        proxAliquota: proxRbt <= 4800000 ? aliquotaEfetiva(proxAnexo === 'III' ? ANEXO_III : ANEXO_V, proxRbt) : null
       };
+    };
+
+    var abrirHistorico = function (e) {
+      if (e) e.preventDefault();
+      var det = r('historico');
+      det.open = true;
+      rbtIn.focus();
     };
 
     var update = function () {
@@ -308,89 +323,102 @@
 
       var temRbt = parseBRL(rbtIn.value) > 0;
       var temFolha = parseBRL(folhaIn.value) > 0;
+      var historico = temRbt || temFolha;
       var rbt12 = temRbt ? parseBRL(rbtIn.value) : f * 12;
       if (rbt12 > 4800000) return vazio('Receita de 12 meses acima do limite do Simples (R$ 4,8 milhões)');
+      // Sem a folha dos 12 meses, supõe 12 meses com este pró-labore; com ela, o anexo deste mês já está decidido
+      var folha12 = function (valor) { return temFolha ? parseBRL(folhaIn.value) : valor * 12; };
+      var base = { receita: f, rbt12: rbt12, historico: historico };
+      var com = function (extra) { var o = {}; for (var k in base) o[k] = base[k]; for (var j in extra) o[j] = extra[j]; return o; };
 
-      // Sem histórico, a conta supõe 12 meses iguais a este (o pró-labore define o Fator R).
-      // Com a folha dos 12 meses, o anexo deste mês já está decidido: o pró-labore muda só os próximos.
-      var a = cenario(f, rbt12, temFolha ? parseBRL(folhaIn.value) : pl * 12, pl);
       var igual = Math.abs(pl - minimo) < 0.005;
-      var b = igual ? null : cenario(f, rbt12, temFolha ? parseBRL(folhaIn.value) : minimo * 12, minimo);
+      var salarioMinimo = tabela.minimumWage || 1621;
+      var a = cenario(com({ pl: pl, folha12: folha12(pl), rotulo: igual ? 'Seu pró-labore (28%)' : 'Seu pró-labore' }));
+      var b = igual
+        ? cenario(com({ pl: salarioMinimo, folha12: salarioMinimo * 12, semFatorR: true, rotulo: 'Sem Fator R' }))
+        : cenario(com({ pl: minimo, folha12: folha12(minimo), rotulo: 'Pró-labore em 28%' }));
 
       r('fator').textContent = pct.format(a.fator);
       box.className = 'result ' + (a.anexo === 'III' ? 'ok' : 'bad');
       r('fator-sub').textContent = 'Anexo ' + a.anexo + (temFolha ? ', pelo histórico' : a.anexo === 'III' ? '' : ' · faltam ' + brl.format(minimo - pl) + ' de pró-labore');
       r('aliquota').textContent = pct.format(a.das.aliquota);
-      r('aliquota-sub').textContent = 'DAS de ' + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa;
+      r('aliquota-sub').textContent = 'DAS de ' + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa + (historico ? '' : ' · estimado');
       r('liquido').textContent = brl.format(a.p.liquido);
       r('liquido-sub').textContent = 'INSS ' + brl.format(a.p.inss) + ' · IRRF ' + brl.format(a.p.irrf);
 
-      // Tabela agrupada: pró-labore, empresa e resumo, lado a lado com o pró-labore em 28%
-      var tabelaEl = r('tabela-detalhe');
-      tabelaEl.classList.toggle('one-col', igual);
-      r('col-a').textContent = igual ? 'Pró-labore em 28%' : 'Seu pró-labore';
-      var linha = function (rotulo, va, vb, cls, nota) {
-        var cel = function (v) { return '<td>' + v + '</td>'; };
-        return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><th scope="row">' + rotulo + (nota ? '<small>' + nota + '</small>' : '') + '</th>'
-          + cel(va) + (b ? cel(vb) : '') + '</tr>';
-      };
-      var grupo = function (titulo) { return '<tr class="group"><th scope="rowgroup" colspan="' + (b ? 3 : 2) + '">' + titulo + '</th></tr>'; };
-      var m = function (v) { return brl.format(v); };
-      var neg = function (v) { return v ? '− ' + brl.format(v) : brl.format(0); };
-      var sub = function (v, txt) { return v + '<small>' + esc(txt) + '</small>'; };
-      var bb = b || a;
+      // Selo: deixa claro quando os números são estimativa
+      r('selo').className = 'selo ' + (historico ? 'hist' : 'est');
+      r('selo').innerHTML = historico
+        ? '<b>Com o seu histórico</b><span>RBT12 de ' + brl.format(rbt12) + (temFolha ? ' e folha de ' + brl.format(parseBRL(folhaIn.value)) : '') + ' nos 12 meses anteriores.</span><a href="#rbt" data-r="abrir-historico">Editar</a>'
+        : '<b>Estimativa</b><span>Supõe 12 meses iguais a este. A alíquota e o anexo podem mudar com o seu histórico real.</span><a href="#rbt" data-r="abrir-historico">Preencher o histórico</a>';
+      r('abrir-historico').addEventListener('click', abrirHistorico);
+
+      // Mensagem principal e qual cenário leva o destaque de "melhor"
+      var dif = cents(b.paraVoce - a.paraVoce);
+      var msg, nota = '', aviso = false;
+      if (temFolha && a.anexo === 'V') {
+        aviso = true;
+        var precisa = Math.max(0, Math.ceil((0.28 * (rbt12 * 11 / 12 + f) - parseBRL(folhaIn.value) * 11 / 12) * 100) / 100);
+        msg = 'Pelo histórico, este mês já fica no Anexo V.';
+        nota = 'Para voltar ao Anexo III no mês seguinte, o pró-labore deste mês precisa ser de pelo menos ' + brl.format(precisa) + ' (aproximado).';
+      } else if (temFolha && a.proxAnexo === 'V' && !igual && pl < minimo) {
+        aviso = true;
+        var custo = cents(das(f, rbt12, 'V').valor - das(f, rbt12, 'III').valor);
+        msg = 'Neste mês, ' + brl.format(pl) + ' deixa ' + brl.format(Math.abs(dif)) + ' a mais para você, porque o DAS já está no Anexo III pelo histórico. Mas o Fator R do mês seguinte cai para ' + pct.format(a.proxFator) + ' (Anexo V).';
+        nota = 'No Anexo V, o DAS do mês seguinte fica cerca de ' + brl.format(custo) + ' mais caro, com o mesmo faturamento. Com o pró-labore em 28%, o Anexo III continua.';
+      } else if (igual) {
+        msg = 'O Fator R deixa ' + brl.format(Math.abs(dif)) + ' a mais para você neste mês.';
+        nota = 'Comparado a não usar o Fator R: pró-labore de 1 salário mínimo (' + brl.format(salarioMinimo) + ') e DAS pelo Anexo V.';
+      } else if (pl > minimo) {
+        // Folga: até quanto dá para faturar no mês sem o Fator R ficar abaixo de 28%
+        var limite = temFolha
+          ? (parseBRL(folhaIn.value) * 11 / 12 + pl) / 0.28 - rbt12 * 11 / 12
+          : pl / 0.28;
+        msg = 'Seu pró-labore está ' + brl.format(cents(pl - minimo)) + ' acima dos 28%. Baixando para ' + brl.format(minimo) + ', sobram ' + brl.format(Math.abs(dif)) + ' a mais para você neste mês.';
+        nota = 'A folga tem valor: com ' + brl.format(pl) + ', dá para faturar até ' + brl.format(cents(limite)) + ' neste mês sem o Fator R cair abaixo de 28%.';
+      } else {
+        msg = 'Com o pró-labore em 28%, sobram ' + brl.format(Math.abs(dif)) + ' a mais para você neste mês.';
+      }
+      var melhor = aviso ? null : b.paraVoce > a.paraVoce ? b : a;
+      var veredito = r('veredito');
+      veredito.className = 'forecast-verdict ' + (aviso ? 'warn' : 'ok');
+      veredito.innerHTML = esc(msg) + (nota ? '<small>' + esc(nota) + '</small>' : '');
+
+      // Dois cartões: o cenário informado e o de comparação
       var irNota = function (c) {
         return c.p.irrf === 0 && c.p.reducao > 0 ? 'isento pela redução da Lei 15.270'
-          : c.p.reducao > 0 ? c.p.metodo + ' · redução de ' + brl.format(c.p.reducao) : c.p.metodo;
+          : c.p.reducao > 0 ? c.p.metodo + ', redução de ' + brl.format(c.p.reducao) : c.p.metodo;
       };
-
-      r('grupo-pl').innerHTML = grupo('Pró-labore')
-        + linha('Pró-labore bruto', m(a.pl), m(bb.pl))
-        + linha('INSS', sub(neg(a.p.inss), a.p.tetoInss ? 'no teto' : '11%'), sub(neg(bb.p.inss), bb.p.tetoInss ? 'no teto' : '11%'), '', '11% até o teto de ' + brl.format(tabela.inssCeiling))
-        + linha('IRRF', sub(neg(a.p.irrf), irNota(a)), sub(neg(bb.p.irrf), irNota(bb)))
-        + linha('Pró-labore líquido', m(a.p.liquido), m(bb.p.liquido), 'sum');
-
-      r('grupo-empresa').innerHTML = grupo('Empresa')
-        + linha('Faturamento do mês', m(f), m(f))
-        + linha('DAS', sub(neg(a.das.valor), 'Anexo ' + a.anexo + ' · ' + pct.format(a.das.aliquota)), sub(neg(bb.das.valor), 'Anexo ' + bb.anexo + ' · ' + pct.format(bb.das.aliquota)), '', 'RBT12 de ' + brl.format(rbt12) + ', faixa ' + a.das.faixa)
-        + linha('Pró-labore bruto', neg(a.pl), neg(bb.pl))
-        + (a.irLucros || bb.irLucros ? linha('IR retido sobre lucros', neg(a.irLucros), neg(bb.irLucros), '', '10% acima de R$ 50 mil no mês') : '')
-        + linha('Antecipação de lucros', m(a.lucros), m(bb.lucros), 'sum', a.irLucros || bb.irLucros ? '' : 'isenta de IR');
-
-      var proximo = function (c) {
-        // Fator R do mês seguinte: o mês mais antigo sai e este entra (sem histórico, fica igual)
-        if (!temFolha && !temRbt) return c.pl / f;
-        var folha12 = temFolha ? parseBRL(folhaIn.value) : c.pl * 12;
-        return (folha12 * 11 / 12 + c.pl) / (rbt12 * 11 / 12 + f);
+      var est = historico ? '' : ' <span class="est-tag">estimado</span>';
+      var item = function (rotulo, valor, nota2, cls) {
+        return '<dt' + (cls ? ' class="' + cls + '"' : '') + '>' + rotulo + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + valor + (nota2 ? '<small>' + esc(nota2) + '</small>' : '') + '</dd>';
       };
-      var proxTxt = function (c) { var x = proximo(c); return sub(pct.format(x), 'Anexo ' + (x >= 0.28 ? 'III' : 'V')); };
-      r('grupo-resumo').innerHTML = grupo('Resumo')
-        + linha('Impostos do mês', sub(m(a.impostos), pct.format(a.carga) + ' do faturamento'), sub(m(bb.impostos), pct.format(bb.carga) + ' do faturamento'), 'sum', 'DAS + INSS + IRRF')
-        + linha('Fator R do mês seguinte', proxTxt(a), proxTxt(bb), '', temFolha || temRbt ? 'aproximado pelo histórico' : '')
-        + linha('Para você no mês', m(a.paraVoce), m(bb.paraVoce), 'sum total', 'pró-labore líquido + lucros');
-
-      var veredito = r('veredito');
-      // Com o histórico preenchido, o anexo deste mês já está decidido: o que dá para mudar é o próximo
-      var folha12 = temFolha ? parseBRL(folhaIn.value) : 0;
-      var precisa = temFolha ? Math.ceil((0.28 * (rbt12 * 11 / 12 + f) - folha12 * 11 / 12) * 100) / 100 : 0;
-      if (temFolha && a.anexo === 'V') {
-        veredito.textContent = 'Pelo histórico, este mês já fica no Anexo V. Para voltar ao Anexo III no mês seguinte, o pró-labore deste mês precisa ser de pelo menos '
-          + brl.format(Math.max(0, precisa)) + ' (aproximado).';
-      } else if (temFolha && proximo(a) < 0.28) {
-        veredito.textContent = 'Este mês está no Anexo III, mas com esse pró-labore o próximo cai para o Anexo V. Para manter, use pelo menos '
-          + brl.format(Math.max(0, precisa)) + ' (aproximado).';
-      } else if (!b) {
-        veredito.textContent = 'Pró-labore em 28% do faturamento: o ponto certo para manter o Anexo III.';
-      } else {
-        var dif = cents(b.paraVoce - a.paraVoce);
-        veredito.textContent = dif > 0
-          ? 'Com o pró-labore em 28%, sobram ' + brl.format(dif) + ' a mais para você neste mês.'
-          : dif < 0
-            ? 'Com o pró-labore em 28% (' + brl.format(minimo) + '), sobram ' + brl.format(-dif) + ' a mais para você neste mês.'
-            : 'Neste mês, o pró-labore em 28% deixa o mesmo valor para você.';
-      }
-      veredito.className = 'forecast-verdict ' + (temFolha && (a.anexo === 'V' || proximo(a) < 0.28) ? 'warn' : 'ok');
-      r('tabela').textContent = 'INSS e IRRF pela tabela "' + tabela.name + '" (' + origemTabela + ').';
+      var menos = function (v) { return v ? '− ' + brl.format(v) : brl.format(0); };
+      var cartao = function (c) {
+        var vence = c === melhor;
+        var etiqueta = 'Anexo ' + c.anexo + (vence ? ' · +' + brl.format(Math.abs(dif)) : '');
+        var prox = c.proxAliquota === null ? '—' : pct.format(c.proxAliquota);
+        var proxNota = c.semFatorR ? 'Anexo V, sem Fator R' : 'Anexo ' + c.proxAnexo + ' · Fator R de ' + pct.format(c.proxFator);
+        return '<article class="sc' + (vence ? ' best' : '') + '">'
+          + '<div class="sc-head"><h3>' + esc(c.rotulo) + ' · ' + brl.format(c.pl) + '</h3><span class="sc-badge ' + (c.anexo === 'III' ? 'iii' : 'v') + '">' + esc(etiqueta) + '</span></div>'
+          + '<div class="sc-total"><small>Para você no mês</small><b>' + brl.format(c.paraVoce) + '</b></div>'
+          + '<dl>'
+          + '<dt class="grp">Pró-labore</dt>'
+          + item('Bruto', brl.format(c.pl))
+          + item('INSS', menos(c.p.inss), c.p.tetoInss ? 'no teto de ' + brl.format(tabela.inssCeiling) : '11%')
+          + item('IRRF', menos(c.p.irrf), irNota(c))
+          + item('Líquido', brl.format(c.p.liquido), '', 'sum')
+          + '<dt class="grp">Empresa</dt>'
+          + item('DAS · ' + pct.format(c.das.aliquota) + est, menos(c.das.valor), 'Anexo ' + c.anexo + ', faixa ' + c.das.faixa)
+          + (c.irLucros ? item('IR retido sobre lucros', menos(c.irLucros), '10% acima de R$ 50 mil no mês') : '')
+          + item('Antecipação de lucros', brl.format(c.lucros), c.irLucros ? '' : 'isenta de IR', 'sum')
+          + '<dt class="grp">Impostos e próximo mês</dt>'
+          + item('DAS + INSS + IRRF', brl.format(c.impostos), pct.format(c.carga) + ' do faturamento')
+          + item('Alíquota no mês seguinte', prox, proxNota)
+          + '</dl></article>';
+      };
+      r('cenarios').innerHTML = cartao(a) + cartao(b);
+      r('tabela').textContent = 'INSS e IRRF pela tabela "' + tabela.name + '" (' + origemTabela + '). Pró-labore de um sócio, sem dependentes e antes dos honorários da contabilidade.';
       r('previsao').hidden = false;
     };
 
