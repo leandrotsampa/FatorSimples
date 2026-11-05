@@ -26,8 +26,10 @@
   color-scheme: light;
 }
 
+/* Escuro: segue o sistema, a menos que a pessoa tenha escolhido um tema no botão do menu
+   (data-theme no <html>, guardado no navegador). O bloco se repete para a escolha manual. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --canvas: #0a1216;
     --canvas-glow: rgb(45 212 191 / 0.08);
     --surface: #152127;
@@ -47,6 +49,46 @@
     --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 48px -28px rgb(0 0 0 / 0.8);
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --canvas: #0a1216;
+  --canvas-glow: rgb(45 212 191 / 0.08);
+  --surface: #152127;
+  --surface-2: #0e181d;
+  --line: #26353c;
+  --text: #f2f6f7;
+  --text-2: #c9d4d8;
+  --text-3: #9aa9b0;
+  --brand: #34d399;
+  --brand-hover: #6ee7b7;
+  --brand-bright: #10b981;
+  --brand-soft: #0f2b26;
+  --brand-ink: #04281d;
+  --v-tone: #fbbf24;
+  --v-soft: #2a2416;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 24px -14px rgb(0 0 0 / 0.7);
+  --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 48px -28px rgb(0 0 0 / 0.8);
+  color-scheme: dark;
+}
+
+/* Botão de tema: mostra o sol no escuro (vai para o claro) e a lua no claro */
+.theme-btn {
+  display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none;
+  border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--text-2);
+  cursor: pointer; transition: border-color 150ms, color 150ms;
+}
+.theme-btn:hover { border-color: var(--brand); color: var(--text); }
+.theme-btn svg { width: 18px; height: 18px; }
+.theme-btn .sun { display: none; }
+:root[data-theme="dark"] .theme-btn .sun { display: block; }
+:root[data-theme="dark"] .theme-btn .moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .sun { display: block; }
+  :root:not([data-theme="light"]) .theme-btn .moon { display: none; }
+}
+/* Troca de tema suave, só durante o clique (sem animar a primeira pintura) */
+.theme-anim, .theme-anim *, .theme-anim *::before, .theme-anim *::after {
+  transition: background-color 300ms var(--ease-out), border-color 300ms var(--ease-out), color 300ms var(--ease-out) !important;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

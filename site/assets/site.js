@@ -6,6 +6,44 @@
 
   var REPO = 'leandrotsampa/FatorSimples';
 
+  // ---------- Tema: segue o sistema; a troca no botão fica salva neste navegador ----------
+  var root = document.documentElement;
+  var sistemaEscuro = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function temaAtual() {
+    var t = root.getAttribute('data-theme');
+    return t || (sistemaEscuro && sistemaEscuro.matches ? 'dark' : 'light');
+  }
+  // As capturas com versão escura (<picture>) acompanham a escolha, não só o sistema
+  function sincronizarCapturas() {
+    var escolhido = root.getAttribute('data-theme');
+    Array.prototype.forEach.call(document.querySelectorAll('picture source[media*="prefers-color-scheme"], picture source[data-media-tema]'), function (s) {
+      if (!s.hasAttribute('data-media-tema')) s.setAttribute('data-media-tema', s.getAttribute('media'));
+      s.setAttribute('media', escolhido === 'dark' ? 'all' : escolhido === 'light' ? 'not all' : s.getAttribute('data-media-tema'));
+    });
+  }
+  function rotularBotoes() {
+    var proximo = temaAtual() === 'dark' ? 'claro' : 'escuro';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-theme-toggle]'), function (b) {
+      b.setAttribute('aria-label', 'Usar o tema ' + proximo);
+      b.setAttribute('title', 'Usar o tema ' + proximo);
+    });
+  }
+  sincronizarCapturas();
+  rotularBotoes();
+  if (sistemaEscuro && sistemaEscuro.addEventListener) sistemaEscuro.addEventListener('change', rotularBotoes);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-theme-toggle]'), function (b) {
+    b.addEventListener('click', function () {
+      var novo = temaAtual() === 'dark' ? 'light' : 'dark';
+      var animar = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (animar) root.classList.add('theme-anim');
+      root.setAttribute('data-theme', novo);
+      try { localStorage.setItem('fs-tema', novo); } catch (e) { /* navegação privada: vale só nesta página */ }
+      sincronizarCapturas();
+      rotularBotoes();
+      if (animar) setTimeout(function () { root.classList.remove('theme-anim'); }, 350);
+    });
+  });
+
   // ---------- Tabelas do Simples (LC 123/2006, Anexos III e V), as mesmas do app ----------
   var ANEXO_III = [
     [180000, 0.06, 0], [360000, 0.112, 9360], [720000, 0.135, 17640],
