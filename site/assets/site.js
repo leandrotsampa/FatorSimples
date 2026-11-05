@@ -341,8 +341,10 @@
       r('fator').textContent = pct.format(a.fator);
       box.className = 'result ' + (a.anexo === 'III' ? 'ok' : 'bad');
       r('fator-sub').textContent = 'Anexo ' + a.anexo + (temFolha ? ', pelo histórico' : a.anexo === 'III' ? '' : ' · faltam ' + brl.format(minimo - pl) + ' de pró-labore');
-      r('aliquota').textContent = (historico ? '' : '≈ ') + pct.format(a.das.aliquota);
-      r('aliquota-sub').textContent = 'DAS de ' + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa + (historico ? '' : ' · depende do RBT12');
+      // Mesmo marcador ≈ dos cartões: sem o RBT12, a alíquota e o DAS são estimados
+      var marca = historico ? '' : '<span class="aprox" title="Estimado: depende do RBT12">≈</span> ';
+      r('aliquota').innerHTML = marca + pct.format(a.das.aliquota);
+      r('aliquota-sub').innerHTML = 'DAS de ' + marca + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa;
       r('liquido').textContent = brl.format(a.p.liquido);
       r('liquido-sub').textContent = 'INSS ' + brl.format(a.p.inss) + ' · IRRF ' + brl.format(a.p.irrf);
 
