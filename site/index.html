@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FatorSimples: calculadora do Fator R e do Simples Nacional, grátis</title>
+  <meta name="description" content="App gratuito para quem presta serviço no Simples Nacional: calcula o Fator R, a alíquota para a nota, o DAS e o pró-labore que mantém a empresa no Anexo III. Windows, macOS e Linux.">
+  <link rel="canonical" href="https://leandrotsampa.github.io/FatorSimples/">
+  <meta name="theme-color" content="#047857">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="FatorSimples">
+  <meta property="og:title" content="FatorSimples: pague 6% de Simples em vez de 15,5%">
+  <meta property="og:description" content="Alíquota para a nota, DAS, pró-labore no ponto certo do Fator R e quanto transferir para você. Grátis, de código aberto e com os dados só no seu computador.">
+  <meta property="og:url" content="https://leandrotsampa.github.io/FatorSimples/">
+  <meta property="og:image" content="https://leandrotsampa.github.io/FatorSimples/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="FatorSimples: Simples Nacional e Fator R">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/site.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "FatorSimples",
+    "description": "Apuração mensal do Simples Nacional e do Fator R para quem presta serviço: alíquota para a nota, DAS, pró-labore ideal, INSS e IRRF.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "inLanguage": "pt-BR",
+    "url": "https://leandrotsampa.github.io/FatorSimples/",
+    "downloadUrl": "https://github.com/leandrotsampa/FatorSimples/releases/latest",
+    "image": "https://leandrotsampa.github.io/FatorSimples/og.png",
+    "screenshot": "https://leandrotsampa.github.io/FatorSimples/img/apuracao.png",
+    "license": "https://opensource.org/licenses/MIT",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+    "author": { "@type": "Person", "name": "leandrotsampa", "url": "https://github.com/leandrotsampa" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "O FatorSimples é gratuito?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Sim. O app é gratuito e de código aberto, sob a licença MIT. Não tem plano pago, anúncio nem cadastro." } },
+      { "@type": "Question", "name": "Meus dados vão para a internet?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Não. Os dados ficam num arquivo SQLite no seu computador. O app só consulta o GitHub para saber se há tabelas fiscais ou uma versão nova." } },
+      { "@type": "Question", "name": "Para quem o FatorSimples serve?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Para empresas do Simples Nacional que prestam serviços sujeitos ao Fator R, como desenvolvimento de software, consultoria, engenharia e saúde, e que querem ficar no Anexo III mantendo a folha em 28% da receita." } },
+      { "@type": "Question", "name": "Por que o Windows ou o macOS avisam na primeira abertura?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Porque o app não tem uma assinatura de código comercial, que é paga. O código é aberto e pode ser conferido no GitHub. No Windows, clique em Mais informações e depois em Executar assim mesmo. No macOS, vá em Ajustes do Sistema, Privacidade e Segurança, e clique em Abrir Mesmo Assim." } },
+      { "@type": "Question", "name": "O app substitui o contador?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Não. Ele é uma ferramenta de planejamento e conferência. A apuração oficial continua sendo feita no PGDAS-D, e a orientação do contador continua importante." } }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="./" aria-label="FatorSimples, página inicial">
+        <img src="icon.png" alt="" width="32" height="32">
+        FatorSimples
+      </a>
+      <nav class="nav-links" aria-label="Principal">
+        <a class="hide-sm" href="#como-funciona">Como funciona</a>
+        <a class="hide-sm" href="fator-r/">Calcular o Fator R</a>
+        <a class="hide-sm" href="https://github.com/leandrotsampa/FatorSimples">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="#baixar">Baixar grátis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <div class="hero wrap">
+      <div class="hero-copy">
+        <h1>Pague <span class="hl-iii">6%</span> de Simples, não <span class="hl-v">15,5%</span></h1>
+        <p class="lead">Quem presta serviço fica no Anexo III, o mais barato, enquanto a folha dos últimos 12 meses chegar a 28% da receita. O FatorSimples faz essa conta todo mês e diz a alíquota para a nota, o DAS, o pró-labore no ponto certo e quanto pode ir para a sua conta.</p>
+        <div class="cta-row" data-cta-row>
+          <a class="btn btn-primary" href="#baixar" data-cta-download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            <span data-cta-download-label>Baixar grátis</span>
+          </a>
+          <a class="btn btn-ghost" href="fator-r/" data-cta-calc>Calcular o Fator R online</a>
+        </div>
+        <ul class="platforms" aria-label="Sistemas compatíveis">
+          <li>Windows</li><li>macOS</li><li>Linux</li><li class="muted" data-version>Código aberto</li>
+        </ul>
+      </div>
+
+      <form class="sim" id="sim" aria-labelledby="sim-title" onsubmit="return false">
+        <div class="sim-head">
+          <h2 id="sim-title">Quanto o Fator R vale para você?</h2>
+          <span class="sim-tag">simulação</span>
+        </div>
+        <label class="sim-label" for="sim-fat">Faturamento por mês</label>
+        <output class="sim-fat num" id="sim-fat-out" for="sim-fat">R$ 14.000,00</output>
+        <input class="range" type="range" id="sim-fat" min="5000" max="100000" step="1000" value="14000" aria-describedby="sim-note">
+
+        <div class="sim-anexos">
+          <div class="anexo anexo-iii">
+            <span class="anexo-name">Anexo III <small>folha ≥ 28%</small></span>
+            <b class="num" data-sim="iii-aliq">6,00%</b>
+            <span class="num">DAS <span data-sim="iii-das">R$ 840,00</span></span>
+          </div>
+          <div class="anexo anexo-v">
+            <span class="anexo-name">Anexo V <small>folha &lt; 28%</small></span>
+            <b class="num" data-sim="v-aliq">15,50%</b>
+            <span class="num">DAS <span data-sim="v-das">R$ 2.170,00</span></span>
+          </div>
+        </div>
+
+        <div class="sim-total" aria-live="polite">
+          <span><b class="num" data-sim="mes">R$ 1.330,00</b> a menos de DAS por mês</span>
+          <span class="num">R$ <span data-sim="ano">15.960,00</span> por ano</span>
+        </div>
+        <p class="sim-note" id="sim-note">Com pró-labore de <span class="num" data-sim="pro">R$ 3.920,00</span> (28% do faturamento) e o mesmo faturamento nos 12 meses anteriores. Tabelas da LC 123/2006. O app compara também o INSS e o IRRF do pró-labore.</p>
+      </form>
+    </div>
+
+    <section id="como-funciona" class="wrap">
+      <div class="section-head reveal">
+        <h2>Três respostas no topo de cada mês</h2>
+        <p>Digite o faturamento e pronto: a alíquota para colocar na nota, o DAS com o vencimento e o Fator R já garantido para o mês seguinte.</p>
+      </div>
+      <figure class="crop crop-wide reveal">
+        <picture>
+          <source srcset="img/recorte-respostas-escuro.png" media="(prefers-color-scheme: dark)">
+          <img src="img/recorte-respostas.png" width="1098" height="212" alt="Alíquota para a nota de 8,09%, DAS do mês de R$ 2.124,71 e Fator R de 28,46% garantido para o mês seguinte, com o botão Tirar a folga">
+        </picture>
+      </figure>
+
+      <div class="feature reveal">
+        <div class="feature-copy">
+          <h3>Quanto vai para você, e quanto fica na empresa</h3>
+          <p>O faturamento do mês se divide em três partes que somam o valor recebido: o pró-labore líquido, a antecipação de lucros e o que fica para pagar DAS, INSS, IRRF e contabilidade.</p>
+          <ul>
+            <li>Pró-labore em 28% do mês, sem folga ou manual</li>
+            <li>INSS e IRRF com a tabela de cada ano, inclusive a Lei 15.270/2025</li>
+            <li>Memória de cálculo completa para conferir cada centavo</li>
+          </ul>
+        </div>
+        <figure class="crop">
+          <picture>
+            <source srcset="img/recorte-transferencias-escuro.png" media="(prefers-color-scheme: dark)">
+            <img src="img/recorte-transferencias.png" width="1098" height="368" loading="lazy" alt="Transferências do mês: R$ 22.426,62 para você, divididos em pró-labore líquido e antecipação de lucros, e R$ 3.823,38 que ficam na conta da empresa">
+          </picture>
+        </figure>
+      </div>
+
+      <div class="feature reveal">
+        <div class="feature-copy">
+          <h3>A folga do Fator R, em reais</h3>
+          <p>Veja quanto ainda dá para faturar, ou reduzir de pró-labore, sem cair no Anexo V. E quanto o Fator R já economizou de verdade, mês a mês, com o que você pagou.</p>
+          <ul>
+            <li>Avisa quando o Fator R fica abaixo de 28% por centavos</li>
+            <li>Simulador "e se" a partir do seu faturamento</li>
+          </ul>
+        </div>
+        <figure class="crop">
+          <img src="img/recorte-folga.png" width="1098" height="474" loading="lazy" alt="Tela Vale a pena?: R$ 7.522,17 economizados em 11 meses e o medidor da folga do Fator R em 28,46%, com a meta de 28%">
+        </figure>
+      </div>
+
+      <div class="feature reveal">
+        <div class="feature-copy">
+          <h3>O histórico vem dos PDFs da Receita</h3>
+          <p>Arraste a declaração do PGDAS-D e o relatório de pagamentos. Antes de gravar, o app mostra mês a mês o que entra e confere se chega ao mesmo RBT12, a receita dos 12 meses anteriores, da declaração.</p>
+          <ul>
+            <li>Os arquivos são lidos só no seu computador</li>
+            <li>Importar de novo atualiza os meses, sem duplicar</li>
+          </ul>
+        </div>
+        <figure class="crop">
+          <img src="img/recorte-historico.png" width="1098" height="540" loading="lazy" alt="Histórico com o RBT12, a folha, o Fator R de 28,50% e o gráfico da evolução mensal com a meta de 28%">
+        </figure>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="validado">
+      <div class="proof reveal">
+        <div>
+          <h2 id="validado">Conferido contra recibos reais do PGDAS-D</h2>
+          <p>Com a mesma receita e a mesma folha, o FatorSimples chega aos mesmos números da declaração oficial. O DAS é calculado tributo a tributo, como o PGDAS-D faz.</p>
+          <p><a href="https://github.com/leandrotsampa/FatorSimples/tree/main/src">Os cálculos e os testes estão no GitHub</a>.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Conferência</th><th scope="col">Resultado</th></tr></thead>
+            <tbody>
+              <tr><td>RBT12</td><td class="ok">igual ao recibo</td></tr>
+              <tr><td>Fator R e anexo</td><td class="ok">iguais ao recibo</td></tr>
+              <tr><td>Valor do DAS</td><td class="ok">até R$ 0,01 de diferença</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="comecar">
+      <div class="section-head reveal">
+        <h2 id="comecar">Comece em um minuto</h2>
+        <p>Sem cadastro em site, sem login e sem mensalidade. Tudo fica num arquivo no seu computador, e para fazer backup basta copiá-lo.</p>
+      </div>
+      <div class="start">
+        <ol class="steps reveal">
+          <li><b>Baixe e abra o app.</b> Instalador para Windows, .dmg para macOS e AppImage para Linux.</li>
+          <li><b>Escolha como começar.</b> Explore uma empresa de exemplo, cadastre a sua em 4 etapas curtas ou importe a declaração do PGDAS-D e pule o cadastro.</li>
+          <li><b>Digite o faturamento do mês.</b> A alíquota, o DAS e as transferências aparecem na hora. As tabelas fiscais se atualizam sozinhas.</li>
+        </ol>
+        <figure class="crop reveal">
+          <img src="img/demo.webp" width="960" height="600" loading="lazy" decoding="async" alt="Demonstração: o faturamento digitado gera a alíquota para a nota, o DAS e as transferências do mês; depois as telas Vale a pena? e Histórico e o tema escuro">
+        </figure>
+      </div>
+    </section>
+
+    <section id="baixar" class="wrap" aria-labelledby="baixar-titulo">
+      <div class="section-head reveal">
+        <h2 id="baixar-titulo">Baixe grátis para o seu computador</h2>
+        <p>O app avisa sozinho quando sai uma versão nova. <span data-version-long></span></p>
+      </div>
+      <div class="download">
+        <div class="dl reveal" data-os="windows">
+          <div class="dl-head"><b>Windows</b><span class="badge" hidden>seu sistema</span></div>
+          <div class="dl-options">
+            <a class="dl-opt" data-asset="win-setup" href="https://github.com/leandrotsampa/FatorSimples/releases/latest">
+              <b>Instalador</b><span>Recomendado. Abre rápido e instala só para o seu usuário, sem pedir administrador.</span><small data-size></small>
+            </a>
+            <a class="dl-opt" data-asset="win-portable" href="https://github.com/leandrotsampa/FatorSimples/releases/latest">
+              <b>Portátil</b><span>Não instala nada: roda de uma pasta ou pendrive, com os dados ao lado.</span><small data-size></small>
+            </a>
+          </div>
+          <p class="dl-help"><b>Na primeira abertura</b>, se o Windows mostrar "O Windows protegeu o computador", clique em <em>Mais informações</em> e depois em <em>Executar assim mesmo</em>.</p>
+        </div>
+        <div class="dl reveal" data-os="mac">
+          <div class="dl-head"><b>macOS</b><span class="badge" hidden>seu sistema</span></div>
+          <div class="dl-options">
+            <a class="dl-opt" data-asset="mac-arm" href="https://github.com/leandrotsampa/FatorSimples/releases/latest">
+              <b>Chip Apple</b><span>M1, M2, M3 e mais novos.</span><small data-size></small>
+            </a>
+            <a class="dl-opt" data-asset="mac-intel" href="https://github.com/leandrotsampa/FatorSimples/releases/latest">
+              <b>Intel</b><span>Macs com processador Intel. Na dúvida, veja em menu Apple → Sobre Este Mac.</span><small data-size></small>
+            </a>
+          </div>
+          <p class="dl-help"><b>Na primeira abertura</b>, vá em <em>Ajustes do Sistema → Privacidade e Segurança</em> e clique em <em>Abrir Mesmo Assim</em>.</p>
+        </div>
+        <div class="dl reveal" data-os="linux">
+          <div class="dl-head"><b>Linux</b><span class="badge" hidden>seu sistema</span></div>
+          <div class="dl-options">
+            <a class="dl-opt" data-asset="linux" href="https://github.com/leandrotsampa/FatorSimples/releases/latest">
+              <b>AppImage</b><span>Para x64: um arquivo só, sem instalar nada.</span><small data-size></small>
+            </a>
+          </div>
+          <p class="dl-help"><b>Antes de abrir</b>, dê permissão de execução: botão direito → <em>Propriedades → Permitir executar</em>.</p>
+        </div>
+      </div>
+      <p class="trust">Os avisos aparecem porque o app não tem uma assinatura de código comercial, que é paga. O código é aberto e pode ser conferido no <a href="https://github.com/leandrotsampa/FatorSimples">GitHub</a>.</p>
+    </section>
+
+    <section id="perguntas" class="narrow" aria-labelledby="faq-titulo">
+      <h2 id="faq-titulo" class="reveal">Perguntas frequentes</h2>
+      <div class="faq">
+        <details>
+          <summary>O FatorSimples é gratuito?</summary>
+          <p>Sim. O app é gratuito e de código aberto, sob a licença MIT. Não tem plano pago, anúncio nem cadastro.</p>
+        </details>
+        <details>
+          <summary>Meus dados vão para a internet?</summary>
+          <p>Não. Os dados ficam num arquivo SQLite no seu computador. O app só consulta o GitHub para saber se há tabelas fiscais ou uma versão nova.</p>
+        </details>
+        <details>
+          <summary>Para quem o FatorSimples serve?</summary>
+          <p>Para empresas do Simples Nacional que prestam serviços sujeitos ao Fator R, como desenvolvimento de software, consultoria, engenharia e saúde, e que querem ficar no Anexo III mantendo a folha em 28% da receita.</p>
+        </details>
+        <details>
+          <summary>Por que o Windows ou o macOS avisam na primeira abertura?</summary>
+          <p>Porque o app não tem uma assinatura de código comercial, que é paga. O código é aberto e pode ser conferido no GitHub. No Windows, clique em <em>Mais informações → Executar assim mesmo</em>. No macOS, vá em <em>Ajustes do Sistema → Privacidade e Segurança</em> e clique em <em>Abrir Mesmo Assim</em>.</p>
+        </details>
+        <details>
+          <summary>O app substitui o contador?</summary>
+          <p>Não. Ele é uma ferramenta de planejamento e conferência. A apuração oficial continua sendo feita no PGDAS-D, e a orientação do contador continua importante.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="end-cta reveal">
+        <h2>Descubra quanto o Fator R vale para a sua empresa</h2>
+        <p>Comece pelo exemplo pronto e, quando quiser, troque pelos seus números. Leva um minuto e não custa nada.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#baixar">Baixar grátis</a>
+          <a class="btn btn-ghost" href="fator-r/">Calcular o Fator R online</a>
+        </div>
+        <ul class="platforms center" aria-label="Sistemas compatíveis">
+          <li>Windows</li><li>macOS</li><li>Linux</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <nav aria-label="Rodapé">
+        <a href="fator-r/">O que é o Fator R</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples">Código no GitHub</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples/releases">Versões</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples/issues">Sugestões e problemas</a>
+      </nav>
+      <p>O FatorSimples apoia o planejamento e a conferência e não substitui a apuração oficial no PGDAS-D nem a orientação de um contador.</p>
+      <p>Feito por <a href="https://github.com/leandrotsampa">@leandrotsampa</a> · © 2026 · <a href="https://github.com/leandrotsampa/FatorSimples/blob/main/LICENSE">Licença MIT</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/site.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fator R: o que é, como calcular e calculadora grátis | FatorSimples</title>
+  <meta name="description" content="Calcule o Fator R online e veja se a sua empresa fica no Anexo III (a partir de 6%) ou no Anexo V (a partir de 15,5%) do Simples Nacional. Fórmula, tabelas, exemplos e o pró-labore mínimo.">
+  <link rel="canonical" href="https://leandrotsampa.github.io/FatorSimples/fator-r/">
+  <meta name="theme-color" content="#047857">
+  <link rel="icon" type="image/png" href="../icon.png">
+  <link rel="apple-touch-icon" href="../icon.png">
+
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="FatorSimples">
+  <meta property="og:title" content="Calculadora do Fator R: Anexo III ou Anexo V?">
+  <meta property="og:description" content="Digite o faturamento e a folha do mês e veja o Fator R, o anexo, o pró-labore mínimo e quanto se paga a menos de DAS.">
+  <meta property="og:url" content="https://leandrotsampa.github.io/FatorSimples/fator-r/">
+  <meta property="og:image" content="https://leandrotsampa.github.io/FatorSimples/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="../assets/site.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "headline": "Fator R: o que é, como calcular e calculadora grátis",
+        "inLanguage": "pt-BR",
+        "author": { "@type": "Person", "name": "leandrotsampa", "url": "https://github.com/leandrotsampa" },
+        "publisher": { "@type": "Organization", "name": "FatorSimples" },
+        "mainEntityOfPage": "https://leandrotsampa.github.io/FatorSimples/fator-r/",
+        "image": "https://leandrotsampa.github.io/FatorSimples/og.png"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "FatorSimples", "item": "https://leandrotsampa.github.io/FatorSimples/" },
+          { "@type": "ListItem", "position": 2, "name": "Fator R", "item": "https://leandrotsampa.github.io/FatorSimples/fator-r/" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "O pró-labore entra no Fator R?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Sim. O pró-labore dos sócios faz parte da folha de salários usada no Fator R. Para muitas empresas de um sócio só, ele é a folha inteira." } },
+          { "@type": "Question", "name": "A distribuição de lucros entra no Fator R?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Não. Lucros distribuídos não são folha de salários. Só a remuneração pelo trabalho, como pró-labore e salários, e os encargos sobre ela entram na conta." } },
+          { "@type": "Question", "name": "Quais meses o Fator R usa?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Os 12 meses anteriores ao mês que está sendo apurado, tanto para a folha quanto para a receita (o RBT12). O pró-labore de um mês só passa a contar no Fator R dos meses seguintes." } },
+          { "@type": "Question", "name": "Qual o pró-labore mínimo para ficar no Anexo III?",
+            "acceptedAnswer": { "@type": "Answer", "text": "O suficiente para a folha dos 12 meses anteriores chegar a 28% da receita do mesmo período. Na prática, quem mantém a folha em 28% do faturamento de cada mês fica sempre no Anexo III." } },
+          { "@type": "Question", "name": "E se a empresa não teve folha ou não teve receita?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Pela Resolução CGSN 140/2018, com folha e sem receita o Fator R é considerado 0,28 (Anexo III); com receita e sem folha, é considerado 0,01 (Anexo V)." } }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="FatorSimples, página inicial">
+        <img src="../icon.png" alt="" width="32" height="32">
+        FatorSimples
+      </a>
+      <nav class="nav-links" aria-label="Principal">
+        <a class="hide-sm" href="../#como-funciona">O app</a>
+        <a class="hide-sm" href="#calculadora" aria-current="page">Calcular o Fator R</a>
+        <a class="hide-sm" href="https://github.com/leandrotsampa/FatorSimples">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../#baixar">Baixar grátis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="article narrow">
+    <nav class="crumbs" aria-label="Você está em"><a href="../">FatorSimples</a> › Fator R</nav>
+    <h1>Fator R: o que é e como calcular</h1>
+    <p class="lead">O Fator R decide se a sua empresa de serviços paga o Simples pelo Anexo III, a partir de 6%, ou pelo Anexo V, a partir de 15,5%. Calcule abaixo com os seus números e entenda a regra.</p>
+
+    <form class="calc" id="calculadora" aria-labelledby="calc-titulo" novalidate onsubmit="return false">
+      <h2 id="calc-titulo">Calculadora do Fator R e do pró-labore</h2>
+      <p>Informe o faturamento do mês e o pró-labore, ou gere o pró-labore em 28%. Para a alíquota exata, preencha também o histórico dos 12 meses anteriores.</p>
+      <div id="calc">
+        <div class="fields">
+          <div class="field">
+            <label for="fat">Faturamento do mês</label>
+            <div class="input"><span>R$</span><input id="fat" inputmode="decimal" autocomplete="off" value="18.000,00" aria-describedby="fat-help"></div>
+            <small id="fat-help">Receita bruta das notas do mês</small>
+          </div>
+          <div class="field">
+            <label for="pro">Pró-labore do mês</label>
+            <div class="input"><span>R$</span><input id="pro" inputmode="decimal" autocomplete="off" value="4.000,00" aria-describedby="pro-help"></div>
+            <small id="pro-help"><button type="button" class="link-btn" data-r="usar28">Usar 28% do faturamento</button></small>
+          </div>
+        </div>
+
+        <details class="history" data-r="historico">
+          <summary>Histórico dos 12 meses anteriores <span>opcional, para a alíquota exata</span></summary>
+          <div class="fields">
+            <div class="field">
+              <label for="rbt">Receita dos 12 meses (RBT12)</label>
+              <div class="input"><span>R$</span><input id="rbt" inputmode="decimal" autocomplete="off" aria-describedby="rbt-help"></div>
+              <small id="rbt-help">Vazio: 12 × o faturamento do mês</small>
+            </div>
+            <div class="field">
+              <label for="folha">Folha dos 12 meses</label>
+              <div class="input"><span>R$</span><input id="folha" inputmode="decimal" autocomplete="off" aria-describedby="folha-help"></div>
+              <small id="folha-help">Vazio: 12 × o pró-labore do mês</small>
+            </div>
+          </div>
+          <p class="history-note">Os dois valores aparecem na declaração do PGDAS-D. O Fator R do DAS deste mês vem desse histórico; o pró-labore deste mês só entra no Fator R dos meses seguintes.</p>
+        </details>
+
+        <div class="results" aria-live="polite">
+          <div class="result" data-r="fator-box">
+            <span class="label">Fator R deste mês</span>
+            <b class="value" data-r="fator">—</b>
+            <span class="sub" data-r="fator-sub"></span>
+          </div>
+          <div class="result">
+            <span class="label">Alíquota para a nota</span>
+            <b class="value" data-r="aliquota">—</b>
+            <span class="sub" data-r="aliquota-sub"></span>
+          </div>
+          <div class="result">
+            <span class="label">Pró-labore líquido</span>
+            <b class="value" data-r="liquido">—</b>
+            <span class="sub" data-r="liquido-sub"></span>
+          </div>
+        </div>
+
+        <div class="forecast" data-r="previsao" hidden>
+          <p class="forecast-verdict" data-r="veredito" aria-live="polite"></p>
+          <div class="table-wrap">
+            <table data-r="tabela-detalhe">
+              <thead>
+                <tr><th scope="col"><span class="sr-only">Item</span></th><th scope="col" data-r="col-a">Seu pró-labore</th><th scope="col" data-r="col-b">Pró-labore em 28%</th></tr>
+              </thead>
+              <tbody data-r="grupo-pl"></tbody>
+              <tbody data-r="grupo-empresa"></tbody>
+              <tbody data-r="grupo-resumo"></tbody>
+            </table>
+          </div>
+          <p class="forecast-note" data-r="tabela"></p>
+        </div>
+      </div>
+      <p class="calc-foot">Pró-labore de um sócio, sem dependentes e antes dos honorários da contabilidade. O <a href="../">FatorSimples</a> faz essa conta todo mês com o seu histórico real, com empregados, dependentes e contabilidade.</p>
+    </form>
+
+    <h2>O que é o Fator R</h2>
+    <p>Algumas atividades de serviço do Simples Nacional, como desenvolvimento de software, consultoria, engenharia, arquitetura, publicidade e várias da área da saúde, não têm um anexo fixo. O anexo de cada mês depende da relação entre a folha de salários e a receita da empresa. Essa relação é o <strong>Fator R</strong>.</p>
+    <ul>
+      <li><strong>Fator R igual ou acima de 28%:</strong> a empresa paga pelo <strong>Anexo III</strong>, a partir de 6%.</li>
+      <li><strong>Fator R abaixo de 28%:</strong> a empresa paga pelo <strong>Anexo V</strong>, a partir de 15,5%.</li>
+    </ul>
+    <p>A regra está na Lei Complementar 123/2006, art. 18, §§ 5º-J e 5º-M, com a redação da LC 155/2016.</p>
+
+    <h2>Como calcular o Fator R</h2>
+    <p class="formula">Fator R = folha de salários dos 12 meses anteriores ÷ receita bruta dos 12 meses anteriores (RBT12)</p>
+    <p>Os 12 meses são sempre os <strong>anteriores</strong> ao mês que está sendo apurado. Para o DAS de outubro, por exemplo, contam a folha e a receita de outubro do ano anterior a setembro.</p>
+    <h3>O que entra na folha</h3>
+    <ul>
+      <li>Pró-labore dos sócios</li>
+      <li>Salários, 13º e férias dos empregados</li>
+      <li>FGTS e a contribuição patronal ao INSS paga fora do DAS</li>
+    </ul>
+    <p>Lucros distribuídos <strong>não</strong> entram: não são remuneração pelo trabalho.</p>
+    <h3>Casos especiais</h3>
+    <ul>
+      <li><strong>Com folha e sem receita</strong> nos 12 meses: o Fator R é considerado 0,28, ou seja, Anexo III (Resolução CGSN 140/2018).</li>
+      <li><strong>Com receita e sem folha</strong>: o Fator R é considerado 0,01, ou seja, Anexo V.</li>
+      <li><strong>Menos de 12 meses de atividade:</strong> o RBT12 é a média dos meses de atividade multiplicada por 12 (LC 123/2006, art. 18, § 2º).</li>
+    </ul>
+
+    <h2>Da alíquota nominal à alíquota da nota</h2>
+    <p>Cada anexo tem seis faixas de receita, e cada faixa tem uma alíquota nominal e uma parcela a deduzir. A alíquota que vai na nota é a <strong>efetiva</strong>:</p>
+    <p class="formula">Alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Anexos III e V do Simples Nacional</caption>
+        <thead>
+          <tr><th scope="col">Receita em 12 meses (RBT12)</th><th scope="col">Anexo III</th><th scope="col">Dedução III</th><th scope="col">Anexo V</th><th scope="col">Dedução V</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Até R$ 180 mil</td><td>6,00%</td><td>—</td><td>15,50%</td><td>—</td></tr>
+          <tr><td>Até R$ 360 mil</td><td>11,20%</td><td>R$ 9.360</td><td>18,00%</td><td>R$ 4.500</td></tr>
+          <tr><td>Até R$ 720 mil</td><td>13,50%</td><td>R$ 17.640</td><td>19,50%</td><td>R$ 9.900</td></tr>
+          <tr><td>Até R$ 1,8 milhão</td><td>16,00%</td><td>R$ 35.640</td><td>20,50%</td><td>R$ 17.100</td></tr>
+          <tr><td>Até R$ 3,6 milhões</td><td>21,00%</td><td>R$ 125.640</td><td>23,00%</td><td>R$ 62.100</td></tr>
+          <tr><td>Até R$ 4,8 milhões</td><td>33,00%</td><td>R$ 648.000</td><td>30,50%</td><td>R$ 540.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Exemplo: R$ 20 mil por mês</h3>
+    <p>Com R$ 20.000 por mês nos últimos 12 meses, o RBT12 é R$ 240.000, na segunda faixa.</p>
+    <ul>
+      <li><strong>Anexo III:</strong> (240.000 × 11,2% − 9.360) ÷ 240.000 = <strong>7,30%</strong>, ou R$ 1.460,00 de DAS no mês.</li>
+      <li><strong>Anexo V:</strong> (240.000 × 18% − 4.500) ÷ 240.000 = <strong>16,13%</strong>, ou R$ 3.225,00 de DAS no mês.</li>
+    </ul>
+    <p>Para ficar no Anexo III, a folha precisa ser de pelo menos R$ 5.600 por mês (28% de R$ 20.000). A diferença de DAS é de R$ 1.765 por mês, ou R$ 21.180 por ano. Do outro lado da balança estão o INSS e o IRRF sobre o pró-labore maior, e por isso vale comparar o total, não só o DAS.</p>
+
+    <h2>O pró-labore no ponto certo</h2>
+    <p>Para a maioria das empresas de um sócio só, a folha é o próprio pró-labore. Mantê-lo em 28% do faturamento de cada mês garante o Anexo III nos meses seguintes. Abaixo disso, vale olhar a folga: se a folha dos 12 meses já está acima de 28%, dá para retirar um pró-labore menor por um tempo sem cair no Anexo V.</p>
+    <p class="note">Cuidado com os centavos: 27,99% já é Anexo V. Arredonde o pró-labore sempre para cima.</p>
+
+    <h2>Perguntas frequentes</h2>
+    <div class="faq">
+      <details>
+        <summary>O pró-labore entra no Fator R?</summary>
+        <p>Sim. O pró-labore dos sócios faz parte da folha de salários usada no Fator R. Para muitas empresas de um sócio só, ele é a folha inteira.</p>
+      </details>
+      <details>
+        <summary>A distribuição de lucros entra no Fator R?</summary>
+        <p>Não. Lucros distribuídos não são folha de salários. Só a remuneração pelo trabalho, como pró-labore e salários, e os encargos sobre ela entram na conta.</p>
+      </details>
+      <details>
+        <summary>Quais meses o Fator R usa?</summary>
+        <p>Os 12 meses anteriores ao mês que está sendo apurado, tanto para a folha quanto para a receita (o RBT12). O pró-labore de um mês só passa a contar no Fator R dos meses seguintes.</p>
+      </details>
+      <details>
+        <summary>Qual o pró-labore mínimo para ficar no Anexo III?</summary>
+        <p>O suficiente para a folha dos 12 meses anteriores chegar a 28% da receita do mesmo período. Na prática, quem mantém a folha em 28% do faturamento de cada mês fica sempre no Anexo III.</p>
+      </details>
+      <details>
+        <summary>E se a empresa não teve folha ou não teve receita?</summary>
+        <p>Pela Resolução CGSN 140/2018, com folha e sem receita o Fator R é considerado 0,28 (Anexo III); com receita e sem folha, é considerado 0,01 (Anexo V).</p>
+      </details>
+    </div>
+
+    <div class="end-cta">
+      <h2>Faça essa conta todo mês, com o seu histórico</h2>
+      <p>O FatorSimples guarda os 12 meses, calcula o Fator R de cada competência, a alíquota para a nota, o DAS e quanto pode ir para você. Grátis e com os dados só no seu computador.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="../#baixar">Baixar grátis</a>
+        <a class="btn btn-ghost" href="../">Conhecer o app</a>
+      </div>
+      <ul class="platforms center" aria-label="Sistemas compatíveis"><li>Windows</li><li>macOS</li><li>Linux</li></ul>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <nav aria-label="Rodapé">
+        <a href="../">FatorSimples</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples">Código no GitHub</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples/releases">Versões</a>
+        <a href="https://github.com/leandrotsampa/FatorSimples/issues">Sugestões e problemas</a>
+      </nav>
+      <p>Conteúdo informativo, conferido com a LC 123/2006 e a Resolução CGSN 140/2018. Não substitui a apuração oficial no PGDAS-D nem a orientação de um contador.</p>
+      <p>Feito por <a href="https://github.com/leandrotsampa">@leandrotsampa</a> · © 2026 · <a href="https://github.com/leandrotsampa/FatorSimples/blob/main/LICENSE">Licença MIT</a></p>
+    </div>
+  </footer>
+
+  <script src="../assets/site.js" defer></script>
+</body>
+</html>

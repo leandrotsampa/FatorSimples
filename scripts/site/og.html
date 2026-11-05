@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: 'Bricolage'; src: url('../../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2') format('woff2'); font-weight: 200 800; }
+  @font-face { font-family: 'Plex'; src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Plex'; src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Plex'; src: url('../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: 'Plex', sans-serif; color: #0f1f1a;
+    background: radial-gradient(900px 500px at 8% -10%, rgb(16 185 129 / 0.18), transparent 62%), #e7eee9;
+    padding: 64px 72px; display: grid; grid-template-columns: 1fr 470px; gap: 48px; align-items: center;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: 'Bricolage'; font-weight: 700; font-size: 30px; }
+  .brand img { width: 52px; height: 52px; border-radius: 13px; }
+  h1 { font-family: 'Bricolage'; font-weight: 700; font-size: 76px; line-height: 1.02; letter-spacing: -0.03em; margin-top: 40px; }
+  .iii { color: #047857; }
+  .v { color: #b45309; text-decoration: line-through; text-decoration-thickness: 5px; }
+  p { margin-top: 26px; font-size: 25px; line-height: 1.4; color: #3f504a; }
+  .chips { display: flex; gap: 10px; margin-top: 30px; }
+  .chips span { font-size: 19px; font-weight: 600; padding: 7px 16px; border-radius: 999px; background: #fff; border: 1px solid #d3ded8; color: #3f504a; }
+  .chips span.free { background: #047857; color: #fff; border-color: #047857; }
+  .card { background: #fff; border-radius: 28px; padding: 30px; box-shadow: 0 2px 4px rgb(15 31 26 / 0.05), 0 30px 60px -30px rgb(15 31 26 / 0.4); }
+  .card small { display: block; font-size: 18px; color: #55655e; }
+  .big { font-size: 46px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+  .anexos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+  .anexo { border-radius: 18px; padding: 18px; }
+  .anexo b { display: block; font-size: 38px; margin-top: 4px; }
+  .anexo span { font-size: 18px; font-weight: 600; }
+  .a3 { background: #e3f6ee; color: #047857; }
+  .a5 { background: #fdf3e4; color: #b45309; }
+  .total { margin-top: 22px; padding-top: 20px; border-top: 1px solid #d3ded8; font-size: 21px; color: #3f504a; }
+  .total b { font-size: 34px; color: #047857; display: block; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="brand"><img src="../../build/icon.png" alt="">FatorSimples</div>
+    <h1>Pague <span class="iii">6%</span> de Simples, não <span class="v">15,5%</span></h1>
+    <p>Fator R, alíquota para a nota, DAS e o pró&#8209;labore no ponto certo, todo mês.</p>
+    <div class="chips"><span class="free">Grátis</span><span>Windows</span><span>macOS</span><span>Linux</span></div>
+  </div>
+  <div class="card">
+    <small>Faturamento por mês</small>
+    <div class="big">R$ 14.000,00</div>
+    <div class="anexos">
+      <div class="anexo a3"><span>Anexo III</span><b>6,00%</b></div>
+      <div class="anexo a5"><span>Anexo V</span><b>15,50%</b></div>
+    </div>
+    <div class="total"><b>R$ 1.330,00</b>a menos de DAS por mês</div>
+  </div>
+</body>
+</html>
