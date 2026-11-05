@@ -341,8 +341,8 @@
       r('fator').textContent = pct.format(a.fator);
       box.className = 'result ' + (a.anexo === 'III' ? 'ok' : 'bad');
       r('fator-sub').textContent = 'Anexo ' + a.anexo + (temFolha ? ', pelo histórico' : a.anexo === 'III' ? '' : ' · faltam ' + brl.format(minimo - pl) + ' de pró-labore');
-      r('aliquota').textContent = pct.format(a.das.aliquota);
-      r('aliquota-sub').textContent = 'DAS de ' + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa + (historico ? '' : ' · estimado');
+      r('aliquota').textContent = (historico ? '' : '≈ ') + pct.format(a.das.aliquota);
+      r('aliquota-sub').textContent = 'DAS de ' + brl.format(a.das.valor) + ' · faixa ' + a.das.faixa + (historico ? '' : ' · depende do RBT12');
       r('liquido').textContent = brl.format(a.p.liquido);
       r('liquido-sub').textContent = 'INSS ' + brl.format(a.p.inss) + ' · IRRF ' + brl.format(a.p.irrf);
 
@@ -350,7 +350,7 @@
       r('selo').className = 'selo ' + (historico ? 'hist' : 'est');
       r('selo').innerHTML = historico
         ? '<b>Com o seu histórico</b><span>RBT12 de ' + brl.format(rbt12) + (temFolha ? ' e folha de ' + brl.format(parseBRL(folhaIn.value)) : '') + ' nos 12 meses anteriores.</span><a href="#rbt" data-r="abrir-historico">Editar</a>'
-        : '<b>Estimativa</b><span>Supõe 12 meses iguais a este. A alíquota e o anexo podem mudar com o seu histórico real.</span><a href="#rbt" data-r="abrir-historico">Preencher o histórico</a>';
+        : '<b>Estimativa</b><span>Sem o RBT12, a conta supõe 12 meses iguais a este. Os valores com ≈ dependem dele e podem mudar com o seu histórico real.</span><a href="#rbt" data-r="abrir-historico">Preencher o histórico</a>';
       r('abrir-historico').addEventListener('click', abrirHistorico);
 
       // Mensagem principal e qual cenário leva o destaque de "melhor"
@@ -389,7 +389,8 @@
         return c.p.irrf === 0 && c.p.reducao > 0 ? 'isento pela redução da Lei 15.270'
           : c.p.reducao > 0 ? c.p.metodo + ', redução de ' + brl.format(c.p.reducao) : c.p.metodo;
       };
-      var est = historico ? '' : ' <span class="est-tag">estimado</span>';
+      // Sem o RBT12 informado, o DAS e tudo que depende dele leva o marcador ≈ (explicado no selo)
+      var aprox = function (v) { return historico ? v : '<span class="aprox" title="Estimado: depende do RBT12">≈</span> ' + v; };
       var item = function (rotulo, valor, nota2, cls) {
         return '<dt' + (cls ? ' class="' + cls + '"' : '') + '>' + rotulo + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + valor + (nota2 ? '<small>' + esc(nota2) + '</small>' : '') + '</dd>';
       };
@@ -401,7 +402,7 @@
         var proxNota = c.semFatorR ? 'Anexo V, sem Fator R' : 'Anexo ' + c.proxAnexo + ' · Fator R de ' + pct.format(c.proxFator);
         return '<article class="sc' + (vence ? ' best' : '') + '">'
           + '<div class="sc-head"><h3>' + esc(c.rotulo) + ' · ' + brl.format(c.pl) + '</h3><span class="sc-badge ' + (c.anexo === 'III' ? 'iii' : 'v') + '">' + esc(etiqueta) + '</span></div>'
-          + '<div class="sc-total"><small>Para você no mês</small><b>' + brl.format(c.paraVoce) + '</b></div>'
+          + '<div class="sc-total"><small>Para você no mês</small><b>' + aprox(brl.format(c.paraVoce)) + '</b></div>'
           + '<dl>'
           + '<dt class="grp">Pró-labore</dt>'
           + item('Bruto', brl.format(c.pl))
@@ -409,16 +410,16 @@
           + item('IRRF', menos(c.p.irrf), irNota(c))
           + item('Líquido', brl.format(c.p.liquido), '', 'sum')
           + '<dt class="grp">Empresa</dt>'
-          + item('DAS · ' + pct.format(c.das.aliquota) + est, menos(c.das.valor), 'Anexo ' + c.anexo + ', faixa ' + c.das.faixa)
+          + item('DAS · ' + pct.format(c.das.aliquota), aprox(menos(c.das.valor)), 'Anexo ' + c.anexo + ', faixa ' + c.das.faixa + (historico ? '' : ' · RBT12 estimado em ' + brl.format(rbt12)))
           + (c.irLucros ? item('IR retido sobre lucros', menos(c.irLucros), '10% acima de R$ 50 mil no mês') : '')
-          + item('Antecipação de lucros', brl.format(c.lucros), c.irLucros ? '' : 'isenta de IR', 'sum')
+          + item('Antecipação de lucros', aprox(brl.format(c.lucros)), c.irLucros ? '' : 'isenta de IR', 'sum')
           + '<dt class="grp">Impostos e próximo mês</dt>'
-          + item('DAS + INSS + IRRF', brl.format(c.impostos), pct.format(c.carga) + ' do faturamento')
-          + item('Alíquota no mês seguinte', prox, proxNota)
+          + item('DAS + INSS + IRRF', aprox(brl.format(c.impostos)), pct.format(c.carga) + ' do faturamento')
+          + item('Alíquota no mês seguinte', aprox(prox), proxNota)
           + '</dl></article>';
       };
       r('cenarios').innerHTML = cartao(a) + cartao(b);
-      r('tabela').textContent = 'INSS e IRRF pela tabela "' + tabela.name + '" (' + origemTabela + '). Pró-labore de um sócio, sem dependentes e antes dos honorários da contabilidade.';
+      r('tabela').textContent = 'INSS e IRRF pela tabela "' + tabela.name + '" (' + origemTabela + ').';
       r('previsao').hidden = false;
     };
 

@@ -381,7 +381,8 @@ caption { caption-side: top; text-align: left; padding: 10px 12px 8px; font-weig
 .cenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .sc { border-radius: 20px; padding: 22px; background: var(--surface-2); border: 1px solid var(--line); }
 .sc.best { background: var(--surface); border: 2px solid var(--brand); padding: 21px; box-shadow: var(--shadow); }
-.sc-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px; }
+/* Etiqueta sempre embaixo do título, igual nos dois cartões */
+.sc-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .article .sc-head h3 { margin: 0; font: 600 1rem/1.35 var(--font-sans); letter-spacing: 0; color: var(--text); }
 .sc-badge { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
 .sc-badge.iii { background: var(--brand-soft); color: var(--brand); }
@@ -390,14 +391,15 @@ caption { caption-side: top; text-align: left; padding: 10px 12px 8px; font-weig
 .sc-total small { font-size: 0.86rem; color: var(--text-3); }
 .sc-total b { display: block; font-size: 2rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); }
 .sc.best .sc-total b { color: var(--brand); }
-.sc dl { margin: 16px 0 0; display: grid; grid-template-columns: 1fr auto; row-gap: 9px; column-gap: 14px; font-size: 0.94rem; }
+/* Rótulo na largura do texto (sem quebrar) e o valor com as notas no espaço que sobra */
+.sc dl { margin: 16px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); row-gap: 9px; column-gap: 0; font-size: 0.94rem; }
 .sc dt { color: var(--text-2); }
-.sc dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.sc dd { margin: 0; padding-left: 16px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
 .sc dd small { display: block; font-size: 0.78rem; color: var(--text-3); }
 .sc dt.grp { grid-column: 1 / -1; margin-top: 12px; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--brand); }
 .sc dt.sum, .sc dd.sum { font-weight: 700; padding-top: 9px; border-top: 1px dashed var(--line); }
 .sc dt.sum { color: var(--text); }
-.est-tag { font-size: 0.72rem; font-weight: 600; color: var(--v-tone); }
+.aprox { color: var(--v-tone); font-weight: 700; cursor: help; text-decoration: none; }
 .article .forecast-note { margin-top: 12px; font-size: 0.84rem; color: var(--text-3); }
 @media (max-width: 760px) {
   .cenarios { grid-template-columns: 1fr; }
