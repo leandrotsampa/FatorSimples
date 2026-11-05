@@ -416,3 +416,13 @@ caption { caption-side: top; text-align: left; padding: 10px 12px 8px; font-weig
   .js .reveal { opacity: 1; transform: none; transition: none; }
   .btn { transition: none; }
 }
+
+/* Ícones dos sistemas: desenhados com máscara para herdar a cor do texto nos dois temas.
+   Apple e Linux do Simple Icons (CC0); Windows desenhado aqui. */
+.os-ico { display: inline-block; width: 1em; height: 1em; flex: none; background: currentColor; vertical-align: -0.125em; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
+.os-windows { --ico: url('../img/os-windows.svg'); }
+.os-apple { --ico: url('../img/os-apple.svg'); }
+.os-linux { --ico: url('../img/os-linux.svg'); }
+.platforms li { display: inline-flex; align-items: center; gap: 7px; }
+.dl-head b { display: inline-flex; align-items: center; gap: 10px; }
+.dl-head .os-ico { width: 0.95em; height: 0.95em; color: var(--brand); }
