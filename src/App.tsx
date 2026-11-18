@@ -148,8 +148,10 @@ export default function App() {
   // Modais
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('company');
-  const openSettings = (tab: SettingsTab = 'company') => {
+  const [settingsFocusId, setSettingsFocusId] = useState<string | undefined>(undefined);
+  const openSettings = (tab: SettingsTab = 'company', focusFieldId?: string) => {
     setSettingsTab(tab);
+    setSettingsFocusId(focusFieldId);
     setIsSettingsOpen(true);
   };
   const [isSqliteManagerOpen, setIsSqliteManagerOpen] = useState(false);
@@ -775,7 +777,7 @@ export default function App() {
               settings={apurationSettings}
               onSaveCurrentMonthToHistory={handleSaveMonthToHistory}
               onNavigateToHistory={() => setActiveTab('history')}
-              onOpenSettings={() => openSettings()}
+              onEditAccountingFee={() => openSettings('company', 'accounting-fee')}
             />
           )}
 
@@ -833,6 +835,7 @@ export default function App() {
       <SettingsModal
         onClose={() => setIsSettingsOpen(false)}
         initialTab={settingsTab}
+        focusFieldId={settingsFocusId}
         settings={settings}
         onSave={setSettings}
         onCheckUpdates={runUpdateCheck}

@@ -43,6 +43,7 @@ export type SettingsTab = 'company' | 'prolabore' | 'tables' | 'interface';
 interface SettingsModalProps {
   onClose: () => void;
   initialTab?: SettingsTab;
+  focusFieldId?: string; // campo que recebe o foco ao abrir (ex.: honorários, vindo da tela do mês)
   settings: TaxSettings;
   onSave: (newSettings: TaxSettings) => void;
   // Busca real: arquivo de tabelas no GitHub e última versão publicada do app
@@ -173,6 +174,7 @@ const Notice: React.FC<{ tone: 'ok' | 'warn' | 'info'; children: React.ReactNode
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   initialTab = 'company',
+  focusFieldId,
   settings,
   onSave,
   onCheckUpdates,
@@ -192,6 +194,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     loadStoredRemoteTables().then(setStored);
   }, []);
+  // Abre já no campo pedido: rola até ele e dá o foco (depois da animação de entrada do modal)
+  useEffect(() => {
+    if (!focusFieldId) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(focusFieldId) as HTMLInputElement | null;
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.focus({ preventScroll: true });
+      el?.select?.();
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [focusFieldId]);
   const [latestVersion, setLatestVersion] = useState<string | null>(newVersion);
   const set = (patch: Partial<TaxSettings>) => setFormData((prev) => ({ ...prev, ...patch }));
 

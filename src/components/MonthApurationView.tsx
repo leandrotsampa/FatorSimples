@@ -3,7 +3,6 @@ import {
   AlertCircle,
   CheckCircle2,
   BookmarkCheck,
-  ChevronDown,
   Receipt,
   ShieldCheck,
   Lock,
@@ -21,7 +20,6 @@ import {
   calculateMonthSummary,
   calculateFactorRMargin,
   calculateSlackRelease,
-  getActiveTaxTable,
   shiftYearMonth,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
@@ -32,6 +30,7 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
+import { InfoPopover } from './ui/InfoPopover';
 import { CopyButton } from './ui/CopyButton';
 import { formatForCopy } from '../utils/copyFormat';
 import { Sparkline } from './charts/Sparkline';
@@ -57,7 +56,7 @@ interface MonthApurationViewProps {
   settings: TaxSettings;
   onSaveCurrentMonthToHistory: (record: MonthRecord) => void;
   onNavigateToHistory: () => void;
-  onOpenSettings?: () => void;
+  onEditAccountingFee?: () => void; // abre as configurações no campo de honorários
 }
 
 const MONTH_NAMES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -192,13 +191,29 @@ const Indicator: React.FC<{
 );
 
 // Uma transferência do mês: o valor a mandar para a conta pessoal
+// Cores da barra "para onde vai a receita"; as mesmas bolinhas marcam cada linha abaixo dela (servem de legenda).
+// Mesma ordem de tom nos dois temas: pró-labore no verde forte, antecipação no verde claro
+const FLOW_COLORS = {
+  prolaboreNet: 'bg-emerald-600 dark:bg-emerald-700',
+  dividends: 'bg-emerald-300',
+  dividendIr: 'bg-rose-300',
+  das: 'bg-amber-500',
+  prolaboreTaxes: 'bg-rose-500',
+  accounting: 'bg-slate-400 dark:bg-slate-500',
+};
+
+const FlowDot: React.FC<{ color: string }> = ({ color }) => (
+  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${color}`} aria-hidden="true" />
+);
+
 const TransferRow: React.FC<{
   step: number;
   title: string;
   hint: string;
   value: number;
   detail: React.ReactNode;
-}> = ({ step, title, hint, value, detail }) => (
+  color: string;
+}> = ({ step, title, hint, value, detail, color }) => (
   <div className={`${tile} flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5`}>
     <span
       className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10"
@@ -207,8 +222,11 @@ const TransferRow: React.FC<{
       {step}
     </span>
     <div className="min-w-0 flex-1">
-      <div className="text-sm font-semibold text-slate-900 dark:text-white">
-        {title} <span className="font-normal text-slate-500 dark:text-slate-400">· {hint}</span>
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+        <FlowDot color={color} />
+        <span>
+          {title} <span className="font-normal text-slate-500 dark:text-slate-400">· {hint}</span>
+        </span>
       </div>
       <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{detail}</div>
     </div>
@@ -220,7 +238,7 @@ const TransferRow: React.FC<{
   </div>
 );
 
-// Linha de memória de cálculo
+// Linha de detalhe (rótulo à esquerda, valor à direita)
 const DetailRow: React.FC<{ label: React.ReactNode; value: React.ReactNode; strong?: boolean }> = ({
   label,
   value,
@@ -238,56 +256,6 @@ const DetailRow: React.FC<{ label: React.ReactNode; value: React.ReactNode; stro
   </div>
 );
 
-// Seção recolhível de detalhes (memória de cálculo)
-// Seção recolhível: o chevron gira e o conteúdo abre com altura animada (Enter/Espaço no botão)
-const DetailSection: React.FC<{ title: string; summary: React.ReactNode; children: React.ReactNode }> = ({
-  title,
-  summary,
-  children,
-}) => {
-  const [open, setOpen] = useState(false);
-  const reduceMotion = Boolean(useReducedMotion());
-  const contentId = React.useId();
-  return (
-    <div className="border-t border-slate-200 dark:border-slate-800 first:border-t-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls={open ? contentId : undefined}
-        className="w-full flex items-center justify-between gap-4 py-3.5 cursor-pointer rounded text-left active:transform-none"
-      >
-        <span className="text-sm font-semibold text-slate-900 dark:text-white">{title}</span>
-        <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-0">
-          <span className="truncate">{summary}</span>
-          <motion.span
-            className="shrink-0"
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
-          >
-            <ChevronDown className="w-4 h-4" />
-          </motion.span>
-        </span>
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            id={contentId}
-            key="content"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT })}
-            className="overflow-hidden"
-          >
-            <div className="pb-4 pl-1">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
 export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   currentRevenue,
   setCurrentRevenue,
@@ -303,7 +271,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   settings,
   onSaveCurrentMonthToHistory,
   onNavigateToHistory,
-  onOpenSettings,
+  onEditAccountingFee,
 }) => {
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
 
@@ -337,7 +305,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const { prolabore, simples, consolidated, next } = summary;
   const isReadOnly = savedRecord !== null;
   const hasRevenue = currentRevenue > 0;
-  const dividendRule = getActiveTaxTable(settings)?.dividendWithholding;
   const margin = calculateFactorRMargin(currentRevenue, prolabore.gross, history, settings, selectedMonth);
   // Folga de menos de R$ 1 é "no limite" (evita "folga de R$ 0,00" e "passou R$ 0,00")
   const atLimit = Math.abs(margin.prolaboreMargin) < 1;
@@ -372,12 +339,12 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
 
   // Para onde vai a receita do mês
   const breakdown = [
-    { label: 'Pró-labore líquido', value: consolidated.prolaboreNet, color: 'bg-emerald-600 dark:bg-emerald-500' },
-    { label: 'Antecipação de lucros', value: consolidated.taxFreeDividends, color: 'bg-emerald-300 dark:bg-emerald-700' },
-    { label: 'IR sobre lucros', value: consolidated.dividendWithholding, color: 'bg-rose-300 dark:bg-rose-800' },
-    { label: 'DAS', value: consolidated.dasAmount, color: 'bg-amber-500 dark:bg-amber-500' },
-    { label: 'INSS + IRRF', value: consolidated.prolaboreTaxes, color: 'bg-rose-500 dark:bg-rose-500' },
-    { label: 'Contabilidade', value: consolidated.accountingFee, color: 'bg-slate-400 dark:bg-slate-500' },
+    { label: 'Pró-labore líquido', value: consolidated.prolaboreNet, color: FLOW_COLORS.prolaboreNet },
+    { label: 'Antecipação de lucros', value: consolidated.taxFreeDividends, color: FLOW_COLORS.dividends },
+    { label: 'IR sobre lucros', value: consolidated.dividendWithholding, color: FLOW_COLORS.dividendIr },
+    { label: 'DAS', value: consolidated.dasAmount, color: FLOW_COLORS.das },
+    { label: 'INSS + IRRF', value: consolidated.prolaboreTaxes, color: FLOW_COLORS.prolaboreTaxes },
+    { label: 'Contabilidade', value: consolidated.accountingFee, color: FLOW_COLORS.accounting },
   ].filter((p) => p.value > 0.005);
   const breakdownTotal = breakdown.reduce((acc, p) => acc + p.value, 0) || 1;
 
@@ -546,6 +513,17 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               ariaLabel="Estratégia do pró-labore"
               layoutId="prolabore-rule"
             />
+            {/* Mês salvo: mostra o pró-labore gravado (somente leitura), como o faturamento ao lado.
+                O registro não guarda a regra usada; ela é deduzida do valor */}
+            {savedRecord && (
+              <CurrencyInput
+                className="mt-2"
+                ariaLabel="Pró-labore bruto salvo"
+                value={savedRecord.payroll}
+                onChange={() => undefined}
+                readOnly
+              />
+            )}
             <AnimatePresence initial={false}>
               {prolaboreRule === 'manual' && !isReadOnly && (
                 <motion.div
@@ -742,13 +720,45 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               tone={next.isQualifiedForAnexo3 ? 'good' : 'bad'}
               detail={
                 <>
-                  {!next.isQualifiedForAnexo3
-                    ? `Cai no Anexo V · faltam ${formatCurrency(-margin.prolaboreMargin)} de pró-labore`
-                    : atLimit
-                      ? prolaboreRule === 'exact_rbt12'
-                        ? 'Garantido · sem folga, pró-labore no mínimo'
-                        : 'Garantido · no limite, sem folga'
-                      : `Garantido · folga de ${formatCurrency(Math.max(0, margin.prolaboreMargin))}`}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span>
+                      {!next.isQualifiedForAnexo3
+                        ? `Cai no Anexo V · faltam ${formatCurrency(Math.max(0, -margin.prolaboreMargin))} de pró-labore`
+                        : atLimit
+                          ? prolaboreRule === 'exact_rbt12'
+                            ? 'Garantido · sem folga, pró-labore no mínimo'
+                            : 'Garantido · no limite, sem folga'
+                          : `Garantido · folga de ${formatCurrency(Math.max(0, margin.prolaboreMargin))}`}
+                    </span>
+                    {/* As contas da folga do Fator R, num painel flutuante para o cartão não crescer */}
+                    <InfoPopover label="ver detalhes" title={`Fator R e folga em ${formatCompetence(next.yearMonth)}`}>
+                      <DetailRow
+                        label="Fator R (11 meses anteriores + este)"
+                        value={formatPercent(next.factorRPercentage)}
+                      />
+                      <DetailRow label="Pró-labore mínimo para manter 28%" value={formatCurrency(margin.minProlabore)} />
+                      <DetailRow
+                        label="Folga no pró-labore"
+                        value={
+                          margin.prolaboreMargin >= 0
+                            ? `pode reduzir ${formatCurrency(margin.prolaboreMargin)}`
+                            : `precisa aumentar ${formatCurrency(-margin.prolaboreMargin)}`
+                        }
+                      />
+                      <DetailRow
+                        label="Folga no faturamento"
+                        value={
+                          atLimit
+                            ? 'no limite'
+                            : margin.revenueMargin >= 0
+                              ? `pode faturar mais ${formatCurrency(margin.revenueMargin)}`
+                              : `passou ${formatCurrency(-margin.revenueMargin)} do limite`
+                        }
+                      />
+                      <DetailRow label="Faturamento máximo com este pró-labore" value={formatCurrency(margin.revenueCeiling)} />
+                      <DetailRow label="DAS em jogo se cair no Anexo V" value={formatCurrency(margin.dasAtStake)} strong />
+                    </InfoPopover>
+                  </div>
                   {(canReleaseSlack || (!isReadOnly && !next.isQualifiedForAnexo3)) && (
                     <button
                       type="button"
@@ -884,6 +894,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 step={1}
                 title="Pró-labore líquido"
                 hint="para a sua conta pessoal"
+                color={FLOW_COLORS.prolaboreNet}
                 value={prolabore.net}
                 detail={
                   <>
@@ -897,6 +908,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                 step={2}
                 title="Antecipação de lucros"
                 hint="para a sua conta pessoal"
+                color={FLOW_COLORS.dividends}
                 value={consolidated.taxFreeDividends}
                 detail={
                   consolidated.dividendWithholding > 0.005 ? (
@@ -910,7 +922,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               />
 
               {/* Fica na conta da empresa: impostos e contabilidade */}
-              <div className="p-3.5 rounded-xl ring-1 ring-inset ring-amber-300/70 dark:ring-amber-500/30 bg-amber-50/60 dark:bg-amber-500/5">
+              <div className="p-3.5 rounded-xl ring-1 ring-inset ring-slate-200 dark:ring-slate-800 bg-amber-50/70 dark:bg-amber-500/[0.06]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-sm font-semibold text-slate-900 dark:text-white">
                     Fica na conta da empresa{' '}
@@ -922,37 +934,68 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                     className="text-xl font-bold font-num tabular-nums text-slate-900 dark:text-white"
                   />
                 </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-600 dark:text-slate-400">
-                  <span>
-                    DAS <span className="font-num text-slate-800 dark:text-slate-200">{formatCurrency(simples.dasAmount)}</span>{' '}
-                    (vence 20/{dasDueMonth[1]})
-                  </span>
-                  <span>
-                    INSS <span className="font-num text-slate-800 dark:text-slate-200">{formatCurrency(prolabore.inss)}</span>
-                  </span>
-                  <span>
-                    IRRF <span className="font-num text-slate-800 dark:text-slate-200">{formatCurrency(prolabore.irrf)}</span>
-                  </span>
-                  {consolidated.dividendWithholding > 0.005 && (
-                    <span>
-                      IR sobre lucros{' '}
-                      <span className="font-num text-slate-800 dark:text-slate-200">{formatCurrency(consolidated.dividendWithholding)}</span>
+                {/* Cada imposto numa linha (valor à direita); os do pró-labore somados, com INSS e IRRF na sub-linha.
+                    Divisórias iguais às da memória de cálculo, nos dois temas */}
+                <div className="mt-2 border-t border-slate-200 dark:border-white/10 divide-y divide-slate-200 dark:divide-white/10 text-sm">
+                  <div className="flex items-baseline justify-between gap-3 py-2">
+                    <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                      <FlowDot color={FLOW_COLORS.das} />
+                      <span>DAS</span> <span className="text-xs text-slate-500 dark:text-slate-400">· vence 20/{dasDueMonth[1]}</span>
                     </span>
+                    <span className="font-num tabular-nums font-medium text-slate-800 dark:text-slate-100">{formatCurrency(simples.dasAmount)}</span>
+                  </div>
+                  <div className="py-2">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                        <FlowDot color={FLOW_COLORS.prolaboreTaxes} />
+                        Impostos do pró-labore
+                      </span>
+                      <span className="font-num tabular-nums font-medium text-slate-800 dark:text-slate-100">{formatCurrency(consolidated.prolaboreTaxes)}</span>
+                    </div>
+                    <div className="mt-0.5 pl-4 text-xs text-slate-500 dark:text-slate-400">
+                      INSS <span className="font-num">{formatCurrency(prolabore.inss)}</span> · IRRF{' '}
+                      <span className="font-num">{formatCurrency(prolabore.irrf)}</span>
+                    </div>
+                  </div>
+                  {consolidated.dividendWithholding > 0.005 && (
+                    <div className="flex items-baseline justify-between gap-3 py-2">
+                      <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                        <FlowDot color={FLOW_COLORS.dividendIr} />
+                        IR sobre lucros
+                      </span>
+                      <span className="font-num tabular-nums font-medium text-slate-800 dark:text-slate-100">{formatCurrency(consolidated.dividendWithholding)}</span>
+                    </div>
                   )}
                   {consolidated.accountingFee > 0.005 ? (
-                    <span>
-                      Contabilidade{' '}
-                      <span className="font-num text-slate-800 dark:text-slate-200">{formatCurrency(consolidated.accountingFee)}</span>
-                    </span>
+                    <div className="flex items-baseline justify-between gap-3 py-2">
+                      <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                        <FlowDot color={FLOW_COLORS.accounting} />
+                        Contabilidade
+                        {onEditAccountingFee && (
+                          <button
+                            type="button"
+                            onClick={onEditAccountingFee}
+                            title="Alterar os honorários mensais da contabilidade"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400 cursor-pointer"
+                          >
+                            <Pencil className="w-3 h-3" aria-hidden="true" />
+                            editar
+                          </button>
+                        )}
+                      </span>
+                      <span className="font-num tabular-nums font-medium text-slate-800 dark:text-slate-100">{formatCurrency(consolidated.accountingFee)}</span>
+                    </div>
                   ) : (
-                    onOpenSettings && (
-                      <button
-                        type="button"
-                        onClick={onOpenSettings}
-                        className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400 cursor-pointer"
-                      >
-                        + informar honorários da contabilidade
-                      </button>
+                    onEditAccountingFee && (
+                      <div className="py-2">
+                        <button
+                          type="button"
+                          onClick={onEditAccountingFee}
+                          className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400 cursor-pointer"
+                        >
+                          + informar honorários da contabilidade
+                        </button>
+                      </div>
                     )
                   )}
                 </div>
@@ -960,124 +1003,6 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
             </div>
           </section>
 
-          {/* Memória de cálculo */}
-          <section className={`${card} px-5 py-1`}>
-            <DetailSection
-              title="Memória de cálculo do DAS"
-              summary={`${formatCurrency(currentRevenue)} × ${formatPercent(simples.effectiveRatePercentage)}`}
-            >
-              <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm font-num space-y-1 mb-2">
-                <div className="text-slate-600 dark:text-slate-400 font-sans">
-                  Alíquota efetiva (LC 123/2006) = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12
-                </div>
-                <div className="text-emerald-700 dark:text-emerald-400 overflow-x-auto">
-                  ({formatCurrency(simples.rbt12)} × {formatPercent(simples.nominalRate * 100)} − {formatCurrency(simples.deduction)}) ÷{' '}
-                  {formatCurrency(simples.rbt12)} = {formatPercent(simples.effectiveRatePercentage)}
-                </div>
-              </div>
-              <DetailRow
-                label="RBT12"
-                value={`${formatCurrency(simples.rbt12)} · ${
-                  simples.monthsCount === 0
-                    ? '1º mês: receita × 12'
-                    : simples.isProportional
-                      ? `média de ${simples.monthsCount} meses × 12`
-                      : '12 meses completos'
-                }`}
-              />
-              <DetailRow label={`Anexo ${simples.anexoUsed}, faixa ${simples.faixa}`} value={`nominal ${formatPercent(simples.nominalRate * 100)} · dedução ${formatCurrency(simples.deduction)}`} />
-              <DetailRow label="CPP (INSS patronal)" value="incluída no DAS" />
-              <DetailRow
-                label={`Prevista para ${formatCompetence(next.yearMonth)}`}
-                value={`${formatPercent(next.effectiveRatePercentage)} · Anexo ${next.anexoUsed}`}
-              />
-              <DetailRow label="DAS do mês" value={formatCurrency(simples.dasAmount)} strong />
-            </DetailSection>
-
-            <DetailSection
-              title="Impostos do pró-labore"
-              summary={`INSS ${formatCurrency(prolabore.inss)} · IRRF ${formatCurrency(prolabore.irrf)}`}
-            >
-              <DetailRow label="Pró-labore bruto" value={formatCurrency(prolabore.gross)} />
-              <DetailRow
-                label={`INSS ${formatPercent(settings.inssRate * 100, 0)}${prolabore.inssCeilingApplied ? ` (teto ${formatCurrency(settings.inssCeiling)})` : ''}`}
-                value={`− ${formatCurrency(prolabore.inss)}`}
-              />
-              <DetailRow
-                label={`IRRF pela tabela (${prolabore.irrfChosenMethod === 'simplified' ? 'desconto simplificado' : 'deduções legais'}, ${formatPercent(prolabore.irrfRate * 100, 1)})`}
-                value={formatCurrency(prolabore.irrfBeforeReduction)}
-              />
-              {prolabore.irrfReduction > 0 && (
-                <DetailRow label="Redução da Lei 15.270/2025" value={`− ${formatCurrency(prolabore.irrfReduction)}`} />
-              )}
-              <DetailRow label="IRRF retido" value={`− ${formatCurrency(prolabore.irrf)}`} />
-              <DetailRow label="Pró-labore líquido" value={formatCurrency(prolabore.net)} strong />
-            </DetailSection>
-
-            <DetailSection
-              title="Fator R e folga"
-              summary={
-                atLimit
-                  ? 'no limite'
-                  : margin.revenueMargin >= 0
-                  ? `pode faturar mais ${formatCurrency(margin.revenueMargin)}`
-                  : `passou ${formatCurrency(-margin.revenueMargin)} do limite`
-              }
-            >
-              <DetailRow
-                label={`Fator R em ${formatCompetence(next.yearMonth)} (11 meses anteriores + este)`}
-                value={formatPercent(next.factorRPercentage)}
-              />
-              <DetailRow label="Pró-labore mínimo para manter 28%" value={formatCurrency(margin.minProlabore)} />
-              <DetailRow
-                label="Folga no pró-labore"
-                value={
-                  margin.prolaboreMargin >= 0
-                    ? `pode reduzir ${formatCurrency(margin.prolaboreMargin)}`
-                    : `precisa aumentar ${formatCurrency(-margin.prolaboreMargin)}`
-                }
-              />
-              <DetailRow label="Faturamento máximo com este pró-labore" value={formatCurrency(margin.revenueCeiling)} />
-              <DetailRow
-                label={`DAS em jogo em ${formatCompetence(next.yearMonth)} se cair no Anexo V`}
-                value={formatCurrency(margin.dasAtStake)}
-                strong
-              />
-            </DetailSection>
-
-            <DetailSection
-              title="Antecipação de lucros"
-              summary={
-                consolidated.dividendWithholding > 0
-                  ? `IR retido ${formatCurrency(consolidated.dividendWithholding)}`
-                  : 'sem retenção'
-              }
-            >
-              <DetailRow
-                label={
-                  consolidated.accountingFee > 0.005
-                    ? 'Faturamento − DAS − pró-labore bruto − contabilidade'
-                    : 'Faturamento − DAS − pró-labore bruto'
-                }
-                value={formatCurrency(consolidated.distributableProfit)}
-              />
-              {dividendRule ? (
-                <DetailRow
-                  label={`IR retido (${formatPercent(dividendRule.rate * 100, 0)} sobre o total acima de ${formatCurrency(dividendRule.monthlyThreshold)}/mês)`}
-                  value={`− ${formatCurrency(consolidated.dividendWithholding)}`}
-                />
-              ) : (
-                <DetailRow label="IR sobre lucros" value="isento nesta competência" />
-              )}
-              <DetailRow label="Antecipação de lucros líquida" value={formatCurrency(consolidated.taxFreeDividends)} strong />
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                Considera um único sócio recebendo todo o lucro do mês. Das despesas da empresa, só os honorários da
-                contabilidade (se informados nas Configurações) são descontados.
-                {dividendRule &&
-                  ' O IR retido sobre lucros é antecipação do IR mínimo anual e é ajustado na declaração.'}
-              </p>
-            </DetailSection>
-          </section>
         </>
       )}
     </div>
