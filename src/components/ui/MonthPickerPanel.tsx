@@ -10,12 +10,15 @@ const pad = (m: number) => String(m).padStart(2, '0');
 // o mês atual com contorno) e atalho para o mês atual. Teclado: setas, Home/End, PageUp/PageDown e Enter.
 // Meses depois do atual ficam bloqueados: a competência ainda não chegou. Clicar no ano abre a grade
 // de anos (12 por página), para pular direto para um ano distante.
+// blockSaved: os meses já salvos não podem ser escolhidos (cadastro de mês novo; para alterá-los existe o Editar).
+// Ficam focáveis pelo teclado (aria-disabled), só não aceitam a escolha.
 export const MonthPickerPanel: React.FC<{
   value: string;
   savedMonths: Set<string>;
   onSelect: (yearMonth: string) => void;
   now?: Date; // relógio do app: o mês atual acompanha a virada do mês com o app aberto
-}> = ({ value, savedMonths, onSelect, now }) => {
+  blockSaved?: boolean;
+}> = ({ value, savedMonths, onSelect, now, blockSaved = false }) => {
   const reduceMotion = Boolean(useReducedMotion());
   const [viewYear, setViewYear] = useState(() => Number(value.slice(0, 4)));
   const [focused, setFocused] = useState(value);
@@ -154,6 +157,7 @@ export const MonthPickerPanel: React.FC<{
           const saved = savedMonths.has(ym);
           const isToday = ym === today;
           const future = ym > today;
+          const blocked = blockSaved && saved && !selected;
           return (
             <button
               key={ym}
@@ -162,14 +166,15 @@ export const MonthPickerPanel: React.FC<{
               tabIndex={ym === focused ? 0 : -1}
               aria-pressed={selected}
               disabled={future}
-              title={future ? 'Este mês ainda não chegou' : undefined}
-              aria-label={`${monthLongName(ym)} de ${viewYear}${saved ? ', salvo no histórico' : ''}${isToday ? ', mês atual' : ''}${future ? ', ainda não chegou' : ''}`}
-              onClick={() => onSelect(ym)}
+              aria-disabled={blocked || undefined}
+              title={future ? 'Este mês ainda não chegou' : blocked ? 'Já está no histórico. Para alterar, use Editar na lista.' : undefined}
+              aria-label={`${monthLongName(ym)} de ${viewYear}${saved ? ', salvo no histórico' : ''}${isToday ? ', mês atual' : ''}${future ? ', ainda não chegou' : ''}${blocked ? ', não pode ser escolhido' : ''}`}
+              onClick={() => !blocked && onSelect(ym)}
               onFocus={() => setFocused(ym)}
               className={`relative h-11 rounded-lg text-sm capitalize transition-colors ${
                 selected
                   ? 'text-white font-semibold dark:text-emerald-950 cursor-pointer'
-                  : future
+                  : future || blocked
                     ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
                     : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer'
               } ${isToday && !selected ? 'ring-1 ring-inset ring-emerald-500/60' : ''}`}
@@ -205,7 +210,8 @@ export const MonthPickerPanel: React.FC<{
         <button
           type="button"
           onClick={() => onSelect(today)}
-          className="font-semibold text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer"
+          disabled={blockSaved && savedMonths.has(today)}
+          className="font-semibold text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Mês atual
         </button>

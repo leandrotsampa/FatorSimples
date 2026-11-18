@@ -6,6 +6,7 @@ import {
   calculateProlabore,
   calculateSimplesNacional,
   settingsForCompetence,
+  shiftYearMonth,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
 import { HelpTip } from './ui/HelpTip';
@@ -13,6 +14,7 @@ import { HELP } from './help';
 import { ModalShell } from './ui/ModalShell';
 import { btnGhost, btnPrimary, inputBase, modalPanel, tile } from './ui/card';
 import { currentYearMonth, isFutureMonth } from '../utils/monthPicker';
+import { MonthPickerField } from './ui/MonthPickerField';
 
 interface AddMonthModalProps {
   onClose: () => void;
@@ -49,29 +51,43 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
     setDasPaid(simples.dasAmount);
   }, [settings, existingHistory]);
 
+  const loadRecord = (rec: MonthRecord) => {
+    setYearMonth(rec.yearMonth);
+    setRevenue(rec.revenue);
+    setPayroll(rec.payroll);
+    setInss(rec.inss);
+    setIrrf(rec.irrf);
+    setDasPaid(rec.dasPaid);
+    setNotes(rec.notes || '');
+  };
+
+  const savedMonths = React.useMemo(() => new Set(existingHistory.map((h) => h.yearMonth)), [existingHistory]);
+
+  // Valores iniciais só ao abrir (editar: o registro; novo: um mês ainda fora do histórico)
   useEffect(() => {
     if (recordToEdit) {
-      setYearMonth(recordToEdit.yearMonth);
-      setRevenue(recordToEdit.revenue);
-      setPayroll(recordToEdit.payroll);
-      setInss(recordToEdit.inss);
-      setIrrf(recordToEdit.irrf);
-      setDasPaid(recordToEdit.dasPaid);
-      setNotes(recordToEdit.notes || '');
-    } else {
-      // Padrão: competência selecionada no app (ou o mês anterior)
-      const now = new Date();
-      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const defaultYm =
-        defaultYearMonth || `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
-      setYearMonth(defaultYm);
-      setRevenue(0);
-      setPayroll(0);
-      recalculateTaxes(0, 0, defaultYm);
-      setNotes('');
+      loadRecord(recordToEdit);
+      return;
     }
-  }, [recordToEdit, recalculateTaxes, defaultYearMonth]);
+    // Mês novo nunca começa num mês salvo (esses são alterados pelo Editar): a competência aberta no app,
+    // senão o mês atual, senão o primeiro mês livre antes dele
+    const today = currentYearMonth();
+    const isFree = (ym: string) => ym <= today && !savedMonths.has(ym);
+    let ym = defaultYearMonth && isFree(defaultYearMonth) ? defaultYearMonth : today;
+    for (let i = 0; i < 240 && !isFree(ym); i++) ym = shiftYearMonth(ym, -1);
+    setYearMonth(ym);
+    setRevenue(0);
+    setPayroll(0);
+    setNotes('');
+    recalculateTaxes(0, 0, ym);
+  }, [recordToEdit, defaultYearMonth]);
 
+  // Novo mês: a grade só deixa escolher meses livres; os impostos passam a usar as tabelas e o histórico do mês escolhido
+  const handleMonthChange = (ym: string) => {
+    if (savedMonths.has(ym)) return;
+    setYearMonth(ym);
+    recalculateTaxes(revenue, payroll, ym);
+  };
 
   const handleRevenueChange = (val: number) => {
     setRevenue(val);
@@ -88,9 +104,11 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!yearMonth || isFutureMonth(yearMonth)) return;
+    // Mês novo não sobrescreve um mês salvo
+    if (!recordToEdit && savedMonths.has(yearMonth)) return;
 
     const newRecord: MonthRecord = {
-      id: recordToEdit ? recordToEdit.id : `month-${yearMonth}-${Date.now()}`,
+      id: recordToEdit?.id ?? `month-${yearMonth}-${Date.now()}`,
       yearMonth,
       revenue,
       payroll,
@@ -131,23 +149,27 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               <label htmlFor="add-month-ym" className="text-sm font-semibold text-slate-800 dark:text-slate-100">Competência</label>
               <HelpTip help={HELP.competence} />
             </div>
-            <input
+            <MonthPickerField
               id="add-month-ym"
-              type="month"
-              required
-              max={currentYearMonth()}
               value={yearMonth}
-              onChange={(e) => setYearMonth(e.target.value)}
-              className={`${inputBase} font-num font-semibold cursor-pointer dark:[color-scheme:dark]`}
+              savedMonths={savedMonths}
+              onChange={handleMonthChange}
+              readOnly={Boolean(recordToEdit)}
+              blockSaved
             />
+            {recordToEdit && (
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                A competência não muda na edição. Para lançar estes valores em outro mês, exclua este registro e adicione o mês certo.
+              </p>
+            )}
             {isFutureMonth(yearMonth) && (
               <p role="alert" className="mt-1.5 text-xs text-rose-700 dark:text-rose-300">
                 Este mês ainda não chegou. Escolha o mês atual ou um anterior.
               </p>
             )}
-            {!recordToEdit && existingHistory.some((h) => h.yearMonth === yearMonth) && (
-              <p role="alert" className="mt-1.5 text-xs text-amber-800 dark:text-amber-300">
-                Já existe um registro para este mês. Salvar vai substituir os valores dele.
+            {!recordToEdit && (
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                Os meses que já estão no histórico ficam bloqueados. Para alterar um deles, use Editar na lista.
               </p>
             )}
           </div>
@@ -227,7 +249,7 @@ export const AddMonthModal: React.FC<AddMonthModalProps> = ({
               title={revenue <= 0 ? 'Informe o faturamento do mês' : undefined}
               className={btnPrimary}
             >
-              {recordToEdit ? 'Salvar mês' : 'Adicionar ao Histórico'}
+              {recordToEdit ? 'Salvar alterações' : 'Adicionar ao Histórico'}
             </button>
           </div>
         </form>

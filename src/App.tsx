@@ -335,7 +335,8 @@ export default function App() {
     window.clearTimeout(lastSavedTimer.current);
     lastSavedTimer.current = window.setTimeout(() => setLastSavedId(undefined), 1500);
     setHistory((prev) => {
-      const filtered = prev.filter((item) => item.yearMonth !== newRecord.yearMonth);
+      // Sai o registro do mesmo mês e o próprio registro (mesmo id), como no SQLite (INSERT OR REPLACE)
+      const filtered = prev.filter((item) => item.yearMonth !== newRecord.yearMonth && item.id !== newRecord.id);
       return [newRecord, ...filtered];
     });
     // Grava no SQLite nativo se estiver no Electron
@@ -790,6 +791,7 @@ export default function App() {
               onImportDocuments={() => setIsImportOpen(true)}
               onClearHistory={handleClearHistory}
               highlightId={lastSavedId}
+              now={now}
             />
           )}
 

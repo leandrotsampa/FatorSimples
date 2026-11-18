@@ -33,7 +33,7 @@ import { selectHistoryRange, type HistoryRange } from '../utils/historyRange';
 import { clamp } from '../utils/chartGeometry';
 import { DURATION, EASE_OUT } from '../utils/motion';
 import { isPayrollEstimated } from '../utils/documentImport';
-import { MONTH_SHORT_NAMES } from '../utils/monthPicker';
+import { currentYearMonth, MONTH_SHORT_NAMES } from '../utils/monthPicker';
 
 const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MONTH_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -92,6 +92,7 @@ interface HistoryTableProps {
   onClearHistory: () => void;
   // Mês recém-salvo ou editado: a linha pisca em verde
   highlightId?: string;
+  now?: Date; // relógio do app: o mês atual acompanha a virada do mês com o app aberto
 }
 
 export const HistoryTable: React.FC<HistoryTableProps> = ({
@@ -102,7 +103,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   onImportDocuments,
   onClearHistory,
   highlightId,
+  now,
 }) => {
+  // Mês atual já salvo: não há competência nova para lançar (os meses seguintes ainda não chegaram)
+  const currentMonthSaved = history.some((h) => h.yearMonth === currentYearMonth(now));
   const [searchTerm, setSearchTerm] = useState('');
   const reduceMotion = Boolean(useReducedMotion());
   // Cascata das linhas só na primeira montagem; depois (busca, novos meses) entram só com fade
@@ -165,10 +169,17 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               <FileUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Importar PGDAS-D</span>
             </button>
+            {/* aria-disabled em vez de disabled: a dica do title continua aparecendo ao passar o mouse */}
             <button
-              onClick={onAddMonth}
+              onClick={currentMonthSaved ? undefined : onAddMonth}
+              aria-disabled={currentMonthSaved || undefined}
               data-tour="hist-adicionar"
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-full transition-colors shadow-xs cursor-pointer"
+              title={currentMonthSaved ? 'O mês atual já está no histórico. Para alterar um mês, use Editar na lista.' : undefined}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-white text-xs font-semibold rounded-full transition-colors shadow-xs ${
+                currentMonthSaved
+                  ? 'bg-emerald-600/40 dark:bg-emerald-500/30 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer'
+              }`}
             >
               <Plus className="w-4 h-4" />
               <span>Nova Competência</span>
