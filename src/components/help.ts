@@ -7,6 +7,10 @@ export const HELP = {
     body: 'A soma, sem descontos, de todas as notas fiscais emitidas no mês. Com várias notas, some o valor bruto de todas.',
     where: 'No emissor de notas da prefeitura ou no Portal Nacional da NFS-e: relatório das notas do mês. É o mesmo valor informado como receita no PGDAS-D.',
   },
+  recentRevenues: {
+    title: 'Últimos faturamentos',
+    body: 'O faturamento dos 3 meses salvos mais recentes antes deste, do mais novo para o mais antigo. Clique num valor para usá-lo neste mês, útil quando o faturamento se repete. Passe o mouse sobre um valor para ver de que mês ele é.',
+  },
   prolabore: {
     title: 'Pró-labore',
     body: 'O "salário" do sócio que trabalha na empresa. Dele saem o INSS (11%) e o IRRF, e ele conta como folha no Fator R.\n\n28% do mês: pró-labore em 28% do faturamento.\nSem folga: o mínimo que mantém o Fator R em 28% no mês seguinte.\nManual: um valor fixo que você define.',

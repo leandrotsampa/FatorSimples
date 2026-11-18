@@ -284,14 +284,13 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const reduceMotion = Boolean(useReducedMotion());
   const sizeTransition = instantIf(reduceMotion, { duration: DURATION.base, ease: EASE_OUT });
 
-  // Último faturamento salvo e média dos 12 meses, para os atalhos
-  const lastRecordedMonth = history.find((h) => h.yearMonth !== selectedMonth) || history[0];
-  const lastRevenue = lastRecordedMonth ? lastRecordedMonth.revenue : null;
-  const recentHistory = history.slice(0, 12);
-  const average12mRevenue =
-    recentHistory.length > 0
-      ? Math.round(recentHistory.reduce((acc, cur) => acc + cur.revenue, 0) / recentHistory.length)
-      : null;
+  // Atalhos do faturamento: os 3 meses salvos mais recentes antes da competência aberta
+  const recentRevenues = history
+    .filter((h) => h.yearMonth < selectedMonth)
+    .sort((a, b) => b.yearMonth.localeCompare(a.yearMonth))
+    .slice(0, 3);
+  // Só o primeiro atalho com o valor digitado fica marcado (dois meses podem ter o mesmo faturamento)
+  const activeShortcut = recentRevenues.findIndex((h) => h.revenue === currentRevenue);
 
   // Apuração em tempo real com base no faturamento e histórico
   const summary: MonthSummaryResult = calculateMonthSummary(
@@ -477,28 +476,23 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               onChange={setCurrentRevenue}
               readOnly={isReadOnly}
             />
-            {!isReadOnly && (lastRevenue !== null || average12mRevenue !== null) && (
+            {!isReadOnly && recentRevenues.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                {lastRevenue !== null && (
+                <span className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Últimos <HelpTip help={HELP.recentRevenues} />
+                </span>
+                {recentRevenues.map((h, i) => (
                   <button
+                    key={h.yearMonth}
                     type="button"
-                    onClick={() => setCurrentRevenue(lastRevenue)}
-                    className={shortcutClass(currentRevenue === lastRevenue)}
-                    title="Repetir o faturamento do último mês salvo"
+                    onClick={() => setCurrentRevenue(h.revenue)}
+                    className={shortcutClass(i === activeShortcut)}
+                    title={`Faturamento de ${formatCompetence(h.yearMonth)}`}
+                    aria-label={`Usar o faturamento de ${formatCompetence(h.yearMonth)}: ${formatCurrency(h.revenue)}`}
                   >
-                    Último: {formatCurrency(lastRevenue)}
+                    {formatCurrency(h.revenue)}
                   </button>
-                )}
-                {average12mRevenue !== null && average12mRevenue !== lastRevenue && (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentRevenue(average12mRevenue)}
-                    className={shortcutClass(currentRevenue === average12mRevenue)}
-                    title="Usar a média de faturamento dos últimos 12 meses salvos"
-                  >
-                    Média: {formatCurrency(average12mRevenue)}
-                  </button>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -515,37 +509,24 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               ariaLabel="Estratégia do pró-labore"
               layoutId="prolabore-rule"
             />
-            {/* Mês salvo: mostra o pró-labore gravado (somente leitura), como o faturamento ao lado.
-                O registro não guarda a regra usada; ela é deduzida do valor */}
-            {savedRecord && (
-              <CurrencyInput
-                className="mt-2"
-                ariaLabel="Pró-labore bruto salvo"
-                value={savedRecord.payroll}
-                onChange={() => undefined}
-                readOnly
-              />
+            {/* Pró-labore sempre visível: o valor que a regra escolhida dá (ou o digitado no Manual).
+                Digitar num valor calculado passa a regra para Manual com o valor digitado.
+                Mês salvo: o valor gravado, somente leitura (a regra é deduzida do valor) */}
+            <CurrencyInput
+              className="mt-2"
+              ariaLabel="Pró-labore bruto do mês"
+              value={savedRecord ? savedRecord.payroll : prolaboreRule === 'manual' ? manualProlabore : prolabore.gross}
+              onChange={(v) => {
+                if (prolaboreRule !== 'manual') setProlaboreRule('manual');
+                setManualProlabore(v);
+              }}
+              readOnly={isReadOnly}
+            />
+            {!isReadOnly && prolaboreRule !== 'manual' && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Calculado pela regra. Digite outro valor para usar o Manual.
+              </p>
             )}
-            <AnimatePresence initial={false}>
-              {prolaboreRule === 'manual' && !isReadOnly && (
-                <motion.div
-                  key="manual-prolabore"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={sizeTransition}
-                  // Folga de 1px para o anel de foco do campo não ser cortado
-                  className="overflow-hidden -mx-px px-px pb-px"
-                >
-                  <CurrencyInput
-                    className="mt-2"
-                    ariaLabel="Pró-labore bruto manual"
-                    value={manualProlabore}
-                    onChange={setManualProlabore}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           <div>
