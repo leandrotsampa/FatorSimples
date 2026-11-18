@@ -20,7 +20,6 @@ import {
   calculateMonthSummary,
   calculateFactorRMargin,
   calculateSlackRelease,
-  shiftYearMonth,
   FACTOR_R_NEAR_MISS,
 } from '../utils/taxCalculations';
 import { CurrencyInput } from './CurrencyInput';
@@ -31,6 +30,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import { AnimatedNumber } from './ui/AnimatedNumber';
 import { InfoPopover } from './ui/InfoPopover';
+import { dasDueDate, formatDueDate } from '../utils/dasDueDate';
 import { CopyButton } from './ui/CopyButton';
 import { formatForCopy } from '../utils/copyFormat';
 import { Sparkline } from './charts/Sparkline';
@@ -312,7 +312,9 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
   const slack = calculateSlackRelease(currentRevenue, history, { ...settings, prolaboreRule }, selectedMonth, summary);
   const canReleaseSlack =
     !isReadOnly && prolaboreRule !== 'exact_rbt12' && next.isQualifiedForAnexo3 && slack.extraForYou >= 1;
-  const dasDueMonth = shiftYearMonth(selectedMonth, 1).split('-');
+  // Dia 20 do mês seguinte, ou o próximo dia útil (fim de semana ou feriado nacional)
+  const dasDue = formatDueDate(dasDueDate(selectedMonth));
+  const dasDueShort = dasDue.slice(0, 5);
   const savingsThisMonth = simples.anexoUsed === 'III' ? simples.anexoVDasAmount - simples.dasAmount : 0;
 
   // Tendências dos indicadores: até 12 meses salvos antes da competência, do mais antigo ao mais recente
@@ -402,7 +404,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
           hasRevenue ? (
             <>
               DAS de <b className="font-num font-semibold text-slate-900 dark:text-white">{formatCurrency(simples.dasAmount)}</b>{' '}
-              vence em 20/{dasDueMonth[1]}/{dasDueMonth[0]} ·{' '}
+              vence em {dasDue} ·{' '}
               {next.isQualifiedForAnexo3 ? (
                 atLimit ? (
                   <>Fator R garantido em {formatCompetence(next.yearMonth)}, no limite</>
@@ -708,7 +710,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
               label="DAS do mês"
               value={simples.dasAmount}
               format={formatCurrency}
-              detail={`Vence em 20/${dasDueMonth[1]}/${dasDueMonth[0]} · fica na conta`}
+              detail={`Vence em ${dasDue} · fica na conta`}
             />
             <AnswerCard
               icon={next.isQualifiedForAnexo3 ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -940,7 +942,7 @@ export const MonthApurationView: React.FC<MonthApurationViewProps> = ({
                   <div className="flex items-baseline justify-between gap-3 py-2">
                     <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                       <FlowDot color={FLOW_COLORS.das} />
-                      <span>DAS</span> <span className="text-xs text-slate-500 dark:text-slate-400">· vence 20/{dasDueMonth[1]}</span>
+                      <span>DAS</span> <span className="text-xs text-slate-500 dark:text-slate-400">· vence {dasDueShort}</span>
                     </span>
                     <span className="font-num tabular-nums font-medium text-slate-800 dark:text-slate-100">{formatCurrency(simples.dasAmount)}</span>
                   </div>

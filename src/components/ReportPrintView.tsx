@@ -5,9 +5,9 @@ import {
   formatCurrency,
   formatPercent,
   calculateMonthSummary,
-  shiftYearMonth,
 } from '../utils/taxCalculations';
 import { monthLongName } from '../utils/monthPicker';
+import { dasDueDate, formatDueDate } from '../utils/dasDueDate';
 import { OFFICIAL_TAX_TABLES } from '../utils/taxTablesRegistry';
 import { PageHeader } from './ui/PageHeader';
 
@@ -114,7 +114,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
     OFFICIAL_TAX_TABLES[settings.taxVersionId] ||
     OFFICIAL_TAX_TABLES['2026_oficial'] ||
     Object.values(OFFICIAL_TAX_TABLES)[0];
-  const [dueYear, dueMonth] = shiftYearMonth(selectedMonth, 1).split('-');
+  const dasDue = formatDueDate(dasDueDate(selectedMonth));
   const prolaboreTaxes = prolabore.inss + prolabore.irrf;
   const monthTaxes = consolidated.totalTaxes + consolidated.dividendWithholding;
 
@@ -229,7 +229,7 @@ export const ReportPrintView: React.FC<ReportPrintViewProps> = ({
             </div>
           </div>
           <Row label="CPP (INSS patronal)" value="incluída no DAS" />
-          <Row label="DAS a recolher" note={`vence em 20/${dueMonth}/${dueYear}`} value={formatCurrency(simples.dasAmount)} tone="result" />
+          <Row label="DAS a recolher" note={`vence em ${dasDue}`} value={formatCurrency(simples.dasAmount)} tone="result" />
         </Section>
 
         <Section n={2} title="Pró-labore">
