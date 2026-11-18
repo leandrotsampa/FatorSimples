@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { arcPath, clamp } from '../../utils/chartGeometry';
-import { formatPercent } from '../../utils/taxCalculations';
+import { FACTOR_R_TARGET, formatPercent, meetsFactorR } from '../../utils/taxCalculations';
 import { DURATION, EASE_OUT, instantIf } from '../../utils/motion';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 
@@ -13,11 +13,8 @@ const SIZES = {
 } as const;
 
 // Meio círculo de 0% a 40% com a meta (28%) marcada; o arco cheio corre até o valor
-export const FactorRGauge: React.FC<{ value: number; threshold?: number; size?: 'sm' | 'lg' }> = ({
-  value,
-  threshold = 28,
-  size = 'lg',
-}) => {
+export const FactorRGauge: React.FC<{ value: number; size?: 'sm' | 'lg' }> = ({ value, size = 'lg' }) => {
+  const threshold = Math.round(FACTOR_R_TARGET * 100); // 28 (sem o resíduo de 0,28 × 100)
   const reduceMotion = Boolean(useReducedMotion());
   const { w, stroke, showValue } = SIZES[size];
   const r = (w - stroke) / 2;
@@ -26,7 +23,7 @@ export const FactorRGauge: React.FC<{ value: number; threshold?: number; size?: 
   const h = cy + stroke / 2;
   const safe = Number.isFinite(value) ? value : 0;
   const frac = clamp(safe, 0, GAUGE_MAX) / GAUGE_MAX;
-  const ok = safe >= threshold;
+  const ok = meetsFactorR(safe / 100);
   const arc = arcPath(cx, cy, r, 180, 360);
 
   // Marca da meta atravessando o arco

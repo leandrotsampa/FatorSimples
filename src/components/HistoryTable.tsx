@@ -21,6 +21,7 @@ import {
   resolveFactorR,
   shiftYearMonth,
   FACTOR_R_NEAR_MISS,
+  meetsFactorR,
 } from '../utils/taxCalculations';
 import { card, tile } from './ui/card';
 import { PageHeader } from './ui/PageHeader';
@@ -135,7 +136,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   const nextCompetence = sortedHistory.length > 0 ? shiftYearMonth(sortedHistory[0].yearMonth, 1) : '';
   const nextRbt = nextCompetence ? calculateRBT12(history, nextCompetence, 0, 0) : null;
   const overallFactorR = nextRbt ? resolveFactorR(nextRbt.folha12, nextRbt.rawRbt12) * 100 : 0;
-  const isOverallQualified = overallFactorR >= 28;
+  const isOverallQualified = meetsFactorR(overallFactorR / 100);
 
   // Fator R efetivamente usado na apuração de cada competência (12 meses anteriores a ela)
   const apurationByMonth = new Map(
@@ -291,7 +292,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                     label="Folha/receita"
                     value={formatPercent(fr, 1)}
                     dot="bg-sky-500"
-                    valueClass={fr >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                    valueClass={meetsFactorR(fr / 100) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
                   />
                   <TooltipRow label="DAS pago" value={formatCurrency(m.dasPaid)} dot="bg-slate-400" />
                 </>

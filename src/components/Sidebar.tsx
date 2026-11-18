@@ -24,7 +24,7 @@ import { MonthPickerPanel } from './ui/MonthPickerPanel';
 import { currentYearMonth, isFutureMonth, MONTH_SHORT_NAMES, monthLongName } from '../utils/monthPicker';
 import { playSound } from '../hooks/useSound';
 import { TaxSettings, MonthRecord } from '../types/tax';
-import { formatCurrency, formatPercent, calculateRBT12, resolveFactorR, shiftYearMonth } from '../utils/taxCalculations';
+import { formatCurrency, formatPercent, calculateRBT12, meetsFactorR, resolveFactorR, shiftYearMonth } from '../utils/taxCalculations';
 import { storageAdapter } from '../utils/storageAdapter';
 import { DURATION, EASE_OUT, instantIf } from '../utils/motion';
 import type { StorageMode } from '../types/electron';
@@ -296,7 +296,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Anel do Fator R no menu recolhido (0 a 40%, meta em 28%)
   const ringPct = Math.min(1, Math.max(0, factorR / 40));
-  const ringOk = factorR >= 28;
+  const ringOk = meetsFactorR(factorR / 100);
 
   const footerButtonClass = `w-full flex items-center rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
     collapsed ? 'justify-center h-9' : 'justify-between px-2.5 py-1.5'
@@ -481,7 +481,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>Fator R {selectedMonth}:</span>
                   <span
                     className={`font-num font-bold ${
-                      factorR >= 28 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                      meetsFactorR(factorR / 100) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}
                   >
                     {monthsCount > 0 ? <AnimatedNumber value={factorR} format={formatPercent1} /> : '—'}

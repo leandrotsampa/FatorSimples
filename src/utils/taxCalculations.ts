@@ -316,6 +316,14 @@ export function calculateRBT12(
  * folha > 0 e receita = 0 -> 0,28 (Anexo III); folha = 0 e receita > 0 -> 0,01 (Anexo V).
  * Com ambos zerados não há relação a calcular: retorna 0.
  */
+// Fator R mínimo para o Anexo III. A comparação tolera só o resíduo de ponto flutuante: o pró-labore
+// calculado para fechar em 28% exatos pode dar 0,27999999999999996 na divisão e cair no Anexo V à toa
+export const FACTOR_R_TARGET = 0.28;
+const FACTOR_R_EPSILON = 1e-9;
+export function meetsFactorR(factorR: number): boolean {
+  return factorR >= FACTOR_R_TARGET - FACTOR_R_EPSILON;
+}
+
 export function resolveFactorR(folha12: number, rbt12: number): number {
   if (rbt12 > 0 && folha12 > 0) return folha12 / rbt12;
   if (folha12 > 0) return 0.28;
@@ -371,7 +379,7 @@ export function calculateSimplesNacional(
   // 140/2018): folha > 0 e receita = 0 -> 0,28; folha = 0 e receita > 0 -> 0,01
   const factorR = resolveFactorR(folha12, rawRbt12);
   const factorRPercentage = factorR * 100;
-  const isQualifiedForAnexo3 = factorR >= 0.28;
+  const isQualifiedForAnexo3 = meetsFactorR(factorR);
   // Folha que faltou, em reais, nos meses de fato considerados (desfaz a proporcionalização × 12)
   const realMonths = monthsCount > 0 ? monthsCount : 1;
   const factorRShortfall = isQualifiedForAnexo3
@@ -867,9 +875,11 @@ export function calculateFactorRMargin(
   const nextFactorR = resolveFactorR(payroll12, revenue12);
 
   const minProlabore = Math.max(settings.minimumWage, ceilToCents(0.28 * revenue12 - payroll11));
-  const prolaboreMargin = prolabore - minProlabore;
+  // No centavo (e sem -0): diferença de ponto flutuante não vira "precisa aumentar R$ 0,00"
+  const toCents = (v: number) => Math.round(v * 100) / 100 + 0;
+  const prolaboreMargin = toCents(prolabore - minProlabore);
   const revenueCeiling = payroll12 / 0.28 - revenue11;
-  const revenueMargin = revenueCeiling - revenue;
+  const revenueMargin = toCents(revenueCeiling - revenue);
 
   const taxesOn = (gross: number) => {
     const p = calculateProlabore(gross, settings);
@@ -889,7 +899,7 @@ export function calculateFactorRMargin(
   return {
     nextYearMonth,
     nextFactorRPercentage: nextFactorR * 100,
-    isNextQualified: nextFactorR >= 0.28,
+    isNextQualified: meetsFactorR(nextFactorR),
     minProlabore,
     prolaboreMargin,
     revenueCeiling: Math.max(0, revenueCeiling),
