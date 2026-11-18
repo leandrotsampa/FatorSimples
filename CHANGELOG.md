@@ -2,6 +2,36 @@
 
 Todas as versões do FatorSimples e o que mudou em cada uma.
 
+## v1.6.0 (2026-11-18)
+
+### ✨ Novidades
+
+- Pró-labore sempre visível e últimos faturamentos como atalho (54b2203)
+- Resumo do mês reescrito como documento de apuração para o contador (83122ac)
+- Aba Mês com impostos do pró-labore somados e tela mais enxuta (bfaa090)
+- Competência do histórico com a mesma grade de meses da página inicial (a7e292f)
+- Ícones dos sistemas também na imagem de prévia do site (5f650a6)
+- Ícones do Windows, macOS e Linux ao lado dos nomes no site (1397200)
+- Valores estimados marcados na calculadora e verificação do Bing (84c9b81)
+- Calculadora do Fator R com dois cenários lado a lado (158fd0b)
+- Botão de tema no site e verificação do Google Search Console (8765c35)
+- Site do app no GitHub Pages, com a calculadora do Fator R (c7efbe1)
+
+### 🐛 Correções
+
+- Mês sem faturamento não assume pró-labore de um salário mínimo (73c37d6)
+- Vencimento do DAS passa para o próximo dia útil (c309ecb)
+- Fator R de 28% exatos tratado como Anexo V por arredondamento (eab3b2a)
+- Marcador ≈ com aviso também no quadro da alíquota para a nota (3e17979)
+
+### 📦 Build e distribuição
+
+- Actions nas versões que rodam em Node 24 (3cbbb4e)
+
+### 🔧 Manutenção
+
+- Verificação do Search Console pela meta tag, no lugar do arquivo HTML (109d650)
+
 ## v1.5.0 (2026-10-29)
 
 ### ✨ Novidades
