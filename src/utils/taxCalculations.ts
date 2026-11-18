@@ -507,6 +507,11 @@ export function calculateMonthSummary(
   } else if (overrideProlabore !== undefined) {
     chosenProlabore = Math.max(settings.minimumWage, overrideProlabore);
   }
+  // Mês sem faturamento informado (regras de 28% e sem folga): ainda não há base. O piso do salário
+  // mínimo só vale depois que o faturamento entra; antes disso, mostraria pró-labore e impostos de um mês em branco
+  if (currentMonthRevenue <= 0 && settings.prolaboreRule !== 'manual' && overrideProlabore === undefined) {
+    chosenProlabore = 0;
+  }
 
   // 1 & 2 & 3: Pró-labore e seus impostos
   const prolabore = calculateProlabore(chosenProlabore, settings);
